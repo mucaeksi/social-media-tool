@@ -1,9 +1,14 @@
 {
-  "status": "failed",
-  "source_commit": "f15ed101b8b1bbf5239f1620e62c70f7745e4a07",
-  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39146305350",
-  "updated_at": "2026-10-18T16:45:12.292Z",
-  "url": null,
-  "verified": false,
-  "error": "Cloudflare GET /accounts/06a486e459d2d7db66198a67001781c5/access/organizations: HTTP 403. 9999: access.api.error.not_enabled: Access is not enabled. Visit the Access dashboard at https://dash.cloudflare.com/ and click the 'Enable Access' button."
+  "status": "success",
+  "source_commit": "2cec27d05c22a132ed2dbfedab1cf10cd11c1db3",
+  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39146845118",
+  "updated_at": "2026-10-18T16:52:28.431Z",
+  "url": "https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev",
+  "verified": true,
+  "components": {
+    "worker": "sosyal-studio",
+    "database": "Cloudflare D1",
+    "media": "Cloudflare R2",
+    "login": "Cloudflare Access — doğrulanmış tüm e-postalar"
+  }
 }
