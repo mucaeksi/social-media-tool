@@ -1914,7 +1914,7 @@ export default function App() {
               <ShieldCheck size={19} />
               <p>
                 {cloud
-                  ? `Taslaklar Cloudflare D1, görseller ${mediaStorage === "d1" ? "Cloudflare D1" : "Cloudflare R2"} üzerinde saklanır. Giriş Cloudflare Access ile doğrulanır. Şimdilik doğrulanmış tüm e-postalar aynı çalışma alanına erişebilir; kullanıcıya göre üyelik ve yetki ayrımı henüz yoktur. Görseller tarayıcıda hazırlanıp Cloudflare'e yüklenir.`
+                  ? `Taslaklar Cloudflare D1, görseller ${mediaStorage === "d1" ? "Cloudflare D1" : "Cloudflare R2"} üzerinde saklanır. Giriş Cloudflare Access ile doğrulanır. Şimdilik doğrulanmış tüm e-postalar aynı çalışma alanına erişebilir; kullanıcıya göre üyelik ve yetki ayrımı henüz yoktur. Görseller tarayıcıda hazırlanıp Cloudflare'e yüklenir.${mediaStorage === "r2" ? " Görsel depolama sınırı 10 GB; aylık işlem sınırları 1 milyon Class A ve 10 milyon Class B’dir." : ""}`
                   : "Taslaklar ve görseller bu ortamın yerel diskinde saklanır. Önemli içeriklerinizi ortam silinmeden önce dışa aktarın."}{" "}
                 Hesap bağlantısı ve otomatik yayınlama yoktur. ChatGPT
                 oturumunuza erişilmez.

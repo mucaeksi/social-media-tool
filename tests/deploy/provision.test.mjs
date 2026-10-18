@@ -180,3 +180,55 @@ test("R2 yetki hatası etkinleştirme hatası gibi değerlendirilmez", async () 
     },
   );
 });
+
+test("Access etkin değil yanıtında resmi kuruluş oluşturma isteği denenir", async () => {
+  await fixture(
+    (pathname, options) => {
+      if (
+        pathname.endsWith("/access/organizations") &&
+        options.method === "GET"
+      )
+        return new Response(
+          JSON.stringify({
+            success: false,
+            errors: [
+              {
+                code: 9999,
+                message: "access.api.error.not_enabled: Access is not enabled.",
+              },
+            ],
+          }),
+          { status: 403 },
+        );
+      return existing(pathname, options);
+    },
+    async ({ calls }) => {
+      await provisionCloudflare();
+      const created = calls.find(
+        (x) => x.path.endsWith("/access/organizations") && x.method === "POST",
+      );
+      assert.equal(created.body.name, "Sosyal Studio");
+      assert.match(created.body.auth_domain, /\.cloudflareaccess\.com$/);
+    },
+  );
+});
+
+test("Access genel yetki hatasında kuruluş oluşturulmaz", async () => {
+  await fixture(
+    (pathname, options) => {
+      if (pathname.endsWith("/access/organizations"))
+        return new Response(
+          JSON.stringify({
+            success: false,
+            errors: [{ code: 10000, message: "Authentication error" }],
+          }),
+          { status: 403 },
+        );
+      return existing(pathname, options);
+    },
+    async ({ calls }) => {
+      await assert.rejects(provisionCloudflare, /10000/);
+      assert.equal(calls.filter((x) => x.method === "POST").length, 0);
+    },
+  );
+});

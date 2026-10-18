@@ -10,6 +10,8 @@ Kaynaklar GitHub `main` dalındadır. Her kaynak güncellemesi `.github/workflow
 
 Kullanıcının tercihiyle şu anda doğrulanmış tüm e-postalar aynı çalışma alanına girebilir. Kullanıcı oluşturma ve şirket bazında üyelik yetkileri henüz uygulanmadı. Dağıtım sonucu ve doğrulanmış canlı adres `deployment/cloudflare.json` dosyasında tutulur; başarı yalnızca canlı kontrol geçince kaydedilir.
 
+R2 için kodda 10 GB depolama, UTC ayında 1 milyon Class A ve 10 milyon Class B sınırı bulunur. Bu sayaçlar uygulamanın veri işlemlerini kapsar; hesap genelinde fatura limiti değildir.
+
 [Cloudflare dağıtımının ayrıntıları](docs/CLOUDFLARE.md) · [Sosyal medya uzmanı AI planı](docs/AI_YOL_HARITASI.md)
 
 ## Neler çalışıyor?

@@ -24,12 +24,30 @@ Token tek hesaba erişiyorsa hesap kimliği otomatik bulunur. Birden fazla hesap
 
 1. Sunucu, D1/R2, Access imzası, dağıtım hazırlığı, masaüstü ve mobil tarayıcı kontrollerini çalıştırır.
 2. Aynı adla mevcut D1 ve R2 kaynaklarını kullanır; yoksa oluşturur. R2 henüz etkin değilse görselleri D1 içinde 1 MB parçalar halinde saklar. Yetki hatalarını bu istisna kapsamında değerlendirmez. Başka isimli kaynakları silmez. Veritabanı şemasına eklemeli migration uygular.
-3. Workers alt alan adını ve Zero Trust kuruluşunu mevcutsa kullanır. E-posta giriş kodu sağlayıcısını ve yalnızca bu sitenin Access uygulamasını hazırlar.
+3. Workers alt alan adını ve Zero Trust kuruluşunu mevcutsa kullanır; kuruluş yoksa resmi API ile oluşturmayı dener. Hesap için Dashboard başlangıcı zorunlu tutulursa Cloudflare hatası sonuç dosyasına yazılır. E-posta giriş kodu sağlayıcısını ve yalnızca bu sitenin Access uygulamasını hazırlar.
 4. Arayüz ve API'yi yayınlar. Üretim ayarında yerel giriş istisnası bulunmaz. Access yapılandırması eksikse veriye erişim kapalı kalır.
 5. Kısa ömürlü bir CI erişimiyle canlı arayüzü, D1 kayıt/okumayı ve seçilen depoda görsel yükleme/indirmeyi sınar. Deneme şirketini, dosyalarını ve geçici CI erişimini temizler.
 6. Sonucu ve doğrulanmış adresi `deployment/cloudflare.json` dosyasıyla `main` dalına kaydeder. Bu dosya tek başına yeni dağıtım tetiklemez. GitHub Actions özeti de adresi gösterir. Başarısız sonuç başarı olarak işaretlenmez.
 
 Canlı dağıtımın doğrulandığını söylemek için sonuç dosyasında `status: success` ve `verified: true` bulunmalıdır. Yerel emulator testleri tek başına canlı hesabın hazır olduğunu kanıtlamaz. Kaynaklar için ücretli plan yükseltmesi otomatik yapılmaz. R2 sonradan etkinleştirilirse sonraki dağıtım yeni görseller için R2'yi seçer; mevcut D1 görselleri okunmaya devam eder. Bucket adı `sosyal-studio-media` olmalı ve herkese açık erişim kapalı kalmalıdır. Zero Trust başlangıç işlemi gerekirse Cloudflare'in verdiği hata Actions kaydında ve dağıtım sonucunda görünür; işlem tamamlandıktan sonra iş akışı yeniden çalıştırılabilir.
+
+## R2 kullanım sınırları
+
+Kodda R2 Standard için aşağıdaki üst sınırlar sabittir:
+
+| Kullanım | Sınır | Dolduğunda |
+| --- | --- | --- |
+| Toplam saklanan görseller | 10.000.000.000 bayt (10 GB) | Yeni yükleme durur; silme alan açar |
+| Class A | UTC takvim ayında 1.000.000 işlem | Yeni yükleme sonraki aya kadar durur |
+| Class B | UTC takvim ayında 10.000.000 işlem | Görsel okuma sonraki aya kadar durur |
+
+Cloudflare depolamayı günlük tepe değerlerinin aylık ortalamasıyla ücretlendirir. Uygulama, ortalamayı beklemek yerine her an 10 GB altında kalır. Bir görselin 17 dosyası yüklemeden önce tek D1 işlemiyle ortak bütçeden ayrılır; eşzamanlı istekler kapasiteyi veya işlem kotasını aşamaz. Her dosyanın yazılması bir Class A, her indirme/önizleme bir Class B sayılır. Başarısız denemeler temkinli olarak işlem sayacından düşülmez. Standard depolama sınıfı kodda açıkça seçilir.
+
+Sayaç ve dosya boyutları D1 içinde kalıcıdır; Worker yeniden başlaması veya dağıtım sayaçları sıfırlamaz. Yalnızca işlem sayaçları UTC ay başında yenilenir. Depolama, R2 silmeyi doğruladıktan sonra serbest kalır. Dosya listesi D1 kayıtlarından okunur; böylece silme için Class A harcanmaz. Ücretsiz DeleteObject işlemi kota dolduğunda da kullanılabilir. Sonucu belirsiz bir kesintide ayrılmış kapasite tutulur; kota eksik sayılmaz. Eski R2 görselleri yükseltmede dosya başına izin verilen en yüksek boyutla sayılır.
+
+Giriş gerektiren `GET /api/storage/usage`, sınırları ve o ayın kullanımını döndürür. Kota aşıldığında API, Türkçe açıklamayla HTTP 429 verir. Bu koruma uygulamanın R2 veri işlemlerini kapsar; Cloudflare hesabının genel faturalandırma kilidi değildir. Başka bucket/uygulama kullanımı, Dashboard/S3 üzerinden dışarıdan yapılan işlemler ve kurulumdaki bucket yönetimi bu sayaçlara dahil değildir. Workers, D1 ve Access kendi planlarına tabidir. Bucket'a uygulama dışından dosya yüklemeyin veya yaşam döngüsüyle farklı depolama sınıfına geçirmeyin.
+
+Kaynak: [Cloudflare R2 fiyatlandırması](https://developers.cloudflare.com/r2/pricing/).
 
 ## Şimdiki giriş ve üyelik durumu
 
@@ -49,8 +67,8 @@ npm run cf:dev
 Bu komutlar yalnızca geliştirme için yerel D1/R2 emulatorünü kullanır; canlı Cloudflare verisine dokunmaz. Yerel giriş istisnası hem geliştirme ayarını hem localhost adresini gerektirir; `workers.dev` üzerinde geçerli değildir. Üretim yapılandırması Actions içinde ayrı üretilir ve Git'e alınmaz.
 
 ```bash
-npm run test:cloud      # 11 D1/R2 ve JWT testi
-npm run test:deploy     # 6 kaynak hazırlama testi; dış servise bağlanmaz
+npm run test:cloud      # 19 D1/R2, kota ve JWT testi
+npm run test:deploy     # 8 kaynak hazırlama testi; dış servise bağlanmaz
 npm run test:e2e:cloud  # 2 tarayıcı akışı; D1 + R2
 npm run test:e2e:d1     # Aynı 2 akış; görseller de D1 üzerinde
 ```

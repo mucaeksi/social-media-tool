@@ -18,6 +18,7 @@ import {
 import { createCloudStore } from "./store.mjs";
 import { authenticate } from "./auth.mjs";
 import { createD1Media } from "./d1-media.mjs";
+import { createR2Media, R2_LIMITS, r2Usage } from "./r2-media.mjs";
 import { parseMediaForm, objectKey, removeCompanyObjects } from "./media.mjs";
 
 const app = new Hono();
@@ -29,7 +30,7 @@ const storageMode = (c) => (c.env.MEDIA_STORAGE === "d1" ? "d1" : "r2");
 function mediaStore(c, mode = storageMode(c)) {
   if (mode === "d1") return createD1Media(c.env.DB);
   if (!c.env.MEDIA) fail(503, "R2 görsel bağlantısı yapılandırılmadı.");
-  return c.env.MEDIA;
+  return createR2Media(c.env.DB, c.env.MEDIA);
 }
 async function company(c, id) {
   const result = await store(c).company(id);
@@ -118,6 +119,12 @@ app.get("/api/health", async (c) => {
   });
 });
 app.get("/api/platforms", (c) => c.json(platforms));
+app.get("/api/storage/usage", async (c) =>
+  c.json({
+    storage: storageMode(c),
+    r2: { limits: R2_LIMITS, usage: await r2Usage(c.env.DB) },
+  }),
+);
 app.get("/api/companies", async (c) => c.json(await store(c).companies()));
 app.post("/api/companies", async (c) => {
   if ((await store(c).companies()).length >= 30)
@@ -140,7 +147,7 @@ app.delete("/api/companies/:id", async (c) => {
   const id = c.req.param("id");
   await company(c, id);
   await removeCompanyObjects(createD1Media(c.env.DB), id);
-  if (c.env.MEDIA) await removeCompanyObjects(c.env.MEDIA, id);
+  if (c.env.MEDIA) await removeCompanyObjects(mediaStore(c, "r2"), id);
   await store(c).deleteCompany(id);
   return c.body(null, 204);
 });
@@ -266,6 +273,13 @@ app.post("/api/media", async (c) => {
     objectKey(companyId, id, image.key),
   );
   const bucket = mediaStore(c);
+  if (storageMode(c) === "r2")
+    await bucket.reserveUpload(
+      parsed.images.map((image, index) => ({
+        key: keys[index],
+        bytes: image.bytes,
+      })),
+    );
   try {
     const uploads = await Promise.allSettled(
       parsed.images.map((image, index) =>
@@ -276,6 +290,7 @@ app.post("/api/media", async (c) => {
     );
     const failed = uploads.find((result) => result.status === "rejected");
     if (failed) throw failed.reason;
+    if (storageMode(c) === "r2") await bucket.completeUpload(keys);
     return c.json(
       await store(c).saveMedia(
         {

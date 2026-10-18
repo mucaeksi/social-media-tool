@@ -72,9 +72,26 @@ export async function provisionCloudflare() {
   if (!/^[a-z0-9-]+$/.test(subdomain?.subdomain ?? ""))
     throw new Error("Workers alt alan adı alınamadı.");
   const hostname = `${name}.${subdomain.subdomain}.workers.dev`;
-  let organization = await cfApi(`${base}/access/organizations`, {
-    allow404: true,
-  });
+  let organization;
+  try {
+    organization = await cfApi(`${base}/access/organizations`, {
+      allow404: true,
+    });
+  } catch (error) {
+    // An account without an organization returns 403, rather than 404. Try the
+    // documented organization creation endpoint; never ignore other 403 errors.
+    if (
+      !(
+        error.status === 403 &&
+        error.codes?.includes(9999) &&
+        error.message.includes("access.api.error.not_enabled")
+      )
+    )
+      throw error;
+    console.log(
+      "Access kuruluşu henüz etkin değil; API ile ilk kurulum deneniyor.",
+    );
+  }
   if (!organization)
     organization = await cfApi(`${base}/access/organizations`, {
       method: "POST",

@@ -94,7 +94,8 @@ before(async () => {
   bucket = await mf.getR2Bucket("MEDIA");
   const migration =
     (await readFile("migrations/0001_studio.sql", "utf8")) +
-    (await readFile("migrations/0002_d1_media.sql", "utf8"));
+    (await readFile("migrations/0002_d1_media.sql", "utf8")) +
+    (await readFile("migrations/0003_r2_budget.sql", "utf8"));
   for (const statement of migration
     .split(";")
     .map((part) => part.trim())
@@ -247,6 +248,18 @@ test("17 JPEG R2 üzerinde saklanır; görsel boyutları ve kırpma seçenekleri
         `${p.id}_${fit}.jpg`,
       );
     }
+  await db
+    .prepare("UPDATE r2_budget SET period=?,class_a=999984 WHERE singleton=1")
+    .bind(new Date().toISOString().slice(0, 7))
+    .run();
+  const denied = await request(`/api/media?companyId=${first.id}`, {
+    method: "POST",
+    body: form,
+  });
+  assert.equal(denied.response.status, 429);
+  assert.match(denied.data.error, /Class A/);
+  assert.equal((await bucket.list()).objects.length, 0);
+  await db.prepare("UPDATE r2_budget SET class_a=0 WHERE singleton=1").run();
   const result = await request(`/api/media?companyId=${first.id}`, {
     method: "POST",
     body: form,
@@ -254,6 +267,10 @@ test("17 JPEG R2 üzerinde saklanır; görsel boyutları ve kırpma seçenekleri
   assert.equal(result.response.status, 201);
   image = result.data;
   assert.equal((await bucket.list()).objects.length, 17);
+  const usage = (await request("/api/storage/usage")).data.r2;
+  assert.equal(usage.limits.storageBytes, 10_000_000_000);
+  assert.equal(usage.usage.classA, 17);
+  assert.ok(usage.usage.storageBytes > 0);
   for (const p of platforms)
     for (const fit of ["contain", "cover"]) {
       const response = await mf.dispatchFetch(
@@ -340,6 +357,10 @@ test("Yabancı kaynak istekleri reddedilir; şirket silme R2 ve D1 kayıtların�
   );
   assert.equal((await request(`/api/drafts/${draft.id}`)).response.status, 404);
   assert.equal((await bucket.list()).objects.length, 0);
+  assert.equal(
+    (await request("/api/storage/usage")).data.r2.usage.storageBytes,
+    0,
+  );
   assert.equal((await request("/api/companies")).data[0].id, second.id);
 });
 
@@ -378,7 +399,11 @@ test("R2 bağlantısı olmadan D1 üzerinde görsel yükleme, indirme ve şirket
   });
   try {
     const database = await instance.getD1Database("DB");
-    for (const name of ["0001_studio.sql", "0002_d1_media.sql"])
+    for (const name of [
+      "0001_studio.sql",
+      "0002_d1_media.sql",
+      "0003_r2_budget.sql",
+    ])
       for (const statement of (await readFile(`migrations/${name}`, "utf8"))
         .split(";")
         .map((s) => s.trim())
