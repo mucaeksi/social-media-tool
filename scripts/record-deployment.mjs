@@ -9,7 +9,7 @@ const source = process.env.RECEIPT_SOURCE || ".cloudflare/deployment.json";
 const destination =
   process.env.RECEIPT_DESTINATION || "deployment/cloudflare.json";
 if (
-  !["deployment/cloudflare.json", "deployment/auth-bootstrap.json"].includes(
+  !["deployment/cloudflare.json", "deployment/auth-bootstrap.json", "deployment/browser-check.json"].includes(
     destination,
   )
 )

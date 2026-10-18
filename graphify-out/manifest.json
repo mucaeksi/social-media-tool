@@ -1,7 +1,7 @@
 {
   "package.json": {
-    "mtime": 1792343425.890337,
-    "seen": 1792343538.4165173,
+    "mtime": 1792344132.8321252,
+    "seen": 1792346364.9539058,
     "ast_hash": "5d19fcfb89212b22b144f3b3e22c2045",
     "semantic_hash": ""
   },
@@ -36,14 +36,14 @@
     "semantic_hash": ""
   },
   "src/App.tsx": {
-    "mtime": 1792343322.3002694,
-    "seen": 1792343538.4169395,
+    "mtime": 1792344132.8336565,
+    "seen": 1792346364.9542885,
     "ast_hash": "099005c429b11159a3c7e41a0a9ecaa4",
     "semantic_hash": ""
   },
   "src/main.tsx": {
-    "mtime": 1792343129.8646863,
-    "seen": 1792343538.4169421,
+    "mtime": 1792344132.8336565,
+    "seen": 1792346364.9542909,
     "ast_hash": "0786ce7d2affa17ae89769e0df53e9e7",
     "semantic_hash": ""
   },
@@ -54,8 +54,8 @@
     "semantic_hash": ""
   },
   "src/types.ts": {
-    "mtime": 1792343322.31243,
-    "seen": 1792343538.4169908,
+    "mtime": 1792344132.834427,
+    "seen": 1792346364.9543355,
     "ast_hash": "e2d870470a76d0e355c7d63bb49ecd58",
     "semantic_hash": ""
   },
@@ -96,8 +96,8 @@
     "semantic_hash": ""
   },
   "scripts/setup.sh": {
-    "mtime": 1792343425.7600331,
-    "seen": 1792343538.4167335,
+    "mtime": 1792344132.832997,
+    "seen": 1792346364.954132,
     "ast_hash": "8cf69024e2a07dfeef4e7f8474333313",
     "semantic_hash": ""
   },
@@ -120,20 +120,20 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792343536.8938618,
-    "seen": 1792343538.4172525,
+    "mtime": 1792344132.826427,
+    "seen": 1792346364.9546502,
     "ast_hash": "5fc9fb224623e051920fefeec0b2f8bd",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792343536.8930511,
-    "seen": 1792343538.417254,
+    "mtime": 1792344132.826427,
+    "seen": 1792346364.9546514,
     "ast_hash": "f8e3471ea94277eb8ca8e1a5ed491693",
     "semantic_hash": ""
   },
   "docs/MIMARI.md": {
-    "mtime": 1792343536.8935983,
-    "seen": 1792343538.4172797,
+    "mtime": 1792344132.826427,
+    "seen": 1792346364.9546764,
     "ast_hash": "e2898984aebd8f0678211684063df7c9",
     "semantic_hash": ""
   },
@@ -168,32 +168,32 @@
     "semantic_hash": ""
   },
   "scripts/deploy-cloudflare.mjs": {
-    "mtime": 1792343321.93227,
-    "seen": 1792343538.4166539,
+    "mtime": 1792344132.8321252,
+    "seen": 1792346364.9540527,
     "ast_hash": "6c125ecc972f1a68ffed88574c567610",
     "semantic_hash": ""
   },
   "scripts/e2e-cloud-server.mjs": {
-    "mtime": 1792343426.4880314,
-    "seen": 1792343538.4166808,
+    "mtime": 1792344132.8321252,
+    "seen": 1792346364.9540803,
     "ast_hash": "9e3a3259c925c91691240a6074aede5c",
     "semantic_hash": ""
   },
   "scripts/provision-cloudflare.mjs": {
-    "mtime": 1792343321.9242702,
-    "seen": 1792343538.4167309,
+    "mtime": 1792344132.832997,
+    "seen": 1792346364.9541295,
     "ast_hash": "877a4aa99deb9b0d08c8137a55fd95fa",
     "semantic_hash": ""
   },
   "scripts/record-deployment.mjs": {
-    "mtime": 1792343321.97627,
-    "seen": 1792343538.416732,
-    "ast_hash": "b4ca0a13831de3512f1dc50e2219633b",
+    "mtime": 1792346363.6253726,
+    "seen": 1792346364.9541306,
+    "ast_hash": "ad2eeef1326c7dc39c30d6036c210507",
     "semantic_hash": ""
   },
   "scripts/smoke-cloudflare.mjs": {
-    "mtime": 1792343321.96427,
-    "seen": 1792343538.416735,
+    "mtime": 1792344132.8336565,
+    "seen": 1792346364.9541333,
     "ast_hash": "46f85f039406e424387687e5cb7dd73e",
     "semantic_hash": ""
   },
@@ -222,20 +222,20 @@
     "semantic_hash": ""
   },
   "tests/deploy/provision.test.mjs": {
-    "mtime": 1792343389.4361231,
-    "seen": 1792343538.4171185,
+    "mtime": 1792344132.8358607,
+    "seen": 1792346364.954491,
     "ast_hash": "9eff8996d3acf6ff4cdf3cf23b61ccc1",
     "semantic_hash": ""
   },
   "worker/auth.mjs": {
-    "mtime": 1792343321.8000646,
-    "seen": 1792343538.4171586,
+    "mtime": 1792344132.8358607,
+    "seen": 1792346364.954531,
     "ast_hash": "f387a3a431c837099d2f61dbf28e08eb",
     "semantic_hash": ""
   },
   "worker/index.mjs": {
-    "mtime": 1792343946.83654,
-    "seen": 1792344084.4582403,
+    "mtime": 1792344132.8358607,
+    "seen": 1792346364.9545546,
     "ast_hash": "9bf734744e0b7c274b0ff3b899af5697",
     "semantic_hash": ""
   },
@@ -252,8 +252,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/cloudflare.yml": {
-    "mtime": 1792343425.5880342,
-    "seen": 1792343538.4172513,
+    "mtime": 1792344132.826427,
+    "seen": 1792346364.9546487,
     "ast_hash": "cfd14ccfc4957903a9a7b36478c6531a",
     "semantic_hash": ""
   },
@@ -264,8 +264,8 @@
     "semantic_hash": ""
   },
   "docs/CLOUDFLARE.md": {
-    "mtime": 1792343945.957904,
-    "seen": 1792344084.4583943,
+    "mtime": 1792344132.826427,
+    "seen": 1792346364.954675,
     "ast_hash": "73fd4e8d5edef7cbed859b2fffe4997b",
     "semantic_hash": ""
   },
@@ -294,68 +294,68 @@
     "semantic_hash": ""
   },
   ".github/admin-request.json": {
-    "mtime": 1792344082.4077022,
-    "seen": 1792344084.4571497,
+    "mtime": 1792344132.826427,
+    "seen": 1792346364.9539008,
     "ast_hash": "3c616e6dc7666eebf835b0574a040330",
     "semantic_hash": ""
   },
   "playwright.auth.config.mjs": {
-    "mtime": 1792343426.4960313,
-    "seen": 1792343538.4165199,
+    "mtime": 1792344132.8321252,
+    "seen": 1792346364.9539084,
     "ast_hash": "d5df94c54140d59d75af9df25d26f0b8",
     "semantic_hash": ""
   },
   "scripts/admin-provision.mjs": {
-    "mtime": 1792343946.9028645,
-    "seen": 1792344084.4572947,
+    "mtime": 1792344132.8321252,
+    "seen": 1792346364.953994,
     "ast_hash": "03b142bf18360465f56fe671ba5a23f3",
     "semantic_hash": ""
   },
   "scripts/password-deployment.mjs": {
-    "mtime": 1792343321.917391,
-    "seen": 1792343538.4167295,
+    "mtime": 1792344132.832997,
+    "seen": 1792346364.954128,
     "ast_hash": "39e6389282e2577007b818ecd9eb2c6e",
     "semantic_hash": ""
   },
   "shared/passwords.mjs": {
-    "mtime": 1792343321.7202706,
-    "seen": 1792343538.4169044,
+    "mtime": 1792344132.8336565,
+    "seen": 1792346364.954265,
     "ast_hash": "4cea9e9fcfe2ca6064a3ba5dd3040ed9",
     "semantic_hash": ""
   },
   "src/AuthRoot.tsx": {
-    "mtime": 1792343536.8940623,
-    "seen": 1792343538.4169407,
+    "mtime": 1792344132.8336565,
+    "seen": 1792346364.9542897,
     "ast_hash": "5a3988e67a1c096061e30ee7368740ca",
     "semantic_hash": ""
   },
   "tests/auth-browser/login.spec.mjs": {
-    "mtime": 1792343426.54784,
-    "seen": 1792343538.4170365,
+    "mtime": 1792344132.834427,
+    "seen": 1792346364.9543808,
     "ast_hash": "f33baf8ecc172e2a78822e2ce15a6c6c",
     "semantic_hash": ""
   },
   "tests/cloud/password-auth.test.mjs": {
-    "mtime": 1792343322.6202686,
-    "seen": 1792343538.4170637,
+    "mtime": 1792344132.834427,
+    "seen": 1792346364.9544086,
     "ast_hash": "25f0d10e057c42d6178cc10fa154d324",
     "semantic_hash": ""
   },
   "tests/deploy/admin-provision.test.mjs": {
-    "mtime": 1792343389.3702755,
-    "seen": 1792343538.4171157,
+    "mtime": 1792344132.834427,
+    "seen": 1792346364.9544628,
     "ast_hash": "f296a42795bac375fd9919d8ab119426",
     "semantic_hash": ""
   },
   "tests/deploy/password-deployment.test.mjs": {
-    "mtime": 1792343389.3925118,
-    "seen": 1792343538.4171169,
+    "mtime": 1792344132.834427,
+    "seen": 1792346364.9544897,
     "ast_hash": "a2bd7f27bed1498c0ef345963a1eaad4",
     "semantic_hash": ""
   },
   "worker/password-auth.mjs": {
-    "mtime": 1792343824.775106,
-    "seen": 1792344084.4582632,
+    "mtime": 1792344132.8364458,
+    "seen": 1792346364.9545767,
     "ast_hash": "5381855c25327b96725b9428dfcdca34",
     "semantic_hash": ""
   },
@@ -369,6 +369,18 @@
     "mtime": 1792343824.7537944,
     "seen": 1792344084.4581037,
     "ast_hash": "b8526f6dd61418c0dbca7eb0872377c5",
+    "semantic_hash": ""
+  },
+  "scripts/check-browser-login.mjs": {
+    "mtime": 1792346363.2893734,
+    "seen": 1792346364.953996,
+    "ast_hash": "efc69c3fd91a794a61b33ebcbe341af8",
+    "semantic_hash": ""
+  },
+  ".github/workflows/browser-check.yml": {
+    "mtime": 1792346363.461373,
+    "seen": 1792346364.954647,
+    "ast_hash": "afa0bf97f202517fbc71bbd153a48929",
     "semantic_hash": ""
   }
 }
