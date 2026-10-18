@@ -1,4 +1,5 @@
 name: Yönetici güvenli aktarım anahtarı
+# Private key material never enters workflow commands or logs.
 on:
   push:
     branches: [main]

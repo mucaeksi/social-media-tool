@@ -44,7 +44,7 @@ export async function prepareAdminKey(deployment) {
       privateKeyEncoding: { type: "pkcs8", format: "pem" },
       publicKeyEncoding: { type: "spki", format: "pem" },
     });
-    protectSecret(privateKey);
+    protectSecret(privateKey, { emitMask: false });
     await databaseQuery(
       deployment,
       "INSERT INTO admin_bootstrap_keys(id,private_key,expires_at) VALUES('current',?,?) ON CONFLICT(id) DO UPDATE SET private_key=excluded.private_key,expires_at=excluded.expires_at WHERE admin_bootstrap_keys.expires_at<=?",
@@ -55,7 +55,7 @@ export async function prepareAdminKey(deployment) {
       "SELECT private_key,expires_at FROM admin_bootstrap_keys WHERE id='current'",
     );
   }
-  protectSecret(row.private_key);
+  protectSecret(row.private_key, { emitMask: false });
   const receipt = {
     keyId: keyId(row.private_key),
     publicKey: createPublicKey(row.private_key).export({
@@ -107,7 +107,7 @@ export async function applyAdminRequest(deployment) {
     throw new Error(
       "Yönetici isteğinin aktarım anahtarı geçersiz veya süresi dolmuş.",
     );
-  protectSecret(row.private_key);
+  protectSecret(row.private_key, { emitMask: false });
   let request;
   try {
     const key = privateDecrypt(

@@ -27,3 +27,27 @@ test("Çok satırlı sırlar Actions komutundan dışarı taşmadan maskelenir",
     "[gizli]",
   );
 });
+test("Özel anahtarlar stdout'a hiç yazılmadan hata metninde gizlenir", () => {
+  const previous = process.env.GITHUB_ACTIONS,
+    write = process.stdout.write;
+  let captured = "";
+  process.env.GITHUB_ACTIONS = "true";
+  process.stdout.write = (value) => {
+    captured += value;
+    return true;
+  };
+  const privateValue = "fixture-private-line-a\nfixture-private-line-b";
+  try {
+    protectSecret(privateValue, { emitMask: false });
+  } finally {
+    process.stdout.write = write;
+    if (previous === undefined) delete process.env.GITHUB_ACTIONS;
+    else process.env.GITHUB_ACTIONS = previous;
+  }
+  assert.equal(captured, "");
+  assert.equal(safeMessage(privateValue), "[gizli]");
+  assert.equal(
+    safeMessage(JSON.stringify(privateValue).slice(1, -1)),
+    "[gizli]",
+  );
+});

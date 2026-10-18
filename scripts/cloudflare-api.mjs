@@ -1,10 +1,12 @@
 const secrets = new Set();
 if (process.env.GITHUB_TOKEN) secrets.add(process.env.GITHUB_TOKEN);
 
-export function protectSecret(value) {
+export function protectSecret(value, { emitMask = true } = {}) {
   if (!value) return;
   secrets.add(value);
-  if (process.env.GITHUB_ACTIONS === "true") {
+  if (typeof value === "string")
+    secrets.add(JSON.stringify(value).slice(1, -1));
+  if (emitMask && process.env.GITHUB_ACTIONS === "true") {
     const escaped = String(value)
       .replaceAll("%", "%25")
       .replaceAll("\r", "%0D")
