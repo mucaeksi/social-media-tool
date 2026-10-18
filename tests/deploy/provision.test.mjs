@@ -27,6 +27,7 @@ async function fixture(handler, action) {
       new URL(url).pathname.replace("/client/v4", ""),
       options,
     );
+    if (result instanceof Response) return result;
     return new Response(JSON.stringify({ success: true, result }), {
       headers: { "Content-Type": "application/json" },
     });
@@ -45,7 +46,7 @@ async function fixture(handler, action) {
 }
 function existing(pathname, options) {
   if (pathname === "/accounts") return [{ id: account }];
-  if (pathname.endsWith('/workers/scripts/sosyal-studio/settings')) return null;
+  if (pathname.endsWith("/workers/scripts/sosyal-studio/settings")) return null;
   if (pathname.endsWith("/d1/database"))
     return [{ name: "sosyal-studio", uuid: "database-id" }];
   if (pathname.endsWith("/r2/buckets/sosyal-studio-media"))
@@ -117,9 +118,65 @@ test("Başka Access uygulamasının üzerine yazılmaz", async () => {
     },
   );
 });
-test('Başka Worker üzerinde yayın yapılmaz ve kaynak değişikliği başlamaz', async () => {
-  await fixture((pathname, options) => pathname.endsWith('/workers/scripts/sosyal-studio/settings') ? { bindings: [] } : existing(pathname, options), async ({ calls }) => {
-    await assert.rejects(provisionCloudflare, /başka bir uygulamaya ait/);
-    assert.equal(calls.filter((call) => call.method !== 'GET').length, 0);
-  });
+test("Başka Worker üzerinde yayın yapılmaz ve kaynak değişikliği başlamaz", async () => {
+  await fixture(
+    (pathname, options) =>
+      pathname.endsWith("/workers/scripts/sosyal-studio/settings")
+        ? { bindings: [] }
+        : existing(pathname, options),
+    async ({ calls }) => {
+      await assert.rejects(provisionCloudflare, /başka bir uygulamaya ait/);
+      assert.equal(calls.filter((call) => call.method !== "GET").length, 0);
+    },
+  );
+});
+
+test("R2 hesapta etkin değilse D1 görsel deposu seçilir; R2 binding eklenmez", async () => {
+  await fixture(
+    (pathname, options) =>
+      pathname.includes("/r2/buckets/")
+        ? new Response(
+            JSON.stringify({
+              success: false,
+              errors: [
+                {
+                  code: 10042,
+                  message: "Please enable R2 through the Cloudflare Dashboard.",
+                },
+              ],
+            }),
+            { status: 403 },
+          )
+        : existing(pathname, options),
+    async ({ directory }) => {
+      const result = await provisionCloudflare();
+      assert.equal(result.mediaStorage, "d1");
+      const config = JSON.parse(
+        await readFile(
+          path.join(directory, ".cloudflare/wrangler.deploy.json"),
+          "utf8",
+        ),
+      );
+      assert.equal(config.r2_buckets, undefined);
+      assert.equal(config.vars.MEDIA_STORAGE, "d1");
+    },
+  );
+});
+
+test("R2 yetki hatası etkinleştirme hatası gibi değerlendirilmez", async () => {
+  await fixture(
+    (pathname, options) =>
+      pathname.includes("/r2/buckets/")
+        ? new Response(
+            JSON.stringify({
+              success: false,
+              errors: [{ code: 10000, message: "Authentication error" }],
+            }),
+            { status: 403 },
+          )
+        : existing(pathname, options),
+    async () => {
+      await assert.rejects(provisionCloudflare, /10000/);
+    },
+  );
 });

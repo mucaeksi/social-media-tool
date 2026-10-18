@@ -42,10 +42,16 @@ export async function cfApi(
     const details = (data.errors ?? [])
       .map((error) => `${error.code}: ${error.message}`)
       .join("; ");
-    throw new Error(
-      safeMessage(
-        `Cloudflare ${method} ${endpoint}: HTTP ${response.status}. ${details}`,
+    throw Object.assign(
+      new Error(
+        safeMessage(
+          `Cloudflare ${method} ${endpoint}: HTTP ${response.status}. ${details}`,
+        ),
       ),
+      {
+        status: response.status,
+        codes: (data.errors ?? []).map((error) => error.code),
+      },
     );
   }
   return data.result;

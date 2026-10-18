@@ -17,6 +17,7 @@ import {
 } from "../server/platforms.mjs";
 import { createCloudStore } from "./store.mjs";
 import { authenticate } from "./auth.mjs";
+import { createD1Media } from "./d1-media.mjs";
 import { parseMediaForm, objectKey, removeCompanyObjects } from "./media.mjs";
 
 const app = new Hono();
@@ -24,6 +25,12 @@ function fail(status, message) {
   throw Object.assign(new Error(message), { status });
 }
 const store = (c) => c.get("store");
+const storageMode = (c) => (c.env.MEDIA_STORAGE === "d1" ? "d1" : "r2");
+function mediaStore(c, mode = storageMode(c)) {
+  if (mode === "d1") return createD1Media(c.env.DB);
+  if (!c.env.MEDIA) fail(503, "R2 görsel bağlantısı yapılandırılmadı.");
+  return c.env.MEDIA;
+}
 async function company(c, id) {
   const result = await store(c).company(id);
   if (!result) fail(404, "Şirket bulunamadı.");
@@ -104,7 +111,7 @@ app.get("/api/health", async (c) => {
   return c.json({
     ok: true,
     database: "d1",
-    storage: "r2",
+    storage: storageMode(c),
     mediaProcessing: "browser",
     publishing: false,
     ai: "manual-chatgpt",
@@ -132,7 +139,8 @@ app.put("/api/companies/:id", async (c) => {
 app.delete("/api/companies/:id", async (c) => {
   const id = c.req.param("id");
   await company(c, id);
-  await removeCompanyObjects(c.env.MEDIA, id);
+  await removeCompanyObjects(createD1Media(c.env.DB), id);
+  if (c.env.MEDIA) await removeCompanyObjects(c.env.MEDIA, id);
   await store(c).deleteCompany(id);
   return c.body(null, 204);
 });
@@ -257,10 +265,11 @@ app.post("/api/media", async (c) => {
   const keys = parsed.images.map((image) =>
     objectKey(companyId, id, image.key),
   );
+  const bucket = mediaStore(c);
   try {
     const uploads = await Promise.allSettled(
       parsed.images.map((image, index) =>
-        c.env.MEDIA.put(keys[index], image.bytes, {
+        bucket.put(keys[index], image.bytes, {
           httpMetadata: { contentType: "image/jpeg" },
         }),
       ),
@@ -269,13 +278,18 @@ app.post("/api/media", async (c) => {
     if (failed) throw failed.reason;
     return c.json(
       await store(c).saveMedia(
-        { companyId, width: parsed.width, height: parsed.height },
+        {
+          companyId,
+          width: parsed.width,
+          height: parsed.height,
+          storage: storageMode(c),
+        },
         id,
       ),
       201,
     );
   } catch (error) {
-    await c.env.MEDIA.delete(keys);
+    await bucket.delete(keys);
     throw error;
   }
 });
@@ -291,7 +305,7 @@ app.get("/api/media/:id/:target", async (c) => {
     p = platformMap[target];
   if (target !== "original" && !p) fail(404, "Görsel boyutu bulunamadı.");
   const fit = c.req.query("fit") === "cover" ? "cover" : "contain";
-  const object = await c.env.MEDIA.get(
+  const object = await mediaStore(c, image.storage ?? "r2").get(
     objectKey(
       image.companyId,
       image.id,

@@ -21,6 +21,7 @@ npm run graph
 if command -v chromium >/dev/null 2>&1; then
   CHROMIUM_EXECUTABLE="$(command -v chromium)" npm run test:e2e
   CHROMIUM_EXECUTABLE="$(command -v chromium)" npm run test:e2e:cloud
+  CHROMIUM_EXECUTABLE="$(command -v chromium)" npm run test:e2e:d1
 else
   printf '%s\n' 'Tarayıcı kontrolleri çalışmadı: Chromium gerekli. Sunucu testleri ve derleme tamamlandı.' >&2
   exit 1

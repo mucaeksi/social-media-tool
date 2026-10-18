@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { Miniflare } from "miniflare";
 import { generateKeyPair, exportJWK, SignJWT } from "jose";
 import sharp from "sharp";
+import { createD1Media } from "../../worker/d1-media.mjs";
 import { platforms } from "../../server/platforms.mjs";
 
 let mf, db, bucket, first, second, image, draft, privateKey, publicKey;
@@ -21,7 +22,14 @@ async function token({ aud = audience, expiry = "5m" } = {}) {
 }
 async function request(
   route,
-  { method = "GET", body, hostname = "localhost", jwt, headers = {} } = {},
+  {
+    method = "GET",
+    body,
+    hostname = "localhost",
+    jwt,
+    headers = {},
+    instance = mf,
+  } = {},
 ) {
   let encoded = body ? JSON.stringify(body) : undefined;
   const contentHeaders = body ? { "Content-Type": "application/json" } : {};
@@ -33,7 +41,7 @@ async function request(
     encoded = await native.arrayBuffer();
     contentHeaders["Content-Type"] = native.headers.get("content-type");
   }
-  const response = await mf.dispatchFetch(`http://${hostname}${route}`, {
+  const response = await instance.dispatchFetch(`http://${hostname}${route}`, {
     method,
     headers: {
       ...contentHeaders,
@@ -84,7 +92,9 @@ before(async () => {
   });
   db = await mf.getD1Database("DB");
   bucket = await mf.getR2Bucket("MEDIA");
-  const migration = await readFile("migrations/0001_studio.sql", "utf8");
+  const migration =
+    (await readFile("migrations/0001_studio.sql", "utf8")) +
+    (await readFile("migrations/0002_d1_media.sql", "utf8"));
   for (const statement of migration
     .split(";")
     .map((part) => part.trim())
@@ -331,4 +341,131 @@ test("Yabancı kaynak istekleri reddedilir; şirket silme R2 ve D1 kayıtların�
   assert.equal((await request(`/api/drafts/${draft.id}`)).response.status, 404);
   assert.equal((await bucket.list()).objects.length, 0);
   assert.equal((await request("/api/companies")).data[0].id, second.id);
+});
+
+test("D1 büyük görselleri parçalara ayırıp eksiksiz akışla geri verir", async () => {
+  const storage = createD1Media(db);
+  const key = `companies/${second.id}/chunk-test/original.jpg`;
+  const bytes = new Uint8Array(2 * 1024 * 1024 + 127);
+  for (let index = 0; index < bytes.length; index++) bytes[index] = index % 251;
+  await storage.put(key, bytes);
+  const chunks = await db
+    .prepare("SELECT COUNT(*) AS total FROM media_chunks WHERE object_key=?")
+    .bind(key)
+    .first();
+  assert.equal(chunks.total, 2);
+  const object = await storage.get(key);
+  const received = new Uint8Array(
+    await new Response(object.body).arrayBuffer(),
+  );
+  assert.deepEqual(received, bytes);
+  await storage.delete(key);
+  assert.equal(await storage.get(key), null);
+});
+
+test("R2 bağlantısı olmadan D1 üzerinde görsel yükleme, indirme ve şirket silme çalışır", async () => {
+  const instance = new Miniflare({
+    modules: true,
+    scriptPath: ".worker-build/index.js",
+    compatibilityDate: "2026-07-01",
+    d1Databases: { DB: "d1-media-only" },
+    bindings: {
+      APP_ENV: "development",
+      LOCAL_AUTH_BYPASS: "true",
+      MEDIA_STORAGE: "d1",
+    },
+    serviceBindings: { ASSETS: () => new Response("Sosyal Studio") },
+  });
+  try {
+    const database = await instance.getD1Database("DB");
+    for (const name of ["0001_studio.sql", "0002_d1_media.sql"])
+      for (const statement of (await readFile(`migrations/${name}`, "utf8"))
+        .split(";")
+        .map((s) => s.trim())
+        .filter(Boolean))
+        await database.prepare(statement).run();
+    const profile = (
+      await request("/api/companies", {
+        instance,
+        method: "POST",
+        body: { name: "D1 Görsel Denemesi" },
+      })
+    ).data;
+    const original = await sharp({
+      create: { width: 300, height: 200, channels: 3, background: "#336655" },
+    })
+      .jpeg()
+      .toBuffer();
+    const form = new FormData();
+    form.append(
+      "original",
+      new Blob([original], { type: "image/jpeg" }),
+      "original.jpg",
+    );
+    for (const p of platforms)
+      for (const fit of ["contain", "cover"]) {
+        const bytes = await sharp(original)
+          .resize(p.width, p.height, { fit, background: "white" })
+          .jpeg()
+          .toBuffer();
+        form.append(
+          `${p.id}_${fit}`,
+          new Blob([bytes], { type: "image/jpeg" }),
+          `${p.id}_${fit}.jpg`,
+        );
+      }
+    const upload = await request(`/api/media?companyId=${profile.id}`, {
+      instance,
+      method: "POST",
+      body: form,
+    });
+    assert.equal(upload.response.status, 201);
+    assert.equal(upload.data.storage, "d1");
+    assert.equal(
+      (await request("/api/health", { instance })).data.storage,
+      "d1",
+    );
+    const response = await instance.dispatchFetch(
+      `http://localhost/api/media/${upload.data.id}/instagram.jpg`,
+    );
+    const metadata = await sharp(
+      Buffer.from(await response.arrayBuffer()),
+    ).metadata();
+    assert.deepEqual([metadata.width, metadata.height], [1080, 1350]);
+    assert.equal(
+      (
+        await database
+          .prepare("SELECT COUNT(*) AS total FROM media_objects")
+          .first()
+      ).total,
+      17,
+    );
+    assert.equal(
+      (
+        await request(`/api/companies/${profile.id}`, {
+          instance,
+          method: "DELETE",
+        })
+      ).response.status,
+      204,
+    );
+    assert.equal(
+      (
+        await database
+          .prepare("SELECT COUNT(*) AS total FROM media_objects")
+          .first()
+      ).total,
+      0,
+    );
+    assert.equal(
+      (
+        await database
+          .prepare("SELECT COUNT(*) AS total FROM media_chunks")
+          .first()
+      ).total,
+      0,
+    );
+  } finally {
+    await instance.dispose();
+  }
 });

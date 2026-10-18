@@ -41,13 +41,13 @@ try {
   receipt.components = {
     worker: deployment.worker,
     database: "Cloudflare D1",
-    media: "Cloudflare R2",
+    media: deployment.mediaStorage === "d1" ? "Cloudflare D1" : "Cloudflare R2",
     login: "Cloudflare Access — doğrulanmış tüm e-postalar",
   };
   if (process.env.GITHUB_STEP_SUMMARY)
     await appendFile(
       process.env.GITHUB_STEP_SUMMARY,
-      `## Sosyal Studio yayında\n\n${deployment.url}\n\nD1, R2, arayüz ve giriş koruması doğrulandı.\n`,
+      `## Sosyal Studio yayında\n\n${deployment.url}\n\nD1, görsel depolaması, arayüz ve giriş koruması doğrulandı.\n`,
     );
 } catch (error) {
   receipt.status = "failed";

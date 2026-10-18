@@ -55,7 +55,11 @@ export async function smokeCloudflare(deployment) {
         )
       ) {
         const result = await response.json();
-        if (result.ok && result.database === "d1" && result.storage === "r2") {
+        if (
+          result.ok &&
+          result.database === "d1" &&
+          result.storage === deployment.mediaStorage
+        ) {
           ready = true;
           break;
         }
@@ -116,7 +120,7 @@ export async function smokeCloudflare(deployment) {
     );
     const metadata = await sharp(downloaded).metadata();
     if (metadata.width !== 1080 || metadata.height !== 1350)
-      throw new Error("Canlı R2 görseli doğrulanamadı.");
+      throw new Error("Canlı görsel doğrulanamadı.");
     const draft = await (
       await http("/api/drafts", {
         method: "POST",
@@ -137,7 +141,7 @@ export async function smokeCloudflare(deployment) {
     await http(`/api/companies/${companyId}`, { method: "DELETE" });
     companyId = null;
     console.log(
-      "Canlı arayüz, D1 kayıt/okuma ve R2 yükleme/indirme kontrolü başarılı. Deneme verileri silindi.",
+      "Canlı arayüz, D1 kayıt/okuma ve Cloudflare görsel yükleme/indirme kontrolü başarılı. Deneme verileri silindi.",
     );
   } finally {
     let cleanupError;

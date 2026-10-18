@@ -6,7 +6,7 @@ Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Tür
 
 ## Cloudflare üzerinde yayın
 
-Kaynaklar GitHub `main` dalındadır. Her kaynak güncellemesi `.github/workflows/cloudflare.yml` ile test edilip Cloudflare Workers'a dağıtılır. Üretim veritabanı Cloudflare D1, görsel deposu R2, giriş doğrulaması Cloudflare Access'tir. GitHub Actions mevcut `CLOUDFLARE_API` repository secret'ını kullanır; tarayıcıya veya koda secret yazılmaz.
+Kaynaklar GitHub `main` dalındadır. Her kaynak güncellemesi `.github/workflows/cloudflare.yml` ile test edilip Cloudflare Workers'a dağıtılır. Üretim veritabanı Cloudflare D1, görsel deposu R2 (henüz etkin değilse D1), giriş doğrulaması Cloudflare Access'tir. GitHub Actions mevcut `CLOUDFLARE_API` repository secret'ını kullanır; tarayıcıya veya koda secret yazılmaz.
 
 Kullanıcının tercihiyle şu anda doğrulanmış tüm e-postalar aynı çalışma alanına girebilir. Kullanıcı oluşturma ve şirket bazında üyelik yetkileri henüz uygulanmadı. Dağıtım sonucu ve doğrulanmış canlı adres `deployment/cloudflare.json` dosyasında tutulur; başarı yalnızca canlı kontrol geçince kaydedilir.
 
@@ -15,7 +15,7 @@ Kullanıcının tercihiyle şu anda doğrulanmış tüm e-postalar aynı çalı�
 ## Neler çalışıyor?
 
 - Ayrı şirket profilleri; anlatım dili, hedef kitle, web sitesi, marka rengi ve anahtar kelimeler.
-- Şirkete özel taslak listesi; SQLite ile yeniden başlatmalar arasında kalıcı kayıt.
+- Şirkete özel taslak listesi; Cloudflare D1 üzerinde, yerel geliştirmede SQLite ile kalıcı kayıt.
 - Platform seçimi; başlık, açıklama, etiket, karakter sayacı ve görsel açıklaması düzenleme.
 - API gerektirmeyen ChatGPT akışı: talimat oluştur → kendi hesabında çalıştır → JSON yanıtını aktar. ChatGPT oturumuna program içinden erişilmez.
 - JPEG, PNG ve WebP yükleme; platforma göre boyutlandırma, beyaz dolgu veya merkezden kırpma; JPEG indirme.

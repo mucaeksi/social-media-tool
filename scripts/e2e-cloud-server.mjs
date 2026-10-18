@@ -34,6 +34,9 @@ const child = spawn(
     "8788",
     "--persist-to",
     stateDir,
+    ...(process.env.STUDIO_MEDIA_STORAGE === "d1"
+      ? ["--var", "MEDIA_STORAGE:d1"]
+      : []),
   ],
   { stdio: "inherit" },
 );

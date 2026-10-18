@@ -17,9 +17,21 @@ export async function provisionCloudflare() {
   if (!/^[a-f0-9]{32}$/i.test(accountId))
     throw new Error("Cloudflare hesap kimliği geçersiz.");
   const base = `/accounts/${accountId}`;
-  const existingWorker = await cfApi(`${base}/workers/scripts/${name}/settings`, { allow404: true });
-  if (existingWorker && !existingWorker.bindings?.some((binding) => binding.name === 'APPLICATION_ID' && binding.text === 'mucaeksi/social-media-tool')) {
-    throw new Error('Aynı adlı Worker başka bir uygulamaya ait; üzerine yazılmadı.');
+  const existingWorker = await cfApi(
+    `${base}/workers/scripts/${name}/settings`,
+    { allow404: true },
+  );
+  if (
+    existingWorker &&
+    !existingWorker.bindings?.some(
+      (binding) =>
+        binding.name === "APPLICATION_ID" &&
+        binding.text === "mucaeksi/social-media-tool",
+    )
+  ) {
+    throw new Error(
+      "Aynı adlı Worker başka bir uygulamaya ait; üzerine yazılmadı.",
+    );
   }
   const databases = await listAll(`${base}/d1/database`);
   let db = databases.find((item) => item.name === databaseName);
@@ -32,15 +44,24 @@ export async function provisionCloudflare() {
   }
   const databaseId = db.uuid || db.id;
   if (!databaseId) throw new Error("D1 veritabanı kimliği alınamadı.");
-  let bucket = await cfApi(`${base}/r2/buckets/${bucketName}`, {
-    allow404: true,
-  });
-  if (!bucket) {
-    bucket = await cfApi(`${base}/r2/buckets`, {
-      method: "POST",
-      body: { name: bucketName },
+  let mediaStorage = "r2";
+  try {
+    const bucket = await cfApi(`${base}/r2/buckets/${bucketName}`, {
+      allow404: true,
     });
-    console.log("R2 görsel deposu oluşturuldu.");
+    if (!bucket) {
+      await cfApi(`${base}/r2/buckets`, {
+        method: "POST",
+        body: { name: bucketName },
+      });
+      console.log("R2 görsel deposu oluşturuldu.");
+    }
+  } catch (error) {
+    if (!error.codes?.includes(10042)) throw error;
+    mediaStorage = "d1";
+    console.log(
+      "R2 hesapta etkin değil. Görseller Cloudflare D1 üzerinde saklanacak.",
+    );
   }
   let subdomain = await cfApi(`${base}/workers/subdomain`, { allow404: true });
   if (!subdomain?.subdomain)
@@ -144,10 +165,13 @@ export async function provisionCloudflare() {
         migrations_dir: "../migrations",
       },
     ],
-    r2_buckets: [{ binding: "MEDIA", bucket_name: bucketName }],
+    ...(mediaStorage === "r2"
+      ? { r2_buckets: [{ binding: "MEDIA", bucket_name: bucketName }] }
+      : {}),
     vars: {
-      APPLICATION_ID: 'mucaeksi/social-media-tool',
+      APPLICATION_ID: "mucaeksi/social-media-tool",
       APP_ENV: "production",
+      MEDIA_STORAGE: mediaStorage,
       ACCESS_TEAM_DOMAIN: teamDomain,
       ACCESS_AUD: application.aud,
     },
@@ -156,7 +180,8 @@ export async function provisionCloudflare() {
     url: `https://${hostname}`,
     accountId,
     databaseId,
-    bucketName,
+    bucketName: mediaStorage === "r2" ? bucketName : null,
+    mediaStorage,
     accessAppId: application.id,
     worker: name,
   };
@@ -170,7 +195,7 @@ export async function provisionCloudflare() {
     JSON.stringify(deployment, null, 2),
   );
   console.log(
-    "Cloudflare D1, R2, Workers alan adı ve e-posta doğrulaması hazırlandı.",
+    "Cloudflare veritabanı, görsel deposu, Workers alan adı ve e-posta doğrulaması hazırlandı.",
   );
   return deployment;
 }

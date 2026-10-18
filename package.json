@@ -21,7 +21,8 @@
     "cf:dev": "node scripts/wrangler.mjs dev --local --ip 127.0.0.1 --port 8787",
     "test:cloud": "npm run cf:build && node --test tests/cloud/*.test.mjs",
     "test:e2e:cloud": "playwright test --config playwright.cloudflare.config.mjs",
-    "test:deploy": "node --test tests/deploy/*.test.mjs"
+    "test:deploy": "node --test tests/deploy/*.test.mjs",
+    "test:e2e:d1": "STUDIO_MEDIA_STORAGE=d1 playwright test --config playwright.cloudflare.config.mjs"
   },
   "dependencies": {
     "express": "5.3.0",

@@ -216,6 +216,7 @@ function Modal({
 export default function App() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [cloud, setCloud] = useState(false);
+  const [mediaStorage, setMediaStorage] = useState("r2");
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [companyId, setCompanyId] = useState("");
   const [page, setPage] = useState<
@@ -271,10 +272,11 @@ export default function App() {
       const [list, configs, health] = await Promise.all([
         api<Company[]>("/api/companies"),
         api<Platform[]>("/api/platforms"),
-        api<{ database: string }>("/api/health"),
+        api<{ database: string; storage?: string }>("/api/health"),
       ]);
       setCompanies(list);
       setCloud(health.database === "d1");
+      setMediaStorage(health.storage ?? "local");
       setPlatforms(configs);
       setCompanyId(list[0]?.id ?? "");
     } catch (error) {
@@ -1912,7 +1914,7 @@ export default function App() {
               <ShieldCheck size={19} />
               <p>
                 {cloud
-                  ? "Taslaklar Cloudflare D1, görseller Cloudflare R2 üzerinde saklanır. Giriş Cloudflare Access ile doğrulanır. Şimdilik doğrulanmış tüm e-postalar aynı çalışma alanına erişebilir; kullanıcıya göre üyelik ve yetki ayrımı henüz yoktur. Görseller tarayıcıda hazırlanıp Cloudflare'e yüklenir."
+                  ? `Taslaklar Cloudflare D1, görseller ${mediaStorage === "d1" ? "Cloudflare D1" : "Cloudflare R2"} üzerinde saklanır. Giriş Cloudflare Access ile doğrulanır. Şimdilik doğrulanmış tüm e-postalar aynı çalışma alanına erişebilir; kullanıcıya göre üyelik ve yetki ayrımı henüz yoktur. Görseller tarayıcıda hazırlanıp Cloudflare'e yüklenir.`
                   : "Taslaklar ve görseller bu ortamın yerel diskinde saklanır. Önemli içeriklerinizi ortam silinmeden önce dışa aktarın."}{" "}
                 Hesap bağlantısı ve otomatik yayınlama yoktur. ChatGPT
                 oturumunuza erişilmez.
