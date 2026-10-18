@@ -1,0 +1,158 @@
+{
+  "package.json": {
+    "mtime": 1792339973.4957757,
+    "seen": 1792339990.7323549,
+    "ast_hash": "768e53e173841936b24293cd0f5257bc",
+    "semantic_hash": ""
+  },
+  "scripts/dev.mjs": {
+    "mtime": 1792339973.3437762,
+    "seen": 1792339990.7323627,
+    "ast_hash": "b3fa567660560ad42e1caa32a5f480eb",
+    "semantic_hash": ""
+  },
+  "server/app.mjs": {
+    "mtime": 1792339973.3077762,
+    "seen": 1792339990.7323723,
+    "ast_hash": "0b145fa9e04eaf45b3a2414eb15b6b7b",
+    "semantic_hash": ""
+  },
+  "server/index.mjs": {
+    "mtime": 1792339973.3172843,
+    "seen": 1792339990.7323735,
+    "ast_hash": "532944b9c7582c7ec7478874d132d67b",
+    "semantic_hash": ""
+  },
+  "server/platforms.mjs": {
+    "mtime": 1792339973.3277762,
+    "seen": 1792339990.7323747,
+    "ast_hash": "749466ee536b0bdd6ba021d89efd6b78",
+    "semantic_hash": ""
+  },
+  "server/store.mjs": {
+    "mtime": 1792339973.335776,
+    "seen": 1792339990.7323759,
+    "ast_hash": "94f19b497eed4f119e91ef5c965b9004",
+    "semantic_hash": ""
+  },
+  "src/App.tsx": {
+    "mtime": 1792339972.971777,
+    "seen": 1792339990.732377,
+    "ast_hash": "f31c4de3cadb7de51e6fb994ec7da71b",
+    "semantic_hash": ""
+  },
+  "src/main.tsx": {
+    "mtime": 1792339972.9847388,
+    "seen": 1792339990.732378,
+    "ast_hash": "d6827ff5680a7f924fa0bf7f99875b47",
+    "semantic_hash": ""
+  },
+  "src/platformMarks.tsx": {
+    "mtime": 1792339972.9921808,
+    "seen": 1792339990.7323792,
+    "ast_hash": "e58d0b611ad5314e123d6c8eb7c1d64f",
+    "semantic_hash": ""
+  },
+  "src/types.ts": {
+    "mtime": 1792339973.2130277,
+    "seen": 1792339990.7323802,
+    "ast_hash": "0357e5ec42e03578b4a12f54e86948aa",
+    "semantic_hash": ""
+  },
+  "src/vite-env.d.ts": {
+    "mtime": 1792339472.0808635,
+    "seen": 1792339555.5229986,
+    "ast_hash": "0352474ba2918efe13895edbc3780d94",
+    "semantic_hash": "0352474ba2918efe13895edbc3780d94"
+  },
+  "tsconfig.json": {
+    "mtime": 1792339019.6218085,
+    "seen": 1792339555.5229998,
+    "ast_hash": "84cde3ed94e2403280e418adba550786",
+    "semantic_hash": "84cde3ed94e2403280e418adba550786"
+  },
+  "vite.config.mjs": {
+    "mtime": 1792339973.435776,
+    "seen": 1792339990.7323875,
+    "ast_hash": "2b3e3a9c3d6e27798504ea3482364b79",
+    "semantic_hash": ""
+  },
+  "playwright.config.mjs": {
+    "mtime": 1792339973.4477758,
+    "seen": 1792339990.7323601,
+    "ast_hash": "8bb00765781fa6e105f3e6b0a04b73c1",
+    "semantic_hash": ""
+  },
+  "scripts/e2e-server.mjs": {
+    "mtime": 1792339973.3477762,
+    "seen": 1792339990.7323647,
+    "ast_hash": "0fa6680c05c445e3101f327478f42d80",
+    "semantic_hash": ""
+  },
+  "scripts/graph.mjs": {
+    "mtime": 1792339973.3517761,
+    "seen": 1792339990.7323663,
+    "ast_hash": "a5987beee561698e6983fe819aad44e4",
+    "semantic_hash": ""
+  },
+  "scripts/setup.sh": {
+    "mtime": 1792339844.468054,
+    "seen": 1792339881.3872328,
+    "ast_hash": "d962be21377f3077e6ce5b86075df7c9",
+    "semantic_hash": "d962be21377f3077e6ce5b86075df7c9"
+  },
+  "scripts/verify-skills.mjs": {
+    "mtime": 1792339973.359776,
+    "seen": 1792339990.7323706,
+    "ast_hash": "637e8cab9d2631297a49e02d2274efec",
+    "semantic_hash": ""
+  },
+  "tests/api.test.mjs": {
+    "mtime": 1792339973.4009628,
+    "seen": 1792339990.7323835,
+    "ast_hash": "3232e9985ecf1b678e92798fa5149044",
+    "semantic_hash": ""
+  },
+  "tests/browser/workflow.spec.mjs": {
+    "mtime": 1792339973.4277759,
+    "seen": 1792339990.732385,
+    "ast_hash": "84d5dfdd4e7b3db42ff3c99a0cfdf439",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1792339845.714718,
+    "seen": 1792339990.7323897,
+    "ast_hash": "cadf25083b8326bbc39511b70c60967d",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1792339845.6000516,
+    "seen": 1792339990.7323914,
+    "ast_hash": "19b71fd2ccdd17492cd3cab7a742bae3",
+    "semantic_hash": ""
+  },
+  "docs/MIMARI.md": {
+    "mtime": 1792339845.1480525,
+    "seen": 1792339990.7323933,
+    "ast_hash": "fe1ee5022d19132e483ca3471937be0c",
+    "semantic_hash": ""
+  },
+  "docs/SKILLER.md": {
+    "mtime": 1792339844.912053,
+    "seen": 1792339990.7323945,
+    "ast_hash": "d297cea85e720ac333ce6ba53c57b804",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1792339973.4877758,
+    "seen": 1792339990.732396,
+    "ast_hash": "f4458ff4d8cf85ec48246aaf44afcbbd",
+    "semantic_hash": ""
+  },
+  "public/favicon.svg": {
+    "mtime": 1792339020.4138067,
+    "seen": 1792339990.732397,
+    "ast_hash": "1bcd32cd1d4d8bb8aee8c58c64d68c7f",
+    "semantic_hash": ""
+  }
+}

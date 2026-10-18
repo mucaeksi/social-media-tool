@@ -1,0 +1,10 @@
+node_modules/
+dist/
+data/
+.agents/
+.codex/
+graphify-out/
+playwright-report/
+test-results/
+package-lock.json
+skills-lock.json
