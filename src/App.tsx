@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { prepareCloudMedia } from "./prepareMedia.ts";
 import type { FormEvent, ReactNode } from "react";
 import {
   ArrowDownToLine,
@@ -214,6 +215,7 @@ function Modal({
 
 export default function App() {
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [cloud, setCloud] = useState(false);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [companyId, setCompanyId] = useState("");
   const [page, setPage] = useState<
@@ -266,11 +268,13 @@ export default function App() {
     setLoading(true);
     setFatalError("");
     try {
-      const [list, configs] = await Promise.all([
+      const [list, configs, health] = await Promise.all([
         api<Company[]>("/api/companies"),
         api<Platform[]>("/api/platforms"),
+        api<{ database: string }>("/api/health"),
       ]);
       setCompanies(list);
+      setCloud(health.database === "d1");
       setPlatforms(configs);
       setCompanyId(list[0]?.id ?? "");
     } catch (error) {
@@ -475,10 +479,11 @@ export default function App() {
       return;
     }
     await run("upload", async () => {
+      const payload = cloud ? await prepareCloudMedia(file, platforms) : file;
       const uploaded = await api<Media>(`/api/media?companyId=${companyId}`, {
         method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: cloud ? {} : { "Content-Type": file.type },
+        body: payload,
       });
       setMedia(uploaded);
       changed();
@@ -598,7 +603,10 @@ export default function App() {
           </span>
           <div>
             <strong>Marka merkeziniz</strong>
-            <small>{companies.length} şirket · yerel çalışma alanı</small>
+            <small>
+              {companies.length} şirket ·{" "}
+              {cloud ? "Cloudflare çalışma alanı" : "yerel çalışma alanı"}
+            </small>
           </div>
         </div>
         <nav aria-label="Ana menü">
@@ -640,7 +648,10 @@ export default function App() {
             <CircleHelp size={18} /> Kullanım rehberi
           </button>
           <div className="local-status">
-            <span /> Veriler bu ortamda saklanır
+            <span />{" "}
+            {cloud
+              ? "Veriler Cloudflare üzerinde saklanır"
+              : "Veriler bu ortamda saklanır"}
           </div>
         </div>
       </aside>
@@ -1900,11 +1911,11 @@ export default function App() {
             <div className="help-note">
               <ShieldCheck size={19} />
               <p>
-                Bu uygulama mevcut ortamda tek kullanıcı için çalışır. Taslaklar
-                ve görseller yerel diskte saklanır; hesap bağlantısı ve otomatik
-                yayınlama yoktur. ChatGPT oturumunuza erişmez. Ortam silinmeden
-                önce önemli içeriklerinizi dışa aktarın. Kamuya açmadan önce
-                kullanıcı girişi ve erişim kontrolü eklenmelidir.
+                {cloud
+                  ? "Taslaklar Cloudflare D1, görseller Cloudflare R2 üzerinde saklanır. Giriş Cloudflare Access ile doğrulanır. Şimdilik doğrulanmış tüm e-postalar aynı çalışma alanına erişebilir; kullanıcıya göre üyelik ve yetki ayrımı henüz yoktur. Görseller tarayıcıda hazırlanıp Cloudflare'e yüklenir."
+                  : "Taslaklar ve görseller bu ortamın yerel diskinde saklanır. Önemli içeriklerinizi ortam silinmeden önce dışa aktarın."}{" "}
+                Hesap bağlantısı ve otomatik yayınlama yoktur. ChatGPT
+                oturumunuza erişilmez.
               </p>
             </div>
             <p className="muted">

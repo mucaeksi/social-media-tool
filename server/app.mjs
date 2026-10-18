@@ -15,66 +15,13 @@ import {
   postWarnings,
 } from "./platforms.mjs";
 
-z.config(z.locales.tr());
-
-const text = (max = 8000) => z.string().max(max);
-const companySchema = z.object({
-  name: z.string().trim().min(1, "Şirket adı gerekli.").max(80),
-  handle: text(60).default(""),
-  website: z
-    .string()
-    .max(250)
-    .refine(
-      (value) => !value || (/^https?:\/\//i.test(value) && URL.canParse(value)),
-      "Web adresini https:// ile girin.",
-    )
-    .default(""),
-  tone: text(300).default("Samimi ve profesyonel"),
-  audience: text(500).default(""),
-  keywords: text(500).default(""),
-  color: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/)
-    .default("#326f61"),
-});
-const selectedSchema = z
-  .array(z.enum(platformIds))
-  .min(1, "En az bir platform seçin.")
-  .max(8)
-  .refine((v) => new Set(v).size === v.length, "Platformlar tekrarlanamaz.");
-const postSchema = z.object({
-  platform: z.enum(platformIds),
-  title: text(500).default(""),
-  caption: text(70000),
-  hashtags: z
-    .array(
-      z
-        .string()
-        .regex(
-          /^#[\p{L}\p{N}_]+$/u,
-          "Etiketler # ile başlamalı ve boşluk içermemeli.",
-        )
-        .max(100),
-    )
-    .max(30)
-    .default([]),
-  alt: text(2000).default(""),
-});
-const briefSchema = z.object({
-  companyId: z.uuid(),
-  text: z.string().trim().min(1, "İçerik metni gerekli.").max(8000),
-  selected: selectedSchema,
-  mediaId: z.uuid().nullable().default(null),
-});
-const draftSchema = z.object({
-  companyId: z.uuid(),
-  name: z.string().trim().min(1).max(120),
-  text: text(),
-  selected: selectedSchema,
-  posts: z.array(postSchema).max(8),
-  mediaId: z.uuid().nullable().default(null),
-  mediaFit: z.enum(["contain", "cover"]).default("contain"),
-});
+import {
+  companySchema,
+  selectedSchema,
+  postSchema,
+  briefSchema,
+  draftSchema,
+} from "../shared/schemas.mjs";
 
 function fail(status, message) {
   throw Object.assign(new Error(message), { status });
@@ -328,16 +275,14 @@ export function createApp({
       await mkdir(mediaDir, { recursive: true, mode: 0o700 });
       const file = `${randomUUID()}.jpg`;
       await writeFile(path.join(mediaDir, file), output.data, { mode: 0o600 });
-      res
-        .status(201)
-        .json(
-          store.saveMedia({
-            companyId,
-            file,
-            width: output.info.width,
-            height: output.info.height,
-          }),
-        );
+      res.status(201).json(
+        store.saveMedia({
+          companyId,
+          file,
+          width: output.info.width,
+          height: output.info.height,
+        }),
+      );
     },
   );
   app.get("/api/media/:id", (req, res) => {
@@ -375,13 +320,11 @@ export function createApp({
   }
   app.use((error, _req, res, _next) => {
     if (error instanceof z.ZodError)
-      return res
-        .status(400)
-        .json({
-          error: error.issues
-            .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-            .join("\n"),
-        });
+      return res.status(400).json({
+        error: error.issues
+          .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+          .join("\n"),
+      });
     if (error.type === "entity.too.large")
       return res
         .status(413)
@@ -390,14 +333,12 @@ export function createApp({
       return res.status(400).json({ error: "Geçersiz JSON isteği." });
     if (!error.status || error.status >= 500)
       console.error("İşlem hatası:", error.message);
-    res
-      .status(error.status ?? 500)
-      .json({
-        error:
-          error.status && error.status < 500
-            ? error.message
-            : "İşlem tamamlanamadı. Sunucu kayıtlarını kontrol edin.",
-      });
+    res.status(error.status ?? 500).json({
+      error:
+        error.status && error.status < 500
+          ? error.message
+          : "İşlem tamamlanamadı. Sunucu kayıtlarını kontrol edin.",
+    });
   });
   return { app, store };
 }

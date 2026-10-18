@@ -15,10 +15,18 @@
     "test": "node --test tests/*.test.mjs",
     "test:e2e": "playwright test",
     "skills:verify": "node scripts/verify-skills.mjs",
-    "graph": "node scripts/graph.mjs"
+    "graph": "node scripts/graph.mjs",
+    "cf:build": "node scripts/wrangler.mjs deploy --dry-run --outdir .worker-build",
+    "cf:migrate:local": "node scripts/wrangler.mjs d1 migrations apply DB --local",
+    "cf:dev": "node scripts/wrangler.mjs dev --local --ip 127.0.0.1 --port 8787",
+    "test:cloud": "npm run cf:build && node --test tests/cloud/*.test.mjs",
+    "test:e2e:cloud": "playwright test --config playwright.cloudflare.config.mjs",
+    "test:deploy": "node --test tests/deploy/*.test.mjs"
   },
   "dependencies": {
     "express": "5.3.0",
+    "hono": "4.13.13",
+    "jose": "6.2.12",
     "lucide-react": "1.59.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
@@ -30,7 +38,9 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
+    "miniflare": "4.20260730.0",
     "typescript": "7.0.2",
-    "vite": "8.3.4"
+    "vite": "8.3.4",
+    "wrangler": "4.151.1"
   }
 }

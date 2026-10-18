@@ -10,3 +10,8 @@ test-results/
 .DS_Store
 graphify-out/cache/
 graphify-out/.graphify*
+.wrangler/
+.worker-build/
+.cloudflare/
+.dev.vars
+.dev.vars.*

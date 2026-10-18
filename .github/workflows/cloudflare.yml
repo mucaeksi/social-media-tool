@@ -1,0 +1,63 @@
+name: Cloudflare yayınla
+on:
+  push:
+    branches: [main]
+    paths-ignore: [deployment/cloudflare.json]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-production
+  cancel-in-progress: false
+
+env:
+  NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-cache
+  WRANGLER_SEND_METRICS: "false"
+
+jobs:
+  validate:
+    name: Derleme ve testler
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run skills:verify
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:cloud
+      - run: npm run test:deploy
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run test:e2e:cloud
+  deploy:
+    name: Cloudflare D1, R2 ve Workers
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Kaynakları hazırla ve yayını doğrula
+        run: node scripts/deploy-cloudflare.mjs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Dağıtım sonucunu GitHub'a kaydet
+        if: ${{ always() && hashFiles('.cloudflare/deployment.json') != '' }}
+        run: node scripts/record-deployment.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

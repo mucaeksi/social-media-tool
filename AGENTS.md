@@ -22,3 +22,14 @@ Rules:
 - Bulut ortamında Graphify: `/workspace/.tools/bin/graphify`. `export PATH="/workspace/.tools/bin:$PATH"` ile etkinleştirin. Yerel kod analizi için `GRAPHIFY_BACKEND=none` kullanın.
 - Kaynak beceri kopyaları `skills-lock.json` ile sabittir. İlgili beceriyi uygulamadan önce kendi `SKILL.md` dosyasını ve gerekli başvuru dosyalarını okuyun. Kurulu liste `docs/SKILLER.md` içindedir.
 - `npm test`, `npm run build`, `npm run test:e2e` ve `npm run skills:verify` doğrulama komutlarıdır. Tarayıcı testleri ayrı geçici SQLite verisi kullanır; kullanıcının `data/` dizini testlerde kullanılmamalıdır.
+
+
+## GitHub ve Cloudflare
+
+- Kullanıcı tüm geliştirme güncellemelerinin `main` dalına commit edilip pushlanmasını açıkça istedi. PR veya başka dal üzerinden yayın önermeyin; force push yapmayın.
+- Üretim yalnızca GitHub Actions + Cloudflare Workers/D1/R2/Access kullanır. Mevcut `CLOUDFLARE_API` GitHub repository secret'ını dağıtım iş akışı okur; değeri ortamdan çıkarmaya, sohbette istemeye veya koda yazmaya çalışmayın.
+- Şimdilik doğrulanmış tüm e-postalara Access girişi açıktır. Kullanıcı oluşturma, davet ve şirket bazında yetki sistemi henüz yoktur; varmış gibi göstermeyin.
+- Worker giriş doğrulaması kapatılamaz. Yerel bypass yalnızca development + localhost için geçerlidir; üretim yapılandırması ayrı oluşturulur.
+- `npm run test:cloud`, `npm run test:deploy`, `npm run test:e2e:cloud` Cloudflare denetimleridir. D1/R2 emulator testleri canlı hesaba bağlanmaz.
+- Canlı yayın için `deployment/cloudflare.json` ve Actions sonucunu inceleyin. Yerel testleri veya başarısız dağıtımı canlı başarı olarak raporlamayın.
+- Yerel AI sorusu gelecekteki kapsamdır. Cloudflare'de kalacak çözüm Workers AI olabilir; henüz model eklenmiş veya eğitilmiş değildir. Ayrıntı `docs/AI_YOL_HARITASI.md` içindedir.

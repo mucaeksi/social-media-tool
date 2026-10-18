@@ -4,6 +4,14 @@ Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Tür
 
 **Bu sürüm içerik hazırlama içindir. Gerçek hesap bağlantısı, otomatik yayınlama veya zamanlama yapmaz.** Bu işlevler için sonraki aşamada resmi OAuth entegrasyonları ve platform izinleri gerekir.
 
+## Cloudflare üzerinde yayın
+
+Kaynaklar GitHub `main` dalındadır. Her kaynak güncellemesi `.github/workflows/cloudflare.yml` ile test edilip Cloudflare Workers'a dağıtılır. Üretim veritabanı Cloudflare D1, görsel deposu R2, giriş doğrulaması Cloudflare Access'tir. GitHub Actions mevcut `CLOUDFLARE_API` repository secret'ını kullanır; tarayıcıya veya koda secret yazılmaz.
+
+Kullanıcının tercihiyle şu anda doğrulanmış tüm e-postalar aynı çalışma alanına girebilir. Kullanıcı oluşturma ve şirket bazında üyelik yetkileri henüz uygulanmadı. Dağıtım sonucu ve doğrulanmış canlı adres `deployment/cloudflare.json` dosyasında tutulur; başarı yalnızca canlı kontrol geçince kaydedilir.
+
+[Cloudflare dağıtımının ayrıntıları](docs/CLOUDFLARE.md) · [Sosyal medya uzmanı AI planı](docs/AI_YOL_HARITASI.md)
+
 ## Neler çalışıyor?
 
 - Ayrı şirket profilleri; anlatım dili, hedef kitle, web sitesi, marka rengi ve anahtar kelimeler.
@@ -35,7 +43,7 @@ npm run build
 npm start
 ```
 
-Bu komut, derlenmiş arayüzü ve API'yi 3001 portunda sunar. Geliştirme sunucusu çalışırken aynı portta ikinci bir API başlatmayın. `PORT` değişkeni yalnızca tek sunuculu üretim çalıştırmasında kullanılabilir; geliştirme vekili 3001'e ayarlıdır. Bu bir genel erişime açılmış üretim dağıtımı değildir.
+Bu komut, derlenmiş arayüzü ve API'yi 3001 portunda sunar. Geliştirme sunucusu çalışırken aynı portta ikinci bir API başlatmayın. `PORT` değişkeni yalnızca tek sunuculu üretim çalıştırmasında kullanılabilir; geliştirme vekili 3001'e ayarlıdır. Bu Node/SQLite komutları yerel geliştirme içindir. Üretim Cloudflare Workers/D1/R2 sürümünü kullanır; yukarıdaki Cloudflare bölümüne bakın.
 
 ## Kullanım
 
