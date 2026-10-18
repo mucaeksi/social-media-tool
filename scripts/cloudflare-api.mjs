@@ -22,7 +22,7 @@ export function safeMessage(message) {
 }
 export async function cfApi(
   endpoint,
-  { method = "GET", body, allow404 = false } = {},
+  { method = "GET", body, allow404 = false, rawResponse = false } = {},
 ) {
   const token = process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API;
   if (token) secrets.add(token);
@@ -61,7 +61,7 @@ export async function cfApi(
       },
     );
   }
-  return data.result;
+  return rawResponse ? data : data.result;
 }
 export async function listAll(endpoint) {
   const all = [];

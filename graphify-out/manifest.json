@@ -162,9 +162,9 @@
     "semantic_hash": ""
   },
   "scripts/cloudflare-api.mjs": {
-    "mtime": 1792343824.6871061,
-    "seen": 1792344084.4572964,
-    "ast_hash": "065c95cc22bafad5065440baa042003a",
+    "mtime": 1792346419.09725,
+    "seen": 1792346420.5216267,
+    "ast_hash": "6fbb4aa9bcd42d4c36393e10737bf20d",
     "semantic_hash": ""
   },
   "scripts/deploy-cloudflare.mjs": {
@@ -372,15 +372,15 @@
     "semantic_hash": ""
   },
   "scripts/check-browser-login.mjs": {
-    "mtime": 1792346363.2893734,
-    "seen": 1792346364.953996,
-    "ast_hash": "efc69c3fd91a794a61b33ebcbe341af8",
+    "mtime": 1792346419.2612498,
+    "seen": 1792346420.5216246,
+    "ast_hash": "a37332032e400bda0eac39c601ae97fb",
     "semantic_hash": ""
   },
   ".github/workflows/browser-check.yml": {
-    "mtime": 1792346363.461373,
-    "seen": 1792346364.954647,
-    "ast_hash": "afa0bf97f202517fbc71bbd153a48929",
+    "mtime": 1792346419.4252493,
+    "seen": 1792346420.52271,
+    "ast_hash": "722d366d331e4764aca237d7e055c196",
     "semantic_hash": ""
   }
 }

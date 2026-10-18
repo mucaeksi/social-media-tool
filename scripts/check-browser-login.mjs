@@ -29,7 +29,7 @@ try {
   endpoint = `/accounts/${accountId}/browser-rendering/devtools/browser`;
   // No recording, short idle expiry, explicit close in finally.
   const response = await cfApi(`${endpoint}?keep_alive=10000`, {
-    method: "POST", body: { recording: false },
+    method: "POST", body: {}, rawResponse: true,
   });
   session = response?.sessionId;
   if (!session || !/^[a-zA-Z0-9-]+$/.test(session))

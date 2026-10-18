@@ -9,6 +9,8 @@ permissions:
 concurrency:
   group: social-browser
   cancel-in-progress: false
+env:
+  NPM_CONFIG_CACHE: /tmp/sosyal-studio-npm-cache
 jobs:
   check:
     runs-on: ubuntu-24.04
