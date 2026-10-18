@@ -1,0 +1,21 @@
+{
+  "checkedAt": "2026-10-18T18:00:36.243Z",
+  "sourceCommit": "1a1296dd13800ffd3c50ab8ddacfa3000dc0b771",
+  "workflowUrl": "https://github.com/mucaeksi/social-media-tool/actions/runs/39152148477",
+  "credentialsSubmitted": false,
+  "postsSubmitted": false,
+  "results": [
+    {
+      "platform": "x",
+      "error": "Giriş sayfası veya canlı görünüm doğrulanamadı."
+    },
+    {
+      "platform": "instagram",
+      "httpStatus": 200,
+      "loginFieldsVisible": true,
+      "challengeVisible": false,
+      "liveViewAvailable": true
+    }
+  ],
+  "sessionClosed": true
+}
