@@ -372,9 +372,9 @@
     "semantic_hash": ""
   },
   "scripts/check-browser-login.mjs": {
-    "mtime": 1792346419.2612498,
-    "seen": 1792346420.5216246,
-    "ast_hash": "a37332032e400bda0eac39c601ae97fb",
+    "mtime": 1792346492.1170914,
+    "seen": 1792346493.2198088,
+    "ast_hash": "01b89b8a215ca86fe0b3112a3474927c",
     "semantic_hash": ""
   },
   ".github/workflows/browser-check.yml": {
