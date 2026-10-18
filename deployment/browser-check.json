@@ -1,12 +1,15 @@
 {
-  "checkedAt": "2026-10-18T18:00:36.243Z",
-  "sourceCommit": "1a1296dd13800ffd3c50ab8ddacfa3000dc0b771",
-  "workflowUrl": "https://github.com/mucaeksi/social-media-tool/actions/runs/39152148477",
+  "checkedAt": "2026-10-18T18:01:52.270Z",
+  "sourceCommit": "213733aeb4c9d79de59ebca64774f67c1fa89224",
+  "workflowUrl": "https://github.com/mucaeksi/social-media-tool/actions/runs/39152254340",
   "credentialsSubmitted": false,
   "postsSubmitted": false,
   "results": [
     {
       "platform": "x",
+      "stage": "navigation",
+      "networkError": "net::ERR_HTTP_RESPONSE_CODE_FAILURE",
+      "timeout": false,
       "error": "Giriş sayfası veya canlı görünüm doğrulanamadı."
     },
     {
@@ -14,7 +17,8 @@
       "httpStatus": 200,
       "loginFieldsVisible": true,
       "challengeVisible": false,
-      "liveViewAvailable": true
+      "liveViewAvailable": true,
+      "iframeAllowed": true
     }
   ],
   "sessionClosed": true
