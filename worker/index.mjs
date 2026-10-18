@@ -17,6 +17,7 @@ import {
 } from "../server/platforms.mjs";
 import { createCloudStore } from "./store.mjs";
 import { authenticate } from "./auth.mjs";
+import { registerPasswordRoutes } from "./password-auth.mjs";
 import { createD1Media } from "./d1-media.mjs";
 import { createR2Media, R2_LIMITS, r2Usage } from "./r2-media.mjs";
 import { parseMediaForm, objectKey, removeCompanyObjects } from "./media.mjs";
@@ -75,23 +76,35 @@ app.use("*", async (c, next) => {
   if (c.req.path.startsWith("/api/")) c.header("Cache-Control", "no-store");
   const url = new URL(c.req.url),
     origin = c.req.header("origin");
+  if (
+    c.env.APP_ENV === "production" &&
+    url.protocol !== "https:" &&
+    !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+  ) {
+    url.protocol = "https:";
+    return c.redirect(url.toString(), 308);
+  }
   if (origin && origin !== url.origin)
     return c.json({ error: "İstek kaynağına izin verilmedi." }, 403);
+  if (
+    c.env.AUTH_MODE === "password" &&
+    !["GET", "HEAD", "OPTIONS"].includes(c.req.method) &&
+    origin !== url.origin
+  )
+    return c.json({ error: "İstek kaynağı doğrulanamadı." }, 403);
   c.set("store", createCloudStore(c.env.DB));
-  if (c.req.path === "/api/health") return next();
+  if (
+    c.req.path === "/api/health" ||
+    c.req.path === "/api/auth/login" ||
+    !c.req.path.startsWith("/api/")
+  )
+    return next();
   const identity = await authenticate(c.req.raw, c.env);
   if (!identity) {
-    if (!c.env.ACCESS_TEAM_DOMAIN || !c.env.ACCESS_AUD)
-      return c.json(
-        {
-          error:
-            "Cloudflare Access yapılandırması tamamlanmadı. Panel erişimi kapalı tutuluyor.",
-        },
-        503,
-      );
     return c.json(
       {
-        error: "Oturum doğrulanamadı. Cloudflare Access üzerinden giriş yapın.",
+        error:
+          "Oturumunuz doğrulanamadı. Kullanıcı adı ve şifrenizle giriş yapın.",
       },
       401,
     );
@@ -106,6 +119,14 @@ app.use(
     onError: (c) => c.json({ error: "İstek boyutu sınırı aşıldı." }, 413),
   }),
 );
+app.use(
+  "/api/auth/login",
+  bodyLimit({
+    maxSize: 8192,
+    onError: (c) => c.json({ error: "Giriş isteği çok büyük." }, 413),
+  }),
+);
+registerPasswordRoutes(app);
 
 app.get("/api/health", async (c) => {
   await c.env.DB.prepare("SELECT 1").first();
@@ -116,6 +137,7 @@ app.get("/api/health", async (c) => {
     mediaProcessing: "browser",
     publishing: false,
     ai: "manual-chatgpt",
+    auth: c.env.AUTH_MODE === "password" ? "password" : "development",
   });
 });
 app.get("/api/platforms", (c) => c.json(platforms));
@@ -338,10 +360,7 @@ app.get("/api/media/:id/:target", async (c) => {
 });
 app.all("/api/*", (c) => c.json({ error: "İşlem bulunamadı." }, 404));
 app.get("/auth/logout", (c) => {
-  if (!c.env.ACCESS_TEAM_DOMAIN) return c.redirect("/");
-  return c.redirect(
-    `https://${c.env.ACCESS_TEAM_DOMAIN}/cdn-cgi/access/logout`,
-  );
+  return c.redirect("/");
 });
 app.all("*", (c) => c.env.ASSETS.fetch(c.req.raw));
 app.onError((error, c) => {

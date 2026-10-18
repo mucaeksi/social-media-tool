@@ -59,3 +59,11 @@ export type Draft = DraftInput & {
   createdAt: string;
   updatedAt: string;
 };
+export type AuthUser = {
+  id: string;
+  username: string;
+  email: string;
+  name: string;
+  role: "admin" | "editor";
+  local?: boolean;
+};

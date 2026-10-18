@@ -21,6 +21,7 @@ import {
   Layers3,
   Link2,
   LoaderCircle,
+  LogOut,
   Menu,
   MessageCircle,
   MoreHorizontal,
@@ -45,6 +46,7 @@ import type {
   Platform,
   PlatformId,
   Post,
+  AuthUser,
 } from "./types.ts";
 
 const initialPlatforms: PlatformId[] = [
@@ -100,6 +102,8 @@ async function api<T>(url: string, options: RequestInit = {}): Promise<T> {
   const data = await response
     .json()
     .catch(() => ({ error: "Sunucudan geçerli bir yanıt alınamadı." }));
+  if (response.status === 401)
+    window.dispatchEvent(new Event("studio:session-expired"));
   if (!response.ok) throw new Error(data.error ?? "İşlem tamamlanamadı.");
   return data as T;
 }
@@ -213,7 +217,13 @@ function Modal({
   );
 }
 
-export default function App() {
+export default function App({
+  user,
+  onLogout,
+}: {
+  user: AuthUser;
+  onLogout?: () => void;
+}) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [cloud, setCloud] = useState(false);
   const [mediaStorage, setMediaStorage] = useState("r2");
@@ -682,7 +692,21 @@ export default function App() {
             >
               <CircleHelp size={20} />
             </button>
-            <div className="profile-avatar">S</div>
+            <div
+              className="profile-avatar"
+              title={`${user.name} — ${user.role === "admin" ? "Yönetici" : "Editör"}`}
+            >
+              {user.name.slice(0, 1).toLocaleUpperCase("tr")}
+            </div>
+            {onLogout && (
+              <button
+                className="icon-button"
+                aria-label="Çıkış yap"
+                onClick={onLogout}
+              >
+                <LogOut size={19} />
+              </button>
+            )}
           </div>
         </header>
         <main>
@@ -1914,7 +1938,7 @@ export default function App() {
               <ShieldCheck size={19} />
               <p>
                 {cloud
-                  ? `Taslaklar Cloudflare D1, görseller ${mediaStorage === "d1" ? "Cloudflare D1" : "Cloudflare R2"} üzerinde saklanır. Giriş Cloudflare Access ile doğrulanır. Şimdilik doğrulanmış tüm e-postalar aynı çalışma alanına erişebilir; kullanıcıya göre üyelik ve yetki ayrımı henüz yoktur. Görseller tarayıcıda hazırlanıp Cloudflare'e yüklenir.${mediaStorage === "r2" ? " Görsel depolama sınırı 10 GB; aylık işlem sınırları 1 milyon Class A ve 10 milyon Class B’dir." : ""}`
+                  ? `Taslaklar Cloudflare D1, görseller ${mediaStorage === "d1" ? "Cloudflare D1" : "Cloudflare R2"} üzerinde saklanır. Kullanıcı adı ve şifreyle giriş yapılır; hesapları yönetici oluşturur. Yetkili kullanıcılar aynı şirket ve taslak alanını kullanır; şirket bazında kullanıcı yetkileri henüz yoktur. Görseller tarayıcıda hazırlanıp Cloudflare'e yüklenir.${mediaStorage === "r2" ? " Görsel depolama sınırı 10 GB; aylık işlem sınırları 1 milyon Class A ve 10 milyon Class B’dir." : ""}`
                   : "Taslaklar ve görseller bu ortamın yerel diskinde saklanır. Önemli içeriklerinizi ortam silinmeden önce dışa aktarın."}{" "}
                 Hesap bağlantısı ve otomatik yayınlama yoktur. ChatGPT
                 oturumunuza erişilmez.

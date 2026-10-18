@@ -1,7 +1,10 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { authenticatePassword } from "./password-auth.mjs";
 
 const keySets = new Map();
 export async function authenticate(request, env) {
+  if (env.AUTH_MODE === "password") return authenticatePassword(request, env);
+  if (env.APP_ENV === "production") return null;
   const url = new URL(request.url);
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   if (
@@ -9,7 +12,14 @@ export async function authenticate(request, env) {
     env.APP_ENV === "development" &&
     env.LOCAL_AUTH_BYPASS === "true"
   )
-    return { email: "yerel-gelistirme", local: true };
+    return {
+      id: "local",
+      username: "yerel-gelistirme",
+      name: "Yerel geliştirme",
+      email: "yerel-gelistirme",
+      role: "admin",
+      local: true,
+    };
   if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return null;
   if (!/^[a-z0-9-]+\.cloudflareaccess\.com$/.test(env.ACCESS_TEAM_DOMAIN))
     return null;

@@ -199,56 +199,26 @@ test("R2 yetki hatası etkinleştirme hatası gibi değerlendirilmez", async () 
   );
 });
 
-test("Access etkin değil yanıtında resmi kuruluş oluşturma isteği denenir", async () => {
-  await fixture(
-    (pathname, options) => {
-      if (
-        pathname.endsWith("/access/organizations") &&
-        options.method === "GET"
-      )
-        return new Response(
-          JSON.stringify({
-            success: false,
-            errors: [
-              {
-                code: 9999,
-                message: "access.api.error.not_enabled: Access is not enabled.",
-              },
-            ],
-          }),
-          { status: 403 },
-        );
-      return existing(pathname, options);
-    },
-    async ({ calls }) => {
-      await provisionCloudflare();
-      const created = calls.find(
-        (x) => x.path.endsWith("/access/organizations") && x.method === "POST",
-      );
-      assert.equal(created.body.name, "Sosyal Studio");
-      assert.match(created.body.auth_domain, /\.cloudflareaccess\.com$/);
-    },
-  );
-});
-
-test("Access genel yetki hatasında kuruluş oluşturulmaz", async () => {
-  await fixture(
-    (pathname, options) => {
-      if (pathname.endsWith("/access/organizations"))
-        return new Response(
-          JSON.stringify({
-            success: false,
-            errors: [{ code: 10000, message: "Authentication error" }],
-          }),
-          { status: 403 },
-        );
-      return existing(pathname, options);
-    },
-    async ({ calls }) => {
-      await assert.rejects(provisionCloudflare, /10000/);
-      assert.equal(calls.filter((x) => x.method === "POST").length, 0);
-    },
-  );
+test("Şifreli giriş için Access kuruluşu, sağlayıcı veya politika oluşturulmaz", async () => {
+  await fixture(existing, async ({ calls, directory }) => {
+    await provisionCloudflare();
+    assert.ok(calls.every((call) => call.method === "GET"));
+    assert.ok(
+      !calls.some(
+        (call) =>
+          call.path.endsWith("/access/organizations") ||
+          call.path.endsWith("/access/identity_providers"),
+      ),
+    );
+    const config = JSON.parse(
+      await readFile(
+        path.join(directory, ".cloudflare/wrangler.deploy.json"),
+        "utf8",
+      ),
+    );
+    assert.equal(config.vars.AUTH_MODE, "password");
+    assert.equal(config.vars.ACCESS_AUD, undefined);
+  });
 });
 
 test("Ücretli Zero Trust planında kaynaklar ve abonelik değiştirilmez", async () => {
@@ -335,17 +305,9 @@ test("Access hesap kaynak sınırlarında yeni kaynak isteği yapılmaz", async 
       /Yeni kaynak oluşturulmadı/,
     );
   }
-  await fixture(
-    (pathname, options) =>
-      pathname.endsWith("/access/identity_providers")
-        ? Array.from({ length: 50 }, (_, i) => ({
-            id: String(i),
-            type: "oidc",
-          }))
-        : existing(pathname, options),
-    async ({ calls }) => {
-      await assert.rejects(provisionCloudflare, /kimlik sağlayıcı sınırına/);
-      assert.ok(calls.every((x) => x.method === "GET"));
-    },
-  );
+  await fixture(existing, async ({ calls }) => {
+    const result = await provisionCloudflare();
+    assert.equal(result.legacyAccessAppId, "app-id");
+    assert.ok(calls.every((call) => call.method === "GET"));
+  });
 });

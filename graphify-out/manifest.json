@@ -1,8 +1,8 @@
 {
   "package.json": {
-    "mtime": 1792341675.7520027,
-    "seen": 1792341803.4543824,
-    "ast_hash": "48755692d54821d2396da5798311cd53",
+    "mtime": 1792343425.890337,
+    "seen": 1792343538.4165173,
+    "ast_hash": "5d19fcfb89212b22b144f3b3e22c2045",
     "semantic_hash": ""
   },
   "scripts/dev.mjs": {
@@ -36,15 +36,15 @@
     "semantic_hash": ""
   },
   "src/App.tsx": {
-    "mtime": 1792342160.7793148,
-    "seen": 1792342194.5804079,
-    "ast_hash": "9ca5bfdb74c133eb93b114d6b7235eb2",
+    "mtime": 1792343322.3002694,
+    "seen": 1792343538.4169395,
+    "ast_hash": "099005c429b11159a3c7e41a0a9ecaa4",
     "semantic_hash": ""
   },
   "src/main.tsx": {
-    "mtime": 1792339972.9847388,
-    "seen": 1792339990.732378,
-    "ast_hash": "d6827ff5680a7f924fa0bf7f99875b47",
+    "mtime": 1792343129.8646863,
+    "seen": 1792343538.4169421,
+    "ast_hash": "0786ce7d2affa17ae89769e0df53e9e7",
     "semantic_hash": ""
   },
   "src/platformMarks.tsx": {
@@ -54,9 +54,9 @@
     "semantic_hash": ""
   },
   "src/types.ts": {
-    "mtime": 1792339973.2130277,
-    "seen": 1792339990.7323802,
-    "ast_hash": "0357e5ec42e03578b4a12f54e86948aa",
+    "mtime": 1792343322.31243,
+    "seen": 1792343538.4169908,
+    "ast_hash": "e2d870470a76d0e355c7d63bb49ecd58",
     "semantic_hash": ""
   },
   "src/vite-env.d.ts": {
@@ -96,9 +96,9 @@
     "semantic_hash": ""
   },
   "scripts/setup.sh": {
-    "mtime": 1792341675.7562065,
-    "seen": 1792341803.4546356,
-    "ast_hash": "6bfc3a8fb94aede40bb584e741f137ac",
+    "mtime": 1792343425.7600331,
+    "seen": 1792343538.4167335,
+    "ast_hash": "8cf69024e2a07dfeef4e7f8474333313",
     "semantic_hash": ""
   },
   "scripts/verify-skills.mjs": {
@@ -120,21 +120,21 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792342462.888299,
-    "seen": 1792342464.9000425,
-    "ast_hash": "e4760546d05053fdf99d9c2708da3ec3",
+    "mtime": 1792343536.8938618,
+    "seen": 1792343538.4172525,
+    "ast_hash": "5fc9fb224623e051920fefeec0b2f8bd",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792342462.888205,
-    "seen": 1792342464.9000442,
-    "ast_hash": "0024567be76ee69ea3110b9933299faa",
+    "mtime": 1792343536.8930511,
+    "seen": 1792343538.417254,
+    "ast_hash": "f8e3471ea94277eb8ca8e1a5ed491693",
     "semantic_hash": ""
   },
   "docs/MIMARI.md": {
-    "mtime": 1792341792.7647343,
-    "seen": 1792341803.4553318,
-    "ast_hash": "b3eae87c828d26445d98b9392a2b282c",
+    "mtime": 1792343536.8935983,
+    "seen": 1792343538.4172797,
+    "ast_hash": "e2898984aebd8f0678211684063df7c9",
     "semantic_hash": ""
   },
   "docs/SKILLER.md": {
@@ -162,39 +162,39 @@
     "semantic_hash": ""
   },
   "scripts/cloudflare-api.mjs": {
-    "mtime": 1792341676.554529,
-    "seen": 1792341803.454499,
-    "ast_hash": "f017b3677c1f6dc8c90730544c29958a",
+    "mtime": 1792343824.6871061,
+    "seen": 1792344084.4572964,
+    "ast_hash": "065c95cc22bafad5065440baa042003a",
     "semantic_hash": ""
   },
   "scripts/deploy-cloudflare.mjs": {
-    "mtime": 1792342380.8664289,
-    "seen": 1792342464.8992267,
-    "ast_hash": "fa5b0fac3cff7991ae42a1ba35598b48",
+    "mtime": 1792343321.93227,
+    "seen": 1792343538.4166539,
+    "ast_hash": "6c125ecc972f1a68ffed88574c567610",
     "semantic_hash": ""
   },
   "scripts/e2e-cloud-server.mjs": {
-    "mtime": 1792341676.6080008,
-    "seen": 1792341803.4545383,
-    "ast_hash": "e7f661c15b51cda1c5ae47562ca432da",
+    "mtime": 1792343426.4880314,
+    "seen": 1792343538.4166808,
+    "ast_hash": "9e3a3259c925c91691240a6074aede5c",
     "semantic_hash": ""
   },
   "scripts/provision-cloudflare.mjs": {
-    "mtime": 1792342426.1979756,
-    "seen": 1792342464.8993263,
-    "ast_hash": "d65312c3bf4962557c44203edca638ce",
+    "mtime": 1792343321.9242702,
+    "seen": 1792343538.4167309,
+    "ast_hash": "877a4aa99deb9b0d08c8137a55fd95fa",
     "semantic_hash": ""
   },
   "scripts/record-deployment.mjs": {
-    "mtime": 1792341125.6012795,
-    "seen": 1792341197.5743487,
-    "ast_hash": "f4a1d3695955de96095451f609d5db41",
+    "mtime": 1792343321.97627,
+    "seen": 1792343538.416732,
+    "ast_hash": "b4ca0a13831de3512f1dc50e2219633b",
     "semantic_hash": ""
   },
   "scripts/smoke-cloudflare.mjs": {
-    "mtime": 1792342426.2303307,
-    "seen": 1792342464.8993754,
-    "ast_hash": "12f6009102a17d97e240c2ec8f81cc68",
+    "mtime": 1792343321.96427,
+    "seen": 1792343538.416735,
+    "ast_hash": "46f85f039406e424387687e5cb7dd73e",
     "semantic_hash": ""
   },
   "scripts/wrangler.mjs": {
@@ -222,21 +222,21 @@
     "semantic_hash": ""
   },
   "tests/deploy/provision.test.mjs": {
-    "mtime": 1792342463.53369,
-    "seen": 1792342464.8998313,
-    "ast_hash": "9ac7926a274c4296ee6ad576f481c5b7",
+    "mtime": 1792343389.4361231,
+    "seen": 1792343538.4171185,
+    "ast_hash": "9eff8996d3acf6ff4cdf3cf23b61ccc1",
     "semantic_hash": ""
   },
   "worker/auth.mjs": {
-    "mtime": 1792341125.39328,
-    "seen": 1792341197.5746317,
-    "ast_hash": "00d10fc51d34e5fb948f1ba67fc3e4fb",
+    "mtime": 1792343321.8000646,
+    "seen": 1792343538.4171586,
+    "ast_hash": "f387a3a431c837099d2f61dbf28e08eb",
     "semantic_hash": ""
   },
   "worker/index.mjs": {
-    "mtime": 1792342132.054971,
-    "seen": 1792342194.5806878,
-    "ast_hash": "214ede70da042d932bb949ad45719bb3",
+    "mtime": 1792343946.83654,
+    "seen": 1792344084.4582403,
+    "ast_hash": "9bf734744e0b7c274b0ff3b899af5697",
     "semantic_hash": ""
   },
   "worker/media.mjs": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/cloudflare.yml": {
-    "mtime": 1792341675.756121,
-    "seen": 1792341803.4553022,
-    "ast_hash": "005c0a7e90c31ec62988c659b0a69840",
+    "mtime": 1792343425.5880342,
+    "seen": 1792343538.4172513,
+    "ast_hash": "cfd14ccfc4957903a9a7b36478c6531a",
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "docs/CLOUDFLARE.md": {
-    "mtime": 1792342462.888026,
-    "seen": 1792342464.9000702,
-    "ast_hash": "24eebd90b4866c59372392f4d220a3ee",
+    "mtime": 1792343945.957904,
+    "seen": 1792344084.4583943,
+    "ast_hash": "73fd4e8d5edef7cbed859b2fffe4997b",
     "semantic_hash": ""
   },
   "worker/d1-media.mjs": {
@@ -288,9 +288,87 @@
     "semantic_hash": ""
   },
   "scripts/cloudflare-free-tier.mjs": {
-    "mtime": 1792342426.1484654,
-    "seen": 1792342464.8992245,
+    "mtime": 1792342478.1161277,
+    "seen": 1792343538.4166522,
     "ast_hash": "5907c5076b1e732bd2110e64dbdde1db",
+    "semantic_hash": ""
+  },
+  ".github/admin-request.json": {
+    "mtime": 1792344082.4077022,
+    "seen": 1792344084.4571497,
+    "ast_hash": "3c616e6dc7666eebf835b0574a040330",
+    "semantic_hash": ""
+  },
+  "playwright.auth.config.mjs": {
+    "mtime": 1792343426.4960313,
+    "seen": 1792343538.4165199,
+    "ast_hash": "d5df94c54140d59d75af9df25d26f0b8",
+    "semantic_hash": ""
+  },
+  "scripts/admin-provision.mjs": {
+    "mtime": 1792343946.9028645,
+    "seen": 1792344084.4572947,
+    "ast_hash": "03b142bf18360465f56fe671ba5a23f3",
+    "semantic_hash": ""
+  },
+  "scripts/password-deployment.mjs": {
+    "mtime": 1792343321.917391,
+    "seen": 1792343538.4167295,
+    "ast_hash": "39e6389282e2577007b818ecd9eb2c6e",
+    "semantic_hash": ""
+  },
+  "shared/passwords.mjs": {
+    "mtime": 1792343321.7202706,
+    "seen": 1792343538.4169044,
+    "ast_hash": "4cea9e9fcfe2ca6064a3ba5dd3040ed9",
+    "semantic_hash": ""
+  },
+  "src/AuthRoot.tsx": {
+    "mtime": 1792343536.8940623,
+    "seen": 1792343538.4169407,
+    "ast_hash": "5a3988e67a1c096061e30ee7368740ca",
+    "semantic_hash": ""
+  },
+  "tests/auth-browser/login.spec.mjs": {
+    "mtime": 1792343426.54784,
+    "seen": 1792343538.4170365,
+    "ast_hash": "f33baf8ecc172e2a78822e2ce15a6c6c",
+    "semantic_hash": ""
+  },
+  "tests/cloud/password-auth.test.mjs": {
+    "mtime": 1792343322.6202686,
+    "seen": 1792343538.4170637,
+    "ast_hash": "25f0d10e057c42d6178cc10fa154d324",
+    "semantic_hash": ""
+  },
+  "tests/deploy/admin-provision.test.mjs": {
+    "mtime": 1792343389.3702755,
+    "seen": 1792343538.4171157,
+    "ast_hash": "f296a42795bac375fd9919d8ab119426",
+    "semantic_hash": ""
+  },
+  "tests/deploy/password-deployment.test.mjs": {
+    "mtime": 1792343389.3925118,
+    "seen": 1792343538.4171169,
+    "ast_hash": "a2bd7f27bed1498c0ef345963a1eaad4",
+    "semantic_hash": ""
+  },
+  "worker/password-auth.mjs": {
+    "mtime": 1792343824.775106,
+    "seen": 1792344084.4582632,
+    "ast_hash": "5381855c25327b96725b9428dfcdca34",
+    "semantic_hash": ""
+  },
+  ".github/workflows/admin-bootstrap.yml": {
+    "mtime": 1792343823.8471081,
+    "seen": 1792344084.4583063,
+    "ast_hash": "236ec2b7daba8681507797e4b68f6563",
+    "semantic_hash": ""
+  },
+  "tests/deploy/log-masking.test.mjs": {
+    "mtime": 1792343824.7537944,
+    "seen": 1792344084.4581037,
+    "ast_hash": "b8526f6dd61418c0dbca7eb0872377c5",
     "semantic_hash": ""
   }
 }

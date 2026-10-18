@@ -224,11 +224,16 @@ if (process.argv.includes("--prepare")) {
   );
   if (!db) throw new Error("Sosyal Studio veritabanı bulunamadı.");
   const deployment = { accountId, databaseId: db.uuid || db.id };
-  if (process.argv.includes("--rotate"))
+  if (process.argv.includes("--rotate")) {
+    await databaseQuery(
+      deployment,
+      "CREATE TABLE IF NOT EXISTS admin_bootstrap_keys(id TEXT PRIMARY KEY,private_key TEXT NOT NULL,expires_at INTEGER NOT NULL)",
+    );
     await databaseQuery(
       deployment,
       "DELETE FROM admin_bootstrap_keys WHERE id='current'",
     );
+  }
   await prepareAdminKey(deployment);
   console.log("Yönetici aktarımı için açık anahtar hazırlandı.");
 }

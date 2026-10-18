@@ -27,10 +27,11 @@ Rules:
 ## GitHub ve Cloudflare
 
 - Kullanıcı tüm geliştirme güncellemelerinin `main` dalına commit edilip pushlanmasını açıkça istedi. PR veya başka dal üzerinden yayın önermeyin; force push yapmayın.
-- Üretim yalnızca GitHub Actions + Cloudflare Workers/D1/R2/Access kullanır. Mevcut `CLOUDFLARE_API` GitHub repository secret'ını dağıtım iş akışı okur; değeri ortamdan çıkarmaya, sohbette istemeye veya koda yazmaya çalışmayın.
-- Şimdilik doğrulanmış tüm e-postalara Access girişi açıktır. Kullanıcı oluşturma, davet ve şirket bazında yetki sistemi henüz yoktur; varmış gibi göstermeyin.
-- Zero Trust Free planı ve sıfır tutar dağıtım öncesi doğrulanır. 50 aktif koltuk Cloudflare tarafından uygulanır; ücretli abonelik veya koltuk satın almayın. Kaynak sınırlarını atlamayın.
-- Worker giriş doğrulaması kapatılamaz. Yerel bypass yalnızca development + localhost için geçerlidir; üretim yapılandırması ayrı oluşturulur.
-- `npm run test:cloud`, `npm run test:deploy`, `npm run test:e2e:cloud` ve `npm run test:e2e:d1` Cloudflare denetimleridir. D1/R2 emulator testleri canlı hesaba bağlanmaz.
+- Üretim yalnızca GitHub Actions + Cloudflare Workers/D1/R2 ve D1 üzerinde şifreli kullanıcı oturumları kullanır. Mevcut `CLOUDFLARE_API` GitHub repository secret'ını dağıtım iş akışı okur; değeri ortamdan çıkarmaya, sohbette istemeye veya koda yazmaya çalışmayın.
+- Üretimde kullanıcı adı/e-posta ve şifreyle giriş yapılır. Açık kayıt yoktur. Yönetici ve editör rolleri vardır; kullanıcı yönetimi admin yetkisi ister. Şirket bazında kullanıcı yetkisi ve davet e-postası henüz yoktur.
+- Asistan üzerinden hesap oluşturma için `deployment/auth-bootstrap.json` açık anahtarını ve şifreli `.github/admin-request.json` kanalını kullanın. Gerçek şifre, şifre özeti veya özel anahtar Git’e eklenmez. D1’deki özel aktarım anahtarı bir işlemden sonra tüketilir; tekrarlanan istek mevcut kullanıcıyı sıfırlamaz. `docs/CLOUDFLARE.md` akışını izleyin.
+- Zero Trust Free planı ve sıfır tutar dağıtım öncesi doğrulanır. Access/Gateway kullanan hesaplarda 50 aktif koltuk Cloudflare tarafından uygulanır; bu panelin şifreli girişi Access koltuğu tüketmez. D1 kullanıcı sayısı ayrıca 50 ile sınırlıdır; ücretli abonelik veya koltuk satın almayın. Kaynak sınırlarını atlamayın.
+- Worker giriş doğrulaması kapatılamaz. Üretim `AUTH_MODE=password` kullanır; eski Access uygulaması yalnızca yeni Worker ve etkin yönetici doğrulandıktan sonra kaldırılır. Yerel bypass yalnızca development + localhost için geçerlidir; üretim yapılandırması ayrı oluşturulur.
+- `npm run test:cloud`, `npm run test:deploy`, `npm run test:e2e:cloud` ve `npm run test:e2e:d1` ve `npm run test:e2e:auth` Cloudflare denetimleridir. D1/R2 emulator testleri canlı hesaba bağlanmaz.
 - Canlı yayın için `deployment/cloudflare.json` ve Actions sonucunu inceleyin. Yerel testleri veya başarısız dağıtımı canlı başarı olarak raporlamayın.
 - Yerel AI sorusu gelecekteki kapsamdır. Cloudflare'de kalacak çözüm Workers AI olabilir; henüz model eklenmiş veya eğitilmiş değildir. Ayrıntı `docs/AI_YOL_HARITASI.md` içindedir.

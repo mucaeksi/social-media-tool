@@ -2,6 +2,12 @@ import { spawnSync } from "node:child_process";
 import { mkdir, writeFile, appendFile } from "node:fs/promises";
 import { provisionCloudflare } from "./provision-cloudflare.mjs";
 import { smokeCloudflare } from "./smoke-cloudflare.mjs";
+import {
+  applyAdminRequest,
+  prepareAdminKey,
+  databaseQuery,
+} from "./admin-provision.mjs";
+import { detachLegacyAccess } from "./password-deployment.mjs";
 import { safeMessage } from "./cloudflare-api.mjs";
 
 const receipt = {
@@ -35,15 +41,29 @@ try {
   receipt.zero_trust = deployment.zeroTrust;
   receipt.url = deployment.url;
   wrangler(["d1", "migrations", "apply", "DB", "--remote"]);
+  const adminVerification = await applyAdminRequest(deployment);
+  if (
+    !(
+      await databaseQuery(
+        deployment,
+        "SELECT id FROM users WHERE role='admin' AND enabled=1 LIMIT 1",
+      )
+    ).length
+  )
+    throw new Error(
+      "Yetkili yönetici hesabı bulunamadı; şifreli giriş sürümü yayımlanmadı.",
+    );
+  await prepareAdminKey(deployment);
   wrangler(["deploy"]);
-  await smokeCloudflare(deployment);
+  await detachLegacyAccess(deployment);
+  await smokeCloudflare(deployment, adminVerification);
   receipt.status = "success";
   receipt.verified = true;
   receipt.components = {
     worker: deployment.worker,
     database: "Cloudflare D1",
     media: deployment.mediaStorage === "d1" ? "Cloudflare D1" : "Cloudflare R2",
-    login: "Cloudflare Access — doğrulanmış tüm e-postalar",
+    login: "Kullanıcı adı ve şifre — D1 oturumları",
   };
   if (process.env.GITHUB_STEP_SUMMARY)
     await appendFile(

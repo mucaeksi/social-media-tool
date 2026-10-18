@@ -1,10 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { cfApi, listAll } from "./cloudflare-api.mjs";
-import {
-  verifyZeroTrustFree,
-  ZERO_TRUST_LIMITS,
-  requireCapacity,
-} from "./cloudflare-free-tier.mjs";
+import { verifyZeroTrustFree } from "./cloudflare-free-tier.mjs";
 
 export async function provisionCloudflare() {
   const name = "sosyal-studio",
@@ -78,111 +74,12 @@ export async function provisionCloudflare() {
   if (!/^[a-z0-9-]+$/.test(subdomain?.subdomain ?? ""))
     throw new Error("Workers alt alan adı alınamadı.");
   const hostname = `${name}.${subdomain.subdomain}.workers.dev`;
-  let organization;
-  try {
-    organization = await cfApi(`${base}/access/organizations`, {
-      allow404: true,
-    });
-  } catch (error) {
-    // An account without an organization returns 403, rather than 404. Try the
-    // documented organization creation endpoint; never ignore other 403 errors.
-    if (
-      !(
-        error.status === 403 &&
-        error.codes?.includes(9999) &&
-        error.message.includes("access.api.error.not_enabled")
-      )
-    )
-      throw error;
-    console.log(
-      "Access kuruluşu henüz etkin değil; API ile ilk kurulum deneniyor.",
-    );
-  }
-  if (!organization)
-    organization = await cfApi(`${base}/access/organizations`, {
-      method: "POST",
-      body: {
-        name: "Sosyal Studio",
-        auth_domain: `sosyalstudio-${accountId.slice(0, 12)}.cloudflareaccess.com`,
-      },
-    });
-  const teamDomain = organization.auth_domain;
-  if (!/^[a-z0-9-]+\.cloudflareaccess\.com$/.test(teamDomain ?? ""))
-    throw new Error("Cloudflare Zero Trust takım alan adı alınamadı.");
-  const providers = await cfApi(`${base}/access/identity_providers`);
-  let otp = providers.find((provider) => provider.type === "onetimepin");
-  if (!otp) {
-    requireCapacity(
-      providers.length,
-      ZERO_TRUST_LIMITS.identityProviders,
-      "Access kimlik sağlayıcı",
-    );
-    otp = await cfApi(`${base}/access/identity_providers`, {
-      method: "POST",
-      body: { name: "E-posta giriş kodu", type: "onetimepin", config: {} },
-    });
-  }
   const apps = await listAll(`${base}/access/apps`);
-  let application = apps.find((item) => item.domain === hostname);
+  const application = apps.find((item) => item.domain === hostname);
   if (application && application.name !== "Sosyal Studio")
     throw new Error(
       "Hedef alan adında farklı bir Access uygulaması var; üzerine yazılmadı.",
     );
-  const config = {
-    name: "Sosyal Studio",
-    type: "self_hosted",
-    domain: hostname,
-    session_duration: "24h",
-    allowed_idps: [otp.id],
-    auto_redirect_to_identity: false,
-  };
-  if (!application) {
-    requireCapacity(
-      apps.length,
-      ZERO_TRUST_LIMITS.accessApps,
-      "Access uygulama",
-    );
-    application = await cfApi(`${base}/access/apps`, {
-      method: "POST",
-      body: {
-        ...config,
-        policies: [
-          {
-            name: "Doğrulanmış tüm e-postalar",
-            decision: "allow",
-            include: [{ everyone: {} }],
-          },
-        ],
-      },
-    });
-  } else {
-    application = await cfApi(`${base}/access/apps/${application.id}`, {
-      method: "PUT",
-      body: config,
-    });
-    const policies = await cfApi(
-      `${base}/access/apps/${application.id}/policies`,
-    );
-    if (
-      !policies.some((policy) => policy.name === "Doğrulanmış tüm e-postalar")
-    ) {
-      requireCapacity(
-        policies.length,
-        ZERO_TRUST_LIMITS.policiesPerApp,
-        "Access uygulama politikası",
-      );
-      await cfApi(`${base}/access/apps/${application.id}/policies`, {
-        method: "POST",
-        body: {
-          name: "Doğrulanmış tüm e-postalar",
-          decision: "allow",
-          include: [{ everyone: {} }],
-        },
-      });
-    }
-  }
-  if (!application.aud || !application.id)
-    throw new Error("Access uygulama kimliği alınamadı; dağıtım yapılmadı.");
   const wrangler = {
     name,
     main: "../worker/index.mjs",
@@ -211,8 +108,7 @@ export async function provisionCloudflare() {
       APPLICATION_ID: "mucaeksi/social-media-tool",
       APP_ENV: "production",
       MEDIA_STORAGE: mediaStorage,
-      ACCESS_TEAM_DOMAIN: teamDomain,
-      ACCESS_AUD: application.aud,
+      AUTH_MODE: "password",
     },
   };
   const deployment = {
@@ -221,7 +117,7 @@ export async function provisionCloudflare() {
     databaseId,
     bucketName: mediaStorage === "r2" ? bucketName : null,
     mediaStorage,
-    accessAppId: application.id,
+    legacyAccessAppId: application?.id ?? null,
     worker: name,
     zeroTrust,
   };
@@ -235,7 +131,7 @@ export async function provisionCloudflare() {
     JSON.stringify(deployment, null, 2),
   );
   console.log(
-    "Cloudflare veritabanı, görsel deposu, Workers alan adı ve e-posta doğrulaması hazırlandı.",
+    "Cloudflare veritabanı, görsel deposu, Workers alan adı ve şifreli giriş yapılandırması hazırlandı.",
   );
   return deployment;
 }

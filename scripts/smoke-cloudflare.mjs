@@ -1,11 +1,16 @@
 import sharp from "sharp";
-import { cfApi, protectSecret, listAll } from "./cloudflare-api.mjs";
-import { ZERO_TRUST_LIMITS, requireCapacity } from "./cloudflare-free-tier.mjs";
+import { protectSecret } from "./cloudflare-api.mjs";
+import { databaseQuery } from "./admin-provision.mjs";
+import {
+  hashPassword,
+  randomToken,
+  tokenDigest,
+} from "../shared/passwords.mjs";
 import { platforms } from "../server/platforms.mjs";
 
-export async function smokeCloudflare(deployment) {
-  const base = `/accounts/${deployment.accountId}/access`;
-  let service, policy, companyId, headers;
+export async function smokeCloudflare(deployment, adminVerification) {
+  let probeId, companyId;
+  let headers = { Origin: deployment.url };
   const http = async (route, options = {}) => {
     const response = await fetch(`${deployment.url}${route}`, {
       ...options,
@@ -14,46 +19,12 @@ export async function smokeCloudflare(deployment) {
     });
     if (!response.ok)
       throw new Error(
-        `Canlı kontrol ${route}: HTTP ${response.status}. Access yapılandırmasını ve Workers günlüklerini inceleyin.`,
+        `Canlı kontrol ${route}: HTTP ${response.status}. Giriş yapılandırmasını ve Workers günlüklerini inceleyin.`,
       );
     return response;
   };
   try {
-    const tokens = await listAll(`${base}/service_tokens`);
-    requireCapacity(
-      tokens.length,
-      ZERO_TRUST_LIMITS.serviceTokens,
-      "Access service token",
-    );
-    const policies = await listAll(
-      `${base}/apps/${deployment.accessAppId}/policies`,
-    );
-    requireCapacity(
-      policies.length,
-      ZERO_TRUST_LIMITS.policiesPerApp,
-      "Access uygulama politikası",
-    );
-    service = await cfApi(`${base}/service_tokens`, {
-      method: "POST",
-      body: {
-        name: `Sosyal Studio CI ${process.env.GITHUB_RUN_ID || Date.now()}`,
-        duration: "1h",
-      },
-    });
-    protectSecret(service.client_secret);
-    protectSecret(service.client_id);
-    policy = await cfApi(`${base}/apps/${deployment.accessAppId}/policies`, {
-      method: "POST",
-      body: {
-        name: `Geçici CI ${process.env.GITHUB_RUN_ID || Date.now()}`,
-        decision: "non_identity",
-        include: [{ service_token: { token_id: service.id } }],
-      },
-    });
-    headers = {
-      "CF-Access-Client-Id": service.client_id,
-      "CF-Access-Client-Secret": service.client_secret,
-    };
+    // The public login must work without an Access e-mail code or service token.
     let ready = false,
       lastStatus = 0;
     // Access policies and a just-published Worker can take a short time to propagate.
@@ -72,6 +43,7 @@ export async function smokeCloudflare(deployment) {
         const result = await response.json();
         if (
           result.ok &&
+          result.auth === "password" &&
           result.database === "d1" &&
           result.storage === deployment.mediaStorage
         ) {
@@ -89,6 +61,96 @@ export async function smokeCloudflare(deployment) {
     const root = await http("/");
     if (!(await root.text()).includes("Sosyal Studio"))
       throw new Error("Canlı arayüz doğrulanamadı.");
+    const anonymous = await fetch(`${deployment.url}/api/companies`, {
+      redirect: "manual",
+    });
+    if (anonymous.status !== 401)
+      throw new Error(
+        "Oturumsuz API erişimi kapalı değil veya eski Access katmanı hâlâ etkin.",
+      );
+    async function login(username, password) {
+      const response = await http("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const cookie = response.headers.get("set-cookie");
+      if (
+        !cookie?.includes("HttpOnly") ||
+        !cookie.includes("Secure") ||
+        !cookie.includes("SameSite=Strict")
+      )
+        throw new Error("Canlı oturum çerezi güvenli değil.");
+      headers.Cookie = cookie.split(";")[0];
+      protectSecret(headers.Cookie);
+      const result = await response.json();
+      if (result.user?.username !== username)
+        throw new Error("Canlı kullanıcı girişi doğrulanamadı.");
+      return result.user;
+    }
+    if (adminVerification) {
+      const admin = await login(
+        adminVerification.username,
+        adminVerification.password,
+      );
+      if (admin.role !== adminVerification.role)
+        throw new Error("Oluşturulan kullanıcının yetkisi doğrulanamadı.");
+      if (admin.role === "admin") await http("/api/admin/users");
+      const revoked = headers.Cookie;
+      await http("/api/auth/logout", { method: "POST" });
+      delete headers.Cookie;
+      const retry = await fetch(`${deployment.url}/api/companies`, {
+        headers: { Cookie: revoked },
+      });
+      if (retry.status !== 401)
+        throw new Error("Çıkış yapılan oturum iptal edilmedi.");
+    }
+    const count = (
+      await databaseQuery(deployment, "SELECT COUNT(*) AS total FROM users")
+    )[0].total;
+    if (count < 50) {
+      probeId = crypto.randomUUID();
+      const password = randomToken();
+      protectSecret(password);
+      const passwordHash = await hashPassword(password);
+      protectSecret(passwordHash);
+      const username = `ci-${probeId}`;
+      await databaseQuery(
+        deployment,
+        "INSERT INTO users(id,username,email,name,password_hash,role,created_at) VALUES(?,?,?,?,?,'editor',?)",
+        [
+          probeId,
+          username,
+          `${username}@example.invalid`,
+          "Geçici dağıtım kontrolü",
+          passwordHash,
+          new Date().toISOString(),
+        ],
+      );
+      await login(username, password);
+      if (
+        (await fetch(`${deployment.url}/api/admin/users`, { headers }))
+          .status !== 403
+      )
+        throw new Error("Editör yönetici bilgilerine erişebiliyor.");
+    } else {
+      const [admin] = await databaseQuery(
+        deployment,
+        "SELECT id FROM users WHERE role='admin' AND enabled=1 LIMIT 1",
+      );
+      const token = randomToken();
+      headers.Cookie = `__Host-studio_session=${token}`;
+      protectSecret(headers.Cookie);
+      await databaseQuery(
+        deployment,
+        "INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(?,?,?)",
+        [
+          await tokenDigest(token),
+          admin.id,
+          Math.floor(Date.now() / 1000) + 300,
+        ],
+      );
+    }
     const configs = await (await http("/api/platforms")).json();
     if (configs.length !== 8) throw new Error("Canlı platform listesi eksik.");
     const company = await (
@@ -167,16 +229,12 @@ export async function smokeCloudflare(deployment) {
       cleanupError = error;
     }
     try {
-      if (policy)
-        await cfApi(
-          `${base}/apps/${deployment.accessAppId}/policies/${policy.id}`,
-          { method: "DELETE" },
-        );
+      if (headers.Cookie) await http("/api/auth/logout", { method: "POST" });
     } finally {
-      if (service)
-        await cfApi(`${base}/service_tokens/${service.id}`, {
-          method: "DELETE",
-        });
+      if (probeId)
+        await databaseQuery(deployment, "DELETE FROM users WHERE id=?", [
+          probeId,
+        ]);
     }
     if (cleanupError) throw cleanupError;
   }

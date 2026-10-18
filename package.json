@@ -22,7 +22,8 @@
     "test:cloud": "npm run cf:build && node --test tests/cloud/*.test.mjs",
     "test:e2e:cloud": "playwright test --config playwright.cloudflare.config.mjs",
     "test:deploy": "node --test tests/deploy/*.test.mjs",
-    "test:e2e:d1": "STUDIO_MEDIA_STORAGE=d1 playwright test --config playwright.cloudflare.config.mjs"
+    "test:e2e:d1": "STUDIO_MEDIA_STORAGE=d1 playwright test --config playwright.cloudflare.config.mjs",
+    "test:e2e:auth": "STUDIO_AUTH=password playwright test --config playwright.auth.config.mjs"
   },
   "dependencies": {
     "express": "5.3.0",

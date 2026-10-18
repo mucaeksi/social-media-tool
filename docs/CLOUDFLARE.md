@@ -9,7 +9,7 @@ Uygulamanın kaynak kodu `mucaeksi/social-media-tool` deposunun `main` dalında 
 | Türkçe arayüz ve API | Cloudflare Workers, `sosyal-studio` |
 | Şirketler, taslaklar, görsel kayıtları | Cloudflare D1, `sosyal-studio` |
 | İşlenmiş görseller | Cloudflare R2, `sosyal-studio-media`; R2 etkin değilse D1 |
-| E-posta giriş doğrulaması | Cloudflare Access / Zero Trust |
+| Kullanıcılar, şifre özetleri, oturumlar | Cloudflare D1 |
 | Kaynak kod, testler, dağıtım otomasyonu | GitHub |
 
 Görseller kullanıcının tarayıcısında üstveriden arındırılmış JPEG olarak hazırlanır ve Cloudflare'e yüklenir. Kaynak görselin uzun kenarı en fazla 2560 piksel olur; her platform için beyaz dolgu ve merkezden kırpma seçenekleri ayrı dosyalardır. Tek paket en fazla 16 MB, dosya en fazla 4 MB olabilir. D1 taslak kayıtları 1 MB ile sınırlandırılır. Sunucu, JPEG başlıklarını ve hedef boyutlarını denetler; dosyalar Cloudflare'de özel kalır ve yalnızca doğrulanmış isteklerle sunulur. Harici bir görsel dönüştürme servisi veya ayrı Node sunucusu kullanılmaz.
@@ -22,14 +22,14 @@ Token tek hesaba erişiyorsa hesap kimliği otomatik bulunur. Birden fazla hesap
 
 ## Dağıtımın yaptığı işlemler
 
-1. Sunucu, D1/R2, Access imzası, dağıtım hazırlığı, masaüstü ve mobil tarayıcı kontrollerini çalıştırır.
-2. Aynı adla mevcut D1 ve R2 kaynaklarını kullanır; yoksa oluşturur. R2 henüz etkin değilse görselleri D1 içinde 1 MB parçalar halinde saklar. Yetki hatalarını bu istisna kapsamında değerlendirmez. Başka isimli kaynakları silmez. Veritabanı şemasına eklemeli migration uygular.
-3. Workers alt alan adını ve Zero Trust kuruluşunu mevcutsa kullanır; kuruluş yoksa resmi API ile oluşturmayı dener. Hesap için Dashboard başlangıcı zorunlu tutulursa Cloudflare hatası sonuç dosyasına yazılır. E-posta giriş kodu sağlayıcısını ve yalnızca bu sitenin Access uygulamasını hazırlar.
-4. Arayüz ve API'yi yayınlar. Üretim ayarında yerel giriş istisnası bulunmaz. Access yapılandırması eksikse veriye erişim kapalı kalır.
-5. Kısa ömürlü bir CI erişimiyle canlı arayüzü, D1 kayıt/okumayı ve seçilen depoda görsel yükleme/indirmeyi sınar. Deneme şirketini, dosyalarını ve geçici CI erişimini temizler.
-6. Sonucu ve doğrulanmış adresi `deployment/cloudflare.json` dosyasıyla `main` dalına kaydeder. Bu dosya tek başına yeni dağıtım tetiklemez. GitHub Actions özeti de adresi gösterir. Başarısız sonuç başarı olarak işaretlenmez.
+1. Sunucu, D1/R2, şifreli giriş, yönetici yetkisi, dağıtım hazırlığı, masaüstü ve mobil tarayıcı kontrollerini çalıştırır.
+2. Aynı adlı D1 ve R2 kaynaklarını kullanır; yoksa oluşturur. R2 etkin değilse görselleri D1 içinde 1 MB parçalar halinde saklar. Yetki hatalarını bu istisna kapsamında değerlendirmez. Şemaya eklemeli migration uygular; mevcut şirket ve taslaklar korunur.
+3. Şifreli kullanıcı oluşturma isteği varsa CI içinde çözüp D1'e uygular. Etkin yönetici yoksa yeni giriş sürümünü yayımlamaz. İlk kurulum ve sonraki hesaplar aşağıdaki güvenli aktarım kanalını kullanır.
+4. Worker'ı `AUTH_MODE=password` ile yayımlar. Yerel giriş istisnası üretimde bulunmaz. Yeni Worker ayarı ve etkin yönetici kaydı doğrulandıktan sonra yalnızca bu sitenin eski Access uygulamasını kaldırır. Başka Access uygulamaları ve kuruluş ayarları korunur.
+5. Oturumsuz API erişiminin kapalı olduğunu, şifreyle girişi, güvenli çerezi, yönetici/editör ayrımını, çıkışta oturum iptalini, şirket/taslak kaydını ve görsel yükleme/indirmeyi canlıda sınar. Geçici test hesabı, oturumları ve dosyaları temizlenir.
+6. Doğrulanan sonucu/adresi `deployment/cloudflare.json`, sonraki kullanıcı işlemi için yalnızca açık anahtarı `deployment/auth-bootstrap.json` ile `main` dalına kaydeder. Bu dosyalar yeni dağıtım tetiklemez; özel anahtar veya kullanıcı sırrı yazılmaz.
 
-Canlı dağıtımın doğrulandığını söylemek için sonuç dosyasında `status: success` ve `verified: true` bulunmalıdır. Yerel emulator testleri tek başına canlı hesabın hazır olduğunu kanıtlamaz. Kaynaklar için ücretli plan yükseltmesi otomatik yapılmaz. R2 sonradan etkinleştirilirse sonraki dağıtım yeni görseller için R2'yi seçer; mevcut D1 görselleri okunmaya devam eder. Bucket adı `sosyal-studio-media` olmalı ve herkese açık erişim kapalı kalmalıdır. Zero Trust başlangıç işlemi gerekirse Cloudflare'in verdiği hata Actions kaydında ve dağıtım sonucunda görünür; işlem tamamlandıktan sonra iş akışı yeniden çalıştırılabilir.
+Canlı dağıtımın doğrulandığını söylemek için sonuç dosyasında `status: success` ve `verified: true` bulunmalıdır. Yerel emulator testleri tek başına canlı hesabın hazır olduğunu kanıtlamaz. Kaynaklar için ücretli plan yükseltmesi otomatik yapılmaz. R2 sonradan etkinleştirilirse sonraki dağıtım yeni görseller için R2'yi seçer; mevcut D1 görselleri okunmaya devam eder. Bucket adı `sosyal-studio-media` olmalı ve herkese açık erişim kapalı kalmalıdır. Zero Trust kuruluşu veya yeni e-posta kodu sağlayıcısı kurulmaz.
 
 ## R2 kullanım sınırları
 
@@ -55,15 +55,23 @@ Access için ücretsiz plan 50 aktif kullanıcı koltuğu içerir. Bu, aylık s�
 
 Her dağıtım kaynakları değiştirmeden önce hesabın aboneliklerini API'den okur. Zero Trust planının Free olduğunu ve abonelik tutarının sıfır olduğunu doğrular; ücretli/deneme planı, belirsiz plan bilgisi veya 50'den fazla aktif koltuk varsa durur. Abonelik satın alma, plan değiştirme veya koltuk artırma API'si çağrılmaz. Aktif koltuk sayısı ve denetim tarihi dağıtım sonuç dosyasına yazılır; kullanıcı e-postaları yazılmaz. Hesap sahibi planı Dashboard'dan sonradan değiştirirse dağıtım denetimi bunu bir sonraki çalışmada görür; uygulama hesabın faturalandırmasını kilitleyemez.
 
-Uygulama bir Access uygulamasını ve mevcut e-posta kodu sağlayıcısını tekrar kullanır. Varsayılan hesap sınırları da yeni kaynak oluşturulmadan denetlenir: 500 Access uygulaması, 50 kimlik sağlayıcı, 50 service token ve uygulama başına 1.000 politika. Bunlar hesap kaynak sınırlarıdır; ücretli kapasite satın alınmaz. CI doğrulaması bir saatlik geçici service token kullanır; token koltuk tüketmez ve işlem sonunda politikasıyla birlikte kaldırılır. Gateway, Tunnel, DLP veya başka ücretli Zero Trust özelliği kurulmaz. Diğer uygulamaların kullanıcıları veya politikaları otomatik silinmez.
+Panelin kullanıcı adı/şifre girişi Access koltuğu tüketmez. Bu hesaptaki başka Access/Gateway kullanımları için Free plan denetimi korunur; yeni Access uygulaması, sağlayıcı veya service token oluşturulmaz. Uygulamanın kendi D1 kullanıcı sayısı ayrıca 50 ile sınırlıdır; bu, Access koltuğundan ayrı bir uygulama sınırıdır. Gateway, Tunnel, DLP veya ücretli özellik kurulmaz. Başka uygulamaların kullanıcıları veya politikaları silinmez.
 
 Kaynaklar: [Cloudflare koltuk yönetimi](https://developers.cloudflare.com/cloudflare-one/team-and-resources/users/seat-management/) · [Hesap kaynak sınırları](https://developers.cloudflare.com/cloudflare-one/account-limits/) · [Zero Trust planları](https://www.cloudflare.com/plans/zero-trust-services/).
 
-## Şimdiki giriş ve üyelik durumu
+## Giriş, yönetici hesabı ve kullanıcı oluşturma
 
-Kullanıcının isteğiyle **doğrulanmış tüm e-posta adresleri** giriş yapabilir. Politika `allow` kullanır; doğrulamayı atlayan `bypass` kullanılmaz. Worker ayrıca Access JWT imzasını, süresini, sağlayıcısını ve uygulama hedefini doğrular. Sahte e-posta başlığı yeterli değildir.
+Giriş ekranı tamamen Türkçedir. Kullanıcı adı veya e-posta ve şifre kabul eder. Açık kayıt ve e-posta kodu akışı yoktur. Yönetici, `GET/POST /api/admin/users` ile kullanıcıları listeleyip oluşturabilir; editör bu uç noktalara erişemez. Hesaplar aynı çalışma alanını kullanır; şirket bazında kullanıcı yetkisi, davet e-postası ve şifre sıfırlama ekranı henüz uygulanmadı.
 
-Henüz kullanıcı oluşturma, davet, roller veya kullanıcıya göre şirket yetkisi yoktur. Giriş yapanlar aynı çalışma alanını kullanır. Kullanıcının hesapları kendisinin açacağı üyelik sistemi sonraki aşamadır. Üyelik hazır olmadan bu ayrımı varmış gibi göstermeyin.
+Şifreler rastgele 32 bayt tuz ve WebCrypto PBKDF2-SHA256 (Workers'ın desteklediği 100.000 iterasyon) ile özetlenir. Düz şifre D1'e yazılmaz. Sekiz saatlik oturumlar rastgele 256 bit belirteç kullanır; D1'de yalnızca belirteç özeti tutulur. Üretim çerezi `__Host-`, `Secure`, `HttpOnly`, `SameSite=Strict` kullanır. Çıkış belirteci D1'den siler. Devre dışı hesap ve süresi dolmuş oturum reddedilir. Yazma isteklerinde aynı Origin zorunludur. Giriş denemeleri IP başına 15 dakikada 10, kullanıcı adı başına 20 ile sınırlıdır; yanlış şifre ve olmayan hesap aynı yanıtı alır.
+
+### Asistan üzerinden hesap oluşturma
+
+GitHub repository secret değerleri indirilmez ve yeni secret yazma izni varsayılmaz. `admin-bootstrap.yml`, mevcut `CLOUDFLARE_API` ile D1'de yedi günlük RSA-3072 aktarım anahtarı hazırlar; yalnızca açık anahtar GitHub'a çıkar. `workflow_dispatch` ile gerektiğinde yenilenebilir; yenileme eski aktarım anahtarını iptal eder. Yeni zarfı güncel açık anahtarla hazırlayın. Özel anahtar sadece özel D1 veritabanında kalır.
+
+Asistan, yetkilendirilmiş kullanıcı bilgilerini bu açık anahtarla RSA-OAEP-SHA256 + AES-256-GCM kullanarak şifreler. `.github/admin-request.json` yalnızca şifreli zarfı içerir; düz şifre, e-posta ve şifre özeti kaynak kodda bulunmaz. Zarfın içindeki istek kimliği AAD ile bağlanır. Hesap oluşturma isteği benzersiz kimliğiyle bir kez uygulanır; mevcut kullanıcının şifresi veya rolü yeniden dağıtımla değişmez. Kullanıcı kaydı ve işlem kaydı tamamlanınca kullanılan özel anahtar silinir; sonraki işlem için yeni açık anahtar hazırlanır. Kesinti sonrası tekrar çalıştırma aynı kullanıcıyı yeniden oluşturmaz. Süresi dolmuş, değiştirilmiş veya başka anahtarla hazırlanmış zarf reddedilir.
+
+İlk oluşturma sırasında şifreli zarfın içindeki geçici doğrulama şifresi yalnızca CI belleğinde canlı giriş kontrolü için kullanılır; çıktılarda maskelenir ve kaydedilmez. Şifre özeti loglarda maskelenir. Özel anahtar hiçbir çıktı veya workflow komutuna gönderilmez; hata metinleri ayrıca gizli değerlerden arındırılır. Gelecekte yeni kullanıcı için yeni istek kimliği ve güncel açık anahtar kullanılır. Gerçek hesap bilgilerini test verisine, komut dosyalarına, belgelere veya düz metin GitHub girdilerine koymayın.
 
 ## Yerelde Cloudflare sürümünü deneme
 
@@ -77,10 +85,11 @@ npm run cf:dev
 Bu komutlar yalnızca geliştirme için yerel D1/R2 emulatorünü kullanır; canlı Cloudflare verisine dokunmaz. Yerel giriş istisnası hem geliştirme ayarını hem localhost adresini gerektirir; `workers.dev` üzerinde geçerli değildir. Üretim yapılandırması Actions içinde ayrı üretilir ve Git'e alınmaz.
 
 ```bash
-npm run test:cloud      # 19 D1/R2, kota ve JWT testi
-npm run test:deploy     # 12 kaynak hazırlama testi; dış servise bağlanmaz
+npm run test:cloud      # 30 D1/R2, kota, oturum ve güvenlik testi
+npm run test:deploy     # 18 kaynak hazırlama, maskeleme ve güvenli geçiş testi; dış servise bağlanmaz
 npm run test:e2e:cloud  # 2 tarayıcı akışı; D1 + R2
 npm run test:e2e:d1     # Aynı 2 akış; görseller de D1 üzerinde
+npm run test:e2e:auth   # 2 tarayıcı akışı; şifreli giriş, çıkış ve yönetici yetkisi
 ```
 
 Cloudflare doğrudan API erişimi olmayan geliştirme ortamlarında da dağıtım GitHub Actions tarafından yapılabilir. Sonuç, Git üzerinden okunabilen dağıtım dosyasında görünür. Siteye erişim, Cloudflare kaynaklarının oluşması ve uygulama davranışının doğrulanması ayrı sonuçlardır; yalnızca doğrulanan durum raporlanmalıdır.

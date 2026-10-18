@@ -6,9 +6,9 @@ Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Tür
 
 ## Cloudflare üzerinde yayın
 
-Kaynaklar GitHub `main` dalındadır. Her kaynak güncellemesi `.github/workflows/cloudflare.yml` ile test edilip Cloudflare Workers'a dağıtılır. Üretim veritabanı Cloudflare D1, görsel deposu R2 (henüz etkin değilse D1), giriş doğrulaması Cloudflare Access'tir. GitHub Actions mevcut `CLOUDFLARE_API` repository secret'ını kullanır; tarayıcıya veya koda secret yazılmaz.
+Kaynaklar GitHub `main` dalındadır. Her kaynak güncellemesi `.github/workflows/cloudflare.yml` ile test edilip Cloudflare Workers'a dağıtılır. Üretim veritabanı Cloudflare D1, görsel deposu R2 (henüz etkin değilse D1), giriş doğrulaması D1 üzerinde kullanıcı adı/şifre ve güvenli oturum çerezleriyle yapılır. GitHub Actions mevcut `CLOUDFLARE_API` repository secret'ını kullanır; tarayıcıya veya koda secret yazılmaz.
 
-Zero Trust Free planı dağıtımda doğrulanır; 50 aktif kullanıcı koltuğu sınırını Cloudflare uygular. Ücretli plana veya ek koltuğa otomatik geçilmez. Kullanıcının tercihiyle şu anda doğrulanmış tüm e-postalar, mevcut boş koltuk sınırında aynı çalışma alanına girebilir. Kullanıcı oluşturma ve şirket bazında üyelik yetkileri henüz uygulanmadı. Dağıtım sonucu ve doğrulanmış canlı adres `deployment/cloudflare.json` dosyasında tutulur; başarı yalnızca canlı kontrol geçince kaydedilir.
+Herkese açık kayıt yoktur; hesapları yönetici oluşturur. Yönetici ve editör rolleri vardır; kullanıcı yönetimi yalnızca yöneticilere açıktır. Kullanıcılar aynı şirket/taslak alanını paylaşır; şirket bazında kullanıcı yetkileri henüz yoktur. Uygulama en fazla 50 kullanıcıya izin verir. Zero Trust Free planı ayrıca dağıtımda doğrulanır; panel artık Access e-posta kodu veya Access koltuğu kullanmaz. Ücretli plana otomatik geçilmez. Dağıtım sonucu ve doğrulanmış canlı adres `deployment/cloudflare.json` dosyasında tutulur; başarı yalnızca canlı kontrol geçince kaydedilir.
 
 R2 için kodda 10 GB depolama, UTC ayında 1 milyon Class A ve 10 milyon Class B sınırı bulunur. Bu sayaçlar uygulamanın veri işlemlerini kapsar; hesap genelinde fatura limiti değildir.
 
@@ -63,6 +63,7 @@ Bu komut, derlenmiş arayüzü ve API'yi 3001 portunda sunar. Geliştirme sunucu
 npm test                  # 12 sunucu testi; geçici veri dizini
 npm run build             # TypeScript denetimi ve üretim derlemesi
 npm run test:e2e          # 2 tarayıcı senaryosu; geçici veri dizini, port 3002
+npm run test:e2e:auth     # 2 şifreli giriş / yönetici yetkisi tarayıcı senaryosu
 npm run skills:verify     # 5 beceri / 38 kaynak dosyası
 npm run graph             # API kullanmadan yerel Graphify analizi
 ```
