@@ -4,8 +4,13 @@ if (process.env.GITHUB_TOKEN) secrets.add(process.env.GITHUB_TOKEN);
 export function protectSecret(value) {
   if (!value) return;
   secrets.add(value);
-  if (process.env.GITHUB_ACTIONS === "true")
-    process.stdout.write(`::add-mask::${value}\n`);
+  if (process.env.GITHUB_ACTIONS === "true") {
+    const escaped = String(value)
+      .replaceAll("%", "%25")
+      .replaceAll("\r", "%0D")
+      .replaceAll("\n", "%0A");
+    process.stdout.write(`::add-mask::${escaped}\n`);
+  }
 }
 export function safeMessage(message) {
   let result = String(message);
