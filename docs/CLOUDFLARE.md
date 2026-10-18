@@ -49,6 +49,16 @@ Giriş gerektiren `GET /api/storage/usage`, sınırları ve o ayın kullanımın
 
 Kaynak: [Cloudflare R2 fiyatlandırması](https://developers.cloudflare.com/r2/pricing/).
 
+## Zero Trust Free sınırları
+
+Access için ücretsiz plan 50 aktif kullanıcı koltuğu içerir. Bu, aylık sıfırlanan bir istek kotası değildir. Hesaptaki Access ve Gateway kullanıcıları aynı havuzu kullanır; aynı kullanıcı iki servisi de kullansa bir koltuktur. Cloudflare, abonelikteki koltuklar dolunca ek kullanıcıların girişini engeller. Otomatik ücretli plan yükseltmesi yapılmaz. Uygulama içindeki bir kontrol girişten sonra çalışacağından koltuk sınırını sağlayıcının Free planı uygular.
+
+Her dağıtım kaynakları değiştirmeden önce hesabın aboneliklerini API'den okur. Zero Trust planının Free olduğunu ve abonelik tutarının sıfır olduğunu doğrular; ücretli/deneme planı, belirsiz plan bilgisi veya 50'den fazla aktif koltuk varsa durur. Abonelik satın alma, plan değiştirme veya koltuk artırma API'si çağrılmaz. Aktif koltuk sayısı ve denetim tarihi dağıtım sonuç dosyasına yazılır; kullanıcı e-postaları yazılmaz. Hesap sahibi planı Dashboard'dan sonradan değiştirirse dağıtım denetimi bunu bir sonraki çalışmada görür; uygulama hesabın faturalandırmasını kilitleyemez.
+
+Uygulama bir Access uygulamasını ve mevcut e-posta kodu sağlayıcısını tekrar kullanır. Varsayılan hesap sınırları da yeni kaynak oluşturulmadan denetlenir: 500 Access uygulaması, 50 kimlik sağlayıcı, 50 service token ve uygulama başına 1.000 politika. Bunlar hesap kaynak sınırlarıdır; ücretli kapasite satın alınmaz. CI doğrulaması bir saatlik geçici service token kullanır; token koltuk tüketmez ve işlem sonunda politikasıyla birlikte kaldırılır. Gateway, Tunnel, DLP veya başka ücretli Zero Trust özelliği kurulmaz. Diğer uygulamaların kullanıcıları veya politikaları otomatik silinmez.
+
+Kaynaklar: [Cloudflare koltuk yönetimi](https://developers.cloudflare.com/cloudflare-one/team-and-resources/users/seat-management/) · [Hesap kaynak sınırları](https://developers.cloudflare.com/cloudflare-one/account-limits/) · [Zero Trust planları](https://www.cloudflare.com/plans/zero-trust-services/).
+
 ## Şimdiki giriş ve üyelik durumu
 
 Kullanıcının isteğiyle **doğrulanmış tüm e-posta adresleri** giriş yapabilir. Politika `allow` kullanır; doğrulamayı atlayan `bypass` kullanılmaz. Worker ayrıca Access JWT imzasını, süresini, sağlayıcısını ve uygulama hedefini doğrular. Sahte e-posta başlığı yeterli değildir.
@@ -68,7 +78,7 @@ Bu komutlar yalnızca geliştirme için yerel D1/R2 emulatorünü kullanır; can
 
 ```bash
 npm run test:cloud      # 19 D1/R2, kota ve JWT testi
-npm run test:deploy     # 8 kaynak hazırlama testi; dış servise bağlanmaz
+npm run test:deploy     # 12 kaynak hazırlama testi; dış servise bağlanmaz
 npm run test:e2e:cloud  # 2 tarayıcı akışı; D1 + R2
 npm run test:e2e:d1     # Aynı 2 akış; görseller de D1 üzerinde
 ```

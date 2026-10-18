@@ -1,5 +1,6 @@
 import sharp from "sharp";
-import { cfApi, protectSecret } from "./cloudflare-api.mjs";
+import { cfApi, protectSecret, listAll } from "./cloudflare-api.mjs";
+import { ZERO_TRUST_LIMITS, requireCapacity } from "./cloudflare-free-tier.mjs";
 import { platforms } from "../server/platforms.mjs";
 
 export async function smokeCloudflare(deployment) {
@@ -18,6 +19,20 @@ export async function smokeCloudflare(deployment) {
     return response;
   };
   try {
+    const tokens = await listAll(`${base}/service_tokens`);
+    requireCapacity(
+      tokens.length,
+      ZERO_TRUST_LIMITS.serviceTokens,
+      "Access service token",
+    );
+    const policies = await listAll(
+      `${base}/apps/${deployment.accessAppId}/policies`,
+    );
+    requireCapacity(
+      policies.length,
+      ZERO_TRUST_LIMITS.policiesPerApp,
+      "Access uygulama politikası",
+    );
     service = await cfApi(`${base}/service_tokens`, {
       method: "POST",
       body: {

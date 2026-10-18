@@ -4,6 +4,10 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { provisionCloudflare } from "../../scripts/provision-cloudflare.mjs";
+import {
+  ZERO_TRUST_LIMITS,
+  requireCapacity,
+} from "../../scripts/cloudflare-free-tier.mjs";
 
 const account = "a".repeat(32);
 async function fixture(handler, action) {
@@ -26,6 +30,7 @@ async function fixture(handler, action) {
     const result = handler(
       new URL(url).pathname.replace("/client/v4", ""),
       options,
+      new URL(url).searchParams,
     );
     if (result instanceof Response) return result;
     return new Response(JSON.stringify({ success: true, result }), {
@@ -46,6 +51,19 @@ async function fixture(handler, action) {
 }
 function existing(pathname, options) {
   if (pathname === "/accounts") return [{ id: account }];
+  if (pathname.endsWith("/subscriptions"))
+    return [
+      {
+        price: 0,
+        state: "Provisioned",
+        rate_plan: {
+          id: "teams_free",
+          public_name: "Zero Trust Free",
+          scope: "teams",
+        },
+      },
+    ];
+  if (pathname.endsWith("/access/users")) return [];
   if (pathname.endsWith("/workers/scripts/sosyal-studio/settings")) return null;
   if (pathname.endsWith("/d1/database"))
     return [{ name: "sosyal-studio", uuid: "database-id" }];
@@ -229,6 +247,105 @@ test("Access genel yetki hatasında kuruluş oluşturulmaz", async () => {
     async ({ calls }) => {
       await assert.rejects(provisionCloudflare, /10000/);
       assert.equal(calls.filter((x) => x.method === "POST").length, 0);
+    },
+  );
+});
+
+test("Ücretli Zero Trust planında kaynaklar ve abonelik değiştirilmez", async () => {
+  await fixture(
+    (pathname, options) =>
+      pathname.endsWith("/subscriptions")
+        ? [
+            {
+              price: 7,
+              state: "Paid",
+              rate_plan: {
+                id: "teams_paid",
+                public_name: "Zero Trust Pay-as-you-go",
+              },
+            },
+          ]
+        : existing(pathname, options),
+    async ({ calls }) => {
+      await assert.rejects(
+        provisionCloudflare,
+        /ücretsiz olarak doğrulanamadı/,
+      );
+      assert.ok(calls.every((x) => x.method === "GET"));
+    },
+  );
+});
+
+test("Plan bulunamazsa veya Free adıyla ücret varsa dağıtım durur", async () => {
+  for (const subscriptions of [
+    [],
+    [
+      {
+        price: 1,
+        state: "Provisioned",
+        rate_plan: { id: "teams_free", public_name: "Zero Trust Free" },
+      },
+    ],
+  ])
+    await fixture(
+      (pathname, options) =>
+        pathname.endsWith("/subscriptions")
+          ? subscriptions
+          : existing(pathname, options),
+      async ({ calls }) => {
+        await assert.rejects(provisionCloudflare, /doğrulanamadı/);
+        assert.ok(calls.every((x) => x.method === "GET"));
+      },
+    );
+});
+
+test("Access ve Gateway ortak koltuk sayısında 50 kabul edilir, 51'de kaynak değişmez", async () => {
+  for (const count of [50, 51])
+    await fixture(
+      (pathname, options, params) =>
+        pathname.endsWith("/access/users")
+          ? Array.from({ length: count }, (_, i) => ({
+              uid: String(i),
+              access_seat: i % 2 === 0,
+              gateway_seat: i % 2 === 1,
+            })).slice(
+              (Number(params.get("page") ?? 1) - 1) * 50,
+              Number(params.get("page") ?? 1) * 50,
+            )
+          : existing(pathname, options),
+      async ({ calls }) => {
+        if (count === 50) {
+          const result = await provisionCloudflare();
+          assert.equal(result.zeroTrust.activeSeats, 50);
+          assert.equal(result.zeroTrust.price, 0);
+        } else {
+          await assert.rejects(provisionCloudflare, /51 aktif koltuk/);
+          assert.ok(calls.every((x) => x.method === "GET"));
+        }
+      },
+    );
+});
+
+test("Access hesap kaynak sınırlarında yeni kaynak isteği yapılmaz", async () => {
+  for (const [name, limit] of Object.entries(ZERO_TRUST_LIMITS)) {
+    if (name === "activeSeats") continue;
+    assert.doesNotThrow(() => requireCapacity(limit - 1, limit, name));
+    assert.throws(
+      () => requireCapacity(limit, limit, name),
+      /Yeni kaynak oluşturulmadı/,
+    );
+  }
+  await fixture(
+    (pathname, options) =>
+      pathname.endsWith("/access/identity_providers")
+        ? Array.from({ length: 50 }, (_, i) => ({
+            id: String(i),
+            type: "oidc",
+          }))
+        : existing(pathname, options),
+    async ({ calls }) => {
+      await assert.rejects(provisionCloudflare, /kimlik sağlayıcı sınırına/);
+      assert.ok(calls.every((x) => x.method === "GET"));
     },
   );
 });

@@ -120,15 +120,15 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792341792.764868,
-    "seen": 1792341803.4553034,
-    "ast_hash": "4a7516591a504418d6a45a2d8c14ec9d",
+    "mtime": 1792342462.888299,
+    "seen": 1792342464.9000425,
+    "ast_hash": "e4760546d05053fdf99d9c2708da3ec3",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792342160.778153,
-    "seen": 1792342194.580815,
-    "ast_hash": "d7d621f82e5875056787b36244f75402",
+    "mtime": 1792342462.888205,
+    "seen": 1792342464.9000442,
+    "ast_hash": "0024567be76ee69ea3110b9933299faa",
     "semantic_hash": ""
   },
   "docs/MIMARI.md": {
@@ -168,9 +168,9 @@
     "semantic_hash": ""
   },
   "scripts/deploy-cloudflare.mjs": {
-    "mtime": 1792341593.8060985,
-    "seen": 1792341803.4545014,
-    "ast_hash": "ddbaaa8cb69966e71aea0a9e187694f8",
+    "mtime": 1792342380.8664289,
+    "seen": 1792342464.8992267,
+    "ast_hash": "fa5b0fac3cff7991ae42a1ba35598b48",
     "semantic_hash": ""
   },
   "scripts/e2e-cloud-server.mjs": {
@@ -180,9 +180,9 @@
     "semantic_hash": ""
   },
   "scripts/provision-cloudflare.mjs": {
-    "mtime": 1792342231.374758,
-    "seen": 1792342232.5987372,
-    "ast_hash": "04ad67d3c3ed09cffd35e9f2305987c9",
+    "mtime": 1792342426.1979756,
+    "seen": 1792342464.8993263,
+    "ast_hash": "d65312c3bf4962557c44203edca638ce",
     "semantic_hash": ""
   },
   "scripts/record-deployment.mjs": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "scripts/smoke-cloudflare.mjs": {
-    "mtime": 1792341676.5973222,
-    "seen": 1792341803.454637,
-    "ast_hash": "430d9ca4c33cbfd59e6da5f8777b3958",
+    "mtime": 1792342426.2303307,
+    "seen": 1792342464.8993754,
+    "ast_hash": "12f6009102a17d97e240c2ec8f81cc68",
     "semantic_hash": ""
   },
   "scripts/wrangler.mjs": {
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "tests/deploy/provision.test.mjs": {
-    "mtime": 1792342231.414758,
-    "seen": 1792342232.5992792,
-    "ast_hash": "77870f55dcf7ded3f4c3b2ee87d74ab2",
+    "mtime": 1792342463.53369,
+    "seen": 1792342464.8998313,
+    "ast_hash": "9ac7926a274c4296ee6ad576f481c5b7",
     "semantic_hash": ""
   },
   "worker/auth.mjs": {
@@ -264,9 +264,9 @@
     "semantic_hash": ""
   },
   "docs/CLOUDFLARE.md": {
-    "mtime": 1792342230.785569,
-    "seen": 1792342232.599544,
-    "ast_hash": "fd6fc36a97f03858a419ab45e97faea8",
+    "mtime": 1792342462.888026,
+    "seen": 1792342464.9000702,
+    "ast_hash": "24eebd90b4866c59372392f4d220a3ee",
     "semantic_hash": ""
   },
   "worker/d1-media.mjs": {
@@ -285,6 +285,12 @@
     "mtime": 1792342161.3469083,
     "seen": 1792342194.5807111,
     "ast_hash": "6a9b5f274106eed7559bc62e86a751e7",
+    "semantic_hash": ""
+  },
+  "scripts/cloudflare-free-tier.mjs": {
+    "mtime": 1792342426.1484654,
+    "seen": 1792342464.8992245,
+    "ast_hash": "5907c5076b1e732bd2110e64dbdde1db",
     "semantic_hash": ""
   }
 }

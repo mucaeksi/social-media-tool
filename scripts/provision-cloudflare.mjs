@@ -1,5 +1,10 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { cfApi, listAll } from "./cloudflare-api.mjs";
+import {
+  verifyZeroTrustFree,
+  ZERO_TRUST_LIMITS,
+  requireCapacity,
+} from "./cloudflare-free-tier.mjs";
 
 export async function provisionCloudflare() {
   const name = "sosyal-studio",
@@ -33,6 +38,7 @@ export async function provisionCloudflare() {
       "Aynı adlı Worker başka bir uygulamaya ait; üzerine yazılmadı.",
     );
   }
+  const zeroTrust = await verifyZeroTrustFree(base);
   const databases = await listAll(`${base}/d1/database`);
   let db = databases.find((item) => item.name === databaseName);
   if (!db) {
@@ -105,11 +111,17 @@ export async function provisionCloudflare() {
     throw new Error("Cloudflare Zero Trust takım alan adı alınamadı.");
   const providers = await cfApi(`${base}/access/identity_providers`);
   let otp = providers.find((provider) => provider.type === "onetimepin");
-  if (!otp)
+  if (!otp) {
+    requireCapacity(
+      providers.length,
+      ZERO_TRUST_LIMITS.identityProviders,
+      "Access kimlik sağlayıcı",
+    );
     otp = await cfApi(`${base}/access/identity_providers`, {
       method: "POST",
       body: { name: "E-posta giriş kodu", type: "onetimepin", config: {} },
     });
+  }
   const apps = await listAll(`${base}/access/apps`);
   let application = apps.find((item) => item.domain === hostname);
   if (application && application.name !== "Sosyal Studio")
@@ -125,6 +137,11 @@ export async function provisionCloudflare() {
     auto_redirect_to_identity: false,
   };
   if (!application) {
+    requireCapacity(
+      apps.length,
+      ZERO_TRUST_LIMITS.accessApps,
+      "Access uygulama",
+    );
     application = await cfApi(`${base}/access/apps`, {
       method: "POST",
       body: {
@@ -149,6 +166,11 @@ export async function provisionCloudflare() {
     if (
       !policies.some((policy) => policy.name === "Doğrulanmış tüm e-postalar")
     ) {
+      requireCapacity(
+        policies.length,
+        ZERO_TRUST_LIMITS.policiesPerApp,
+        "Access uygulama politikası",
+      );
       await cfApi(`${base}/access/apps/${application.id}/policies`, {
         method: "POST",
         body: {
@@ -201,6 +223,7 @@ export async function provisionCloudflare() {
     mediaStorage,
     accessAppId: application.id,
     worker: name,
+    zeroTrust,
   };
   await mkdir(".cloudflare", { recursive: true });
   await writeFile(

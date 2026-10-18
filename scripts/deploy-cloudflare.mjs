@@ -32,6 +32,7 @@ function wrangler(args) {
 }
 try {
   const deployment = await provisionCloudflare();
+  receipt.zero_trust = deployment.zeroTrust;
   receipt.url = deployment.url;
   wrangler(["d1", "migrations", "apply", "DB", "--remote"]);
   wrangler(["deploy"]);

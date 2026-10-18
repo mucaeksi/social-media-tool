@@ -8,7 +8,7 @@ Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Tür
 
 Kaynaklar GitHub `main` dalındadır. Her kaynak güncellemesi `.github/workflows/cloudflare.yml` ile test edilip Cloudflare Workers'a dağıtılır. Üretim veritabanı Cloudflare D1, görsel deposu R2 (henüz etkin değilse D1), giriş doğrulaması Cloudflare Access'tir. GitHub Actions mevcut `CLOUDFLARE_API` repository secret'ını kullanır; tarayıcıya veya koda secret yazılmaz.
 
-Kullanıcının tercihiyle şu anda doğrulanmış tüm e-postalar aynı çalışma alanına girebilir. Kullanıcı oluşturma ve şirket bazında üyelik yetkileri henüz uygulanmadı. Dağıtım sonucu ve doğrulanmış canlı adres `deployment/cloudflare.json` dosyasında tutulur; başarı yalnızca canlı kontrol geçince kaydedilir.
+Zero Trust Free planı dağıtımda doğrulanır; 50 aktif kullanıcı koltuğu sınırını Cloudflare uygular. Ücretli plana veya ek koltuğa otomatik geçilmez. Kullanıcının tercihiyle şu anda doğrulanmış tüm e-postalar, mevcut boş koltuk sınırında aynı çalışma alanına girebilir. Kullanıcı oluşturma ve şirket bazında üyelik yetkileri henüz uygulanmadı. Dağıtım sonucu ve doğrulanmış canlı adres `deployment/cloudflare.json` dosyasında tutulur; başarı yalnızca canlı kontrol geçince kaydedilir.
 
 R2 için kodda 10 GB depolama, UTC ayında 1 milyon Class A ve 10 milyon Class B sınırı bulunur. Bu sayaçlar uygulamanın veri işlemlerini kapsar; hesap genelinde fatura limiti değildir.
 
