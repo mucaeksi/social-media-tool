@@ -1,0 +1,29 @@
+name: Yönetici güvenli aktarım anahtarı
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/admin-bootstrap.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: admin-bootstrap
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+      - run: node scripts/admin-provision.mjs --prepare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - run: node scripts/record-deployment.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RECEIPT_SOURCE: .cloudflare/auth-bootstrap.json
+          RECEIPT_DESTINATION: deployment/auth-bootstrap.json

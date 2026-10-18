@@ -5,8 +5,11 @@ const repository = process.env.GITHUB_REPOSITORY,
   token = process.env.GITHUB_TOKEN;
 if (!repository || !token)
   throw new Error("GitHub dağıtım kaydı için Actions bağlamı gerekli.");
-const file = JSON.parse(await readFile(".cloudflare/deployment.json", "utf8"));
-const endpoint = `https://api.github.com/repos/${repository}/contents/deployment/cloudflare.json`;
+const source=process.env.RECEIPT_SOURCE||".cloudflare/deployment.json";
+const destination=process.env.RECEIPT_DESTINATION||"deployment/cloudflare.json";
+if(!["deployment/cloudflare.json","deployment/auth-bootstrap.json"].includes(destination))throw new Error("Dağıtım sonuç yolu geçersiz.");
+const file = JSON.parse(await readFile(source, "utf8"));
+const endpoint = `https://api.github.com/repos/${repository}/contents/${destination}`;
 const headers = {
   Authorization: `Bearer ${token}`,
   Accept: "application/vnd.github+json",

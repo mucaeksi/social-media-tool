@@ -2,7 +2,7 @@ name: Cloudflare yayınla
 on:
   push:
     branches: [main]
-    paths-ignore: [deployment/cloudflare.json]
+    paths-ignore: ["deployment/**"]
   workflow_dispatch:
 
 permissions:
