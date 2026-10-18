@@ -1,0 +1,9 @@
+{
+  "status": "failed",
+  "source_commit": "e8dd560e61141bf9448dbbb8160a15d1c2023e15",
+  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39145635728",
+  "updated_at": "2026-10-18T16:36:17.300Z",
+  "url": null,
+  "verified": false,
+  "error": "Cloudflare GET /accounts/06a486e459d2d7db66198a67001781c5/r2/buckets/sosyal-studio-media: HTTP 403. 10042: Please enable R2 through the Cloudflare Dashboard."
+}
