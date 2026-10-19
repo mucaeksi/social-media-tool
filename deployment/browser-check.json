@@ -1,7 +1,7 @@
 {
-  "checkedAt": "2026-10-19T01:26:12.294Z",
-  "sourceCommit": "8bc224237bb760f1da9570d8e183073ea046eeb2",
-  "workflowUrl": "https://github.com/mucaeksi/social-media-tool/actions/runs/39185326314",
+  "checkedAt": "2026-10-19T01:48:12.573Z",
+  "sourceCommit": "6ce024678a5341affee433ff4c254752c5c6a0d8",
+  "workflowUrl": "https://github.com/mucaeksi/social-media-tool/actions/runs/39186987786",
   "credentialsSubmitted": false,
   "postsSubmitted": false,
   "results": [
@@ -17,9 +17,65 @@
       "httpStatus": 200,
       "loginFieldsVisible": true,
       "challengeVisible": false,
+      "loginVerified": false,
+      "liveViewAvailable": true,
+      "iframeAllowed": true
+    },
+    {
+      "platform": "facebook",
+      "httpStatus": 200,
+      "loginFieldsVisible": true,
+      "challengeVisible": false,
+      "loginVerified": false,
+      "liveViewAvailable": true,
+      "iframeAllowed": true
+    },
+    {
+      "platform": "threads",
+      "httpStatus": 200,
+      "loginFieldsVisible": true,
+      "challengeVisible": false,
+      "loginVerified": false,
+      "liveViewAvailable": true,
+      "iframeAllowed": true
+    },
+    {
+      "platform": "pinterest",
+      "httpStatus": 200,
+      "loginFieldsVisible": true,
+      "challengeVisible": false,
+      "loginVerified": false,
+      "liveViewAvailable": true,
+      "iframeAllowed": true
+    },
+    {
+      "platform": "youtube",
+      "httpStatus": 200,
+      "loginFieldsVisible": true,
+      "challengeVisible": false,
+      "loginVerified": false,
+      "liveViewAvailable": true,
+      "iframeAllowed": true
+    },
+    {
+      "platform": "tiktok",
+      "httpStatus": 200,
+      "loginFieldsVisible": false,
+      "challengeVisible": false,
+      "loginVerified": false,
+      "liveViewAvailable": true,
+      "iframeAllowed": true
+    },
+    {
+      "platform": "linkedin",
+      "httpStatus": 200,
+      "loginFieldsVisible": false,
+      "challengeVisible": false,
+      "loginVerified": false,
       "liveViewAvailable": true,
       "iframeAllowed": true
     }
   ],
-  "sessionClosed": true
+  "sessionClosed": true,
+  "elapsedMs": 25063
 }
