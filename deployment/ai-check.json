@@ -1,14 +1,13 @@
 {
-  "checkedAt": "2026-10-19T02:14:22.215Z",
-  "sourceCommit": "da0eb5cea7bfd778ef0b5d7047c5749d2f569279",
-  "verified": true,
+  "checkedAt": "2026-10-19T02:38:41.956Z",
+  "sourceCommit": "3ffc187d35a1e430026ed94b35f0267ce3842ef0",
+  "verified": false,
   "socialCredentialsSubmitted": false,
   "postsPublished": false,
-  "stage": "completed",
+  "stage": "platform-content",
   "model": "@cf/qwen/qwen3-30b-a3b-fp8",
   "knowledgeApplied": true,
   "realModelAnswer": true,
-  "contentPlatforms": 8,
-  "contentValidated": true,
-  "historyPersisted": true
+  "httpStatus": 503,
+  "error": "Gerçek model yanıtı, şirket hafızası veya platform içeriği kontrolü tamamlanamadı."
 }
