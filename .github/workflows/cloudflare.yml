@@ -33,7 +33,8 @@ jobs:
       - run: npm run build
       - run: npm run test:cloud
       - run: npm run test:deploy
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium firefox
+      - run: npm run test:companion
       - run: npm run test:e2e
       - run: npm run test:e2e:cloud
       - run: npm run test:e2e:d1

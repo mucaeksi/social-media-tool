@@ -93,10 +93,14 @@ export async function provisionCloudflare() {
     browser: { binding: "BROWSER" },
     ai: { binding: "AI" },
     durable_objects: {
-      bindings: [{ name: "SOCIAL_BROWSER", class_name: "SocialBrowser" }],
+      bindings: [
+        { name: "SOCIAL_BROWSER", class_name: "SocialBrowser" },
+        { name: "COMPANY_COMPUTER", class_name: "CompanyComputer" },
+      ],
     },
     migrations: [
       { tag: "social-browser-v1", new_sqlite_classes: ["SocialBrowser"] },
+      { tag: "company-computer-v1", new_sqlite_classes: ["CompanyComputer"] },
     ],
     workers_dev: true,
     preview_urls: false,

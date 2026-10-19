@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode, ComponentProps } from "react";
+import { CompanyAccounts } from "./CompanyAccounts.tsx";
 import {
   CircleAlert,
   Clock3,
@@ -87,7 +88,7 @@ const savedDate = (value: string) =>
     timeZone: "Europe/Istanbul",
   }).format(new Date(value));
 
-export function SocialAccounts({
+function CloudAccounts({
   company,
   platforms,
   user,
@@ -748,6 +749,24 @@ export function SocialAccounts({
           </Modal>
         </div>
       )}
+    </>
+  );
+}
+
+export function SocialAccounts(
+  props: ComponentProps<typeof CloudAccounts> & { computerEnabled?: boolean },
+) {
+  const [cloud, setCloud] = useState(false);
+  if (props.computerEnabled && !cloud)
+    return <CompanyAccounts {...props} onCloud={() => setCloud(true)} />;
+  return (
+    <>
+      {props.computerEnabled && (
+        <button className="secondary" onClick={() => setCloud(false)}>
+          Şirket bilgisayarına dön
+        </button>
+      )}
+      <CloudAccounts {...props} />
     </>
   );
 }

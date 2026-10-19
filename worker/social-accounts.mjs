@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { browserPlatforms, accountProfileUrl } from "./browser-state.mjs";
+import { computerBroker } from "./company-computer.mjs";
 
 const inputSchema = z.object({
   companyId: z.uuid(),
@@ -34,12 +35,20 @@ export function registerSocialAccounts(app) {
         { error: "Sosyal hesap işlemleri için yönetici yetkisi gerekli." },
         403,
       );
-    if (!c.env.SOCIAL_BROWSER || !c.env.BROWSER_STATE_KEY)
+    if (
+      (!c.env.SOCIAL_BROWSER || !c.env.BROWSER_STATE_KEY) &&
+      !c.env.COMPANY_COMPUTER
+    )
       return c.json({ error: "Uzak tarayıcı bu ortamda etkin değil." }, 503);
     return next();
   });
   app.get("/api/social/status", (c) =>
-    browserCommand(c.env, { action: "status", userId: c.get("identity").id }),
+    c.env.SOCIAL_BROWSER
+      ? browserCommand(c.env, {
+          action: "status",
+          userId: c.get("identity").id,
+        })
+      : c.json({ error: "Cloudflare tarayıcısı etkin değil." }, 503),
   );
   app.get("/api/social/accounts", async (c) => {
     const companyId = z.uuid().parse(c.req.query("companyId"));
@@ -84,6 +93,8 @@ export function registerSocialAccounts(app) {
     );
   });
   app.post("/api/social/accounts/:id/:action", async (c) => {
+    if (!c.env.SOCIAL_BROWSER || !c.env.BROWSER_STATE_KEY)
+      return c.json({ error: "Cloudflare tarayıcısı etkin değil." }, 503);
     const row = await c.env.DB.prepare(
       "SELECT * FROM social_accounts WHERE id=?",
     )
@@ -121,12 +132,16 @@ export function registerSocialAccounts(app) {
   });
   app.delete("/api/social/accounts/:id", async (c) => {
     const id = c.req.param("id");
-    const response = await browserCommand(c.env, {
-      action: "remove-account",
-      account: { id },
-      userId: c.get("identity").id,
-    });
-    if (!response.ok) return response;
+    if (c.env.COMPANY_COMPUTER)
+      await computerBroker(c.env, { action: "remove", accountId: id });
+    if (c.env.SOCIAL_BROWSER) {
+      const response = await browserCommand(c.env, {
+        action: "remove-account",
+        account: { id },
+        userId: c.get("identity").id,
+      });
+      if (!response.ok) return response;
+    }
     await c.env.DB.prepare("DELETE FROM social_accounts WHERE id=?")
       .bind(id)
       .run();

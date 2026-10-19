@@ -128,6 +128,7 @@ export default function App({
   const [companies, setCompanies] = useState<Company[]>([]);
   const [cloud, setCloud] = useState(false);
   const [socialBrowser, setSocialBrowser] = useState(false);
+  const [companyComputer, setCompanyComputer] = useState(false);
   const [aiEnabled, setAIEnabled] = useState(false);
   const [mediaStorage, setMediaStorage] = useState("r2");
   const [platforms, setPlatforms] = useState<Platform[]>([]);
@@ -188,12 +189,14 @@ export default function App({
           database: string;
           storage?: string;
           socialBrowser?: boolean;
+          companyComputer?: boolean;
           ai?: string;
         }>("/api/health"),
       ]);
       setCompanies(list);
       setCloud(health.database === "d1");
       setSocialBrowser(Boolean(health.socialBrowser));
+      setCompanyComputer(Boolean(health.companyComputer));
       setAIEnabled(health.ai === "cloudflare");
       setMediaStorage(health.storage ?? "local");
       setPlatforms(configs);
@@ -1638,6 +1641,7 @@ export default function App({
                 platforms={platforms}
                 user={user}
                 enabled={socialBrowser}
+                computerEnabled={companyComputer}
                 posts={posts}
                 icon={(id) => <PlatformIcon id={id} size={24} />}
               />

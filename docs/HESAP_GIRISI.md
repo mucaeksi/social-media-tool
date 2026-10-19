@@ -1,5 +1,7 @@
 # Sosyal hesaplara normal giriş
 
+Güncel tercih: **Windows şirket bilgisayarı + kalıcı Mozilla Firefox profilleri**. Panelde varsayılan akış budur; [kurulum rehberi](SIRKET_BILGISAYARI.md). Aşağıdaki Cloudflare tarayıcısı ayrı deneysel seçenek olarak korunur.
+
 19 Ekim güncellemesi: kullanıcı ücretsiz resmi API kullanımını da kabul etti. Resmi bağlantılara öncelik verilecek; Meta geliştirici uygulaması henüz yok. [İlk kurulum adımları](META_KURULUM.md) ve [sekiz platformun erişim koşulları](PLATFORM_BAGLANTILARI.md). Aşağıdaki deneysel tarayıcı seçeneği korunur; OAuth ve API yayınlama henüz uygulanmadı.
 
 Kullanıcı, sosyal ağlara kullanıcı adı/şifre ve istenen doğrulama koduyla giriş yapmayı; yardımcı eklenti olmadan yalnızca web panelinden çalışmayı seçti. Bu akış için geliştirici uygulaması yerine Cloudflare Browser Run kullanılır. Ücretli plan satın alınmaz. Normal web sayfasına giriş, resmi API yayın izni sağlamaz.

@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { createHash } from "node:crypto";
 import { protectSecret } from "./cloudflare-api.mjs";
 import { databaseQuery } from "./admin-provision.mjs";
 import {
@@ -46,6 +47,7 @@ export async function smokeCloudflare(deployment, adminVerification) {
           result.auth === "password" &&
           result.database === "d1" &&
           result.socialBrowser === true &&
+          result.companyComputer === true &&
           result.ai === "cloudflare" &&
           result.aiExpertVersion === "gorsel-ozet-v1" &&
           result.storage === deployment.mediaStorage
@@ -64,6 +66,19 @@ export async function smokeCloudflare(deployment, adminVerification) {
     const root = await http("/");
     if (!(await root.text()).includes("Sosyal Studio"))
       throw new Error("Canlı arayüz doğrulanamadı.");
+    const archive = Buffer.from(
+      await (await http("/indir/sosyal-studio-bilgisayar.zip")).arrayBuffer(),
+    );
+    const checksum = (
+      await (await http("/indir/sosyal-studio-bilgisayar.sha256")).text()
+    )
+      .trim()
+      .split(/\s+/)[0];
+    if (
+      archive.readUInt32LE(0) !== 0x04034b50 ||
+      createHash("sha256").update(archive).digest("hex") !== checksum
+    )
+      throw new Error("Windows Firefox kurulum paketi doğrulanamadı.");
     const anonymous = await fetch(`${deployment.url}/api/companies`, {
       redirect: "manual",
     });

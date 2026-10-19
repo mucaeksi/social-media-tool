@@ -24,7 +24,13 @@ import { parseMediaForm, objectKey, removeCompanyObjects } from "./media.mjs";
 import { browserCommand, registerSocialAccounts } from "./social-accounts.mjs";
 import { registerSocialAI } from "./social-ai.mjs";
 import { SOCIAL_EXPERT_VERSION } from "../shared/social-expert.mjs";
+import {
+  registerCompanyComputer,
+  computerPublicPaths,
+  computerBroker,
+} from "./company-computer.mjs";
 export { SocialBrowser } from "./social-browser.mjs";
+export { CompanyComputer } from "./computer-relay.mjs";
 
 const app = new Hono();
 function fail(status, message) {
@@ -100,6 +106,7 @@ app.use("*", async (c, next) => {
   if (
     c.req.path === "/api/health" ||
     c.req.path === "/api/auth/login" ||
+    computerPublicPaths.has(c.req.path) ||
     !c.req.path.startsWith("/api/")
   )
     return next();
@@ -131,6 +138,14 @@ app.use(
   }),
 );
 registerPasswordRoutes(app);
+app.use(
+  "/api/computer/enroll",
+  bodyLimit({
+    maxSize: 8192,
+    onError: (c) => c.json({ error: "Eşleştirme isteği çok büyük." }, 413),
+  }),
+);
+registerCompanyComputer(app);
 registerSocialAccounts(app);
 registerSocialAI(app);
 
@@ -143,7 +158,11 @@ app.get("/api/health", async (c) => {
     mediaProcessing: "browser",
     publishing: false,
     socialBrowser: Boolean(c.env.SOCIAL_BROWSER && c.env.BROWSER_STATE_KEY),
-    ai: c.env.AI && c.env.AI_FREE_ONLY === "true" ? "cloudflare" : "manual-chatgpt",
+    companyComputer: Boolean(c.env.COMPANY_COMPUTER),
+    ai:
+      c.env.AI && c.env.AI_FREE_ONLY === "true"
+        ? "cloudflare"
+        : "manual-chatgpt",
     aiExpertVersion: SOCIAL_EXPERT_VERSION,
     auth: c.env.AUTH_MODE === "password" ? "password" : "development",
   });
@@ -176,7 +195,7 @@ app.put("/api/companies/:id", async (c) => {
 app.delete("/api/companies/:id", async (c) => {
   const id = c.req.param("id");
   await company(c, id);
-  if (c.env.SOCIAL_BROWSER) {
+  if (c.env.SOCIAL_BROWSER || c.env.COMPANY_COMPUTER) {
     const hasAccounts = await c.env.DB.prepare(
       "SELECT id FROM social_accounts WHERE company_id=? LIMIT 1",
     )
@@ -190,6 +209,10 @@ app.delete("/api/companies/:id", async (c) => {
         },
         403,
       );
+    if (c.env.COMPANY_COMPUTER)
+      await computerBroker(c.env, { action: "remove", companyId: id });
+  }
+  if (c.env.SOCIAL_BROWSER) {
     const response = await browserCommand(c.env, {
       action: "remove-company",
       account: { companyId: id },
