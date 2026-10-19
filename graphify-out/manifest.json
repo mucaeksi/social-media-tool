@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "scripts/smoke-cloudflare.mjs": {
-    "mtime": 1792407875.2722101,
-    "seen": 1792408030.584231,
-    "ast_hash": "3dd481603ed94a29d8e842ddf5362921",
+    "mtime": 1792408411.0192778,
+    "seen": 1792408412.8171804,
+    "ast_hash": "fcfe8d919486fa457065525f241b806c",
     "semantic_hash": ""
   },
   "scripts/wrangler.mjs": {

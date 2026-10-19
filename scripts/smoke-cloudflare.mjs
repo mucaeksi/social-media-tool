@@ -233,7 +233,7 @@ export async function smokeCloudflare(deployment, adminVerification) {
     const aiStatus = await (await http("/api/ai/status")).json();
     if (!aiStatus.enabled || aiStatus.limits?.dailyNeurons !== 9000)
       throw new Error("Canlı AI binding veya ücretsiz bütçe doğrulanamadı.");
-    if (configs.length !== 8) throw new Error("Canlı platform listesi eksik.");
+    if (configs.length !== platforms.length) throw new Error("Canlı platform listesi eksik.");
     const company = await (
       await http("/api/companies", {
         method: "POST",
