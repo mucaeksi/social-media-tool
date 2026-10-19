@@ -1,8 +1,8 @@
 {
   "status": "success",
-  "source_commit": "a611932739e412a8c939adaefcfd1a174bfd614a",
-  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39188738958",
-  "updated_at": "2026-10-19T02:13:00.408Z",
+  "source_commit": "9854472a76e5c891439123320714b47807d0bfb4",
+  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39190676403",
+  "updated_at": "2026-10-19T02:37:32.578Z",
   "url": "https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev",
   "zero_trust": {
     "plan": "Teams Free Base",
@@ -15,7 +15,7 @@
       "serviceTokens": 50,
       "policiesPerApp": 1000
     },
-    "checkedAt": "2026-10-19T02:13:01.657Z",
+    "checkedAt": "2026-10-19T02:37:34.198Z",
     "seatEnforcement": "Cloudflare Free planı girişte 50 aktif koltuğu uygular"
   },
   "workers_ai": {
@@ -23,7 +23,7 @@
     "price": 0,
     "dailyNeurons": 10000,
     "applicationBudget": 9000,
-    "checkedAt": "2026-10-19T02:13:01.954Z",
+    "checkedAt": "2026-10-19T02:37:34.612Z",
     "paidSubscriptionFound": false
   },
   "verified": true,
@@ -33,6 +33,6 @@
     "media": "Cloudflare R2",
     "login": "Kullanıcı adı ve şifre — D1 oturumları",
     "socialBrowser": "Cloudflare Browser Run — deneysel hesap girişi",
-    "ai": "Cloudflare Workers AI — Qwen3, şirket hafızası ve ücretsiz bütçe"
+    "ai": "Cloudflare Workers AI — görsel + özet, platform metinleri ve şirket hafızası"
   }
 }
