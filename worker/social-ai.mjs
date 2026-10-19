@@ -8,14 +8,15 @@ import {
 } from "../shared/social-expert.mjs";
 import {
   VISION_MODEL,
+  VISION_RATES,
   VISION_LIMITS,
   visionReservation,
   visionImage,
   observeImage,
 } from "./ai-vision.mjs";
 
-export const AI_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
-const AI_RATES = Object.freeze({ input: 4625, output: 30475 });
+export const AI_MODEL = VISION_MODEL;
+const AI_RATES = VISION_RATES;
 export const AI_LIMITS = Object.freeze({
   dailyNeurons: 9000,
   providerDailyNeurons: 10000,
@@ -97,7 +98,7 @@ async function turns(db, companyId, userId) {
 export function aiReservation(messages, maxTokens) {
   // UTF-8 bytes bound byte-fallback tokenizers conservatively. Extra framing,
   // maximum output (including reasoning), and 2x pricing margin are reserved.
-  // Pinned Qwen3 rates: 4625 input / 30475 output Neurons per million tokens.
+  // Gemma 4 rates: 9091 input / 27273 output Neurons per million tokens.
   const bytes = new TextEncoder().encode(JSON.stringify(messages)).length + 512;
   if (bytes > AI_LIMITS.promptBytes)
     fail(
@@ -505,7 +506,8 @@ export function registerSocialAI(app) {
       try {
         response = await c.env.AI.run(AI_MODEL, {
           messages,
-          max_tokens: attempt ? AI_LIMITS.repairTokens : maxTokens,
+          max_completion_tokens: attempt ? AI_LIMITS.repairTokens : maxTokens,
+          chat_template_kwargs: { enable_thinking: false },
           temperature: 0.6,
           ...(input.mode === "posts"
             ? { response_format: { type: "json_object" } }

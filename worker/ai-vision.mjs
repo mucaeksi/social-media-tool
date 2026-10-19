@@ -6,6 +6,7 @@ import { jpegDimensions, objectKey } from "./media.mjs";
 // Llama 3.2 requires a separate account agreement (Cloudflare error 5016).
 // Gemma 4 supports private data-URI images within the Workers Free allocation.
 export const VISION_MODEL = "@cf/google/gemma-4-26b-a4b-it";
+export const VISION_RATES = Object.freeze({ input: 9091, output: 27273 });
 export const VISION_LIMITS = Object.freeze({
   imageBytes: 4 * 1024 * 1024,
   imageSide: 2560,
@@ -26,8 +27,8 @@ export function visionReservation() {
       ((VISION_LIMITS.imageTokens +
         new TextEncoder().encode(instruction).length +
         1024) *
-        9091 +
-        VISION_LIMITS.outputTokens * 27273)) /
+        VISION_RATES.input +
+        VISION_LIMITS.outputTokens * VISION_RATES.output)) /
       1_000_000,
   );
 }

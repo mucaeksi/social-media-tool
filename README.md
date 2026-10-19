@@ -6,9 +6,9 @@ Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Tür
 
 [Sekiz platformun resmi API ve web girişi koşulları](docs/PLATFORM_BAGLANTILARI.md) panelde hesap kartlarına da eklendi. Facebook, Instagram, Threads, Pinterest ve Google/YouTube giriş alanları açıldı; gerçek hesap girişi denenmedi. X erişimi reddedildi, TikTok ve LinkedIn giriş alanları doğrulanamadı. Resmi API bağlantısı henüz etkin değildir.
 
-**Entegre AI asistanı:** Cloudflare Workers AI üzerindeki Qwen3 modeli şirket hafızasıyla Türkçe fikir/strateji yanıtları ve sekiz platforma ayrı içerik hazırlar. Yönetici marka bilgileri ve onaylı örnekler ekler; kullanıcı sonucu kontrol edip stüdyoya aktarır. Model ağırlıkları eğitilmez. Sağlayıcının günlük 10.000 Neuron ücretsiz kotası içinde uygulama 9.000 Neuron güvenli rezervasyon bütçesi kullanır; ücretli plan açılmaz. [Kullanım ve sınırlar](docs/AI_YOL_HARITASI.md).
+**Entegre AI asistanı:** Cloudflare Workers AI üzerindeki Gemma 4 modeli şirket hafızasıyla Türkçe fikir/strateji yanıtları ve sekiz platforma ayrı içerik hazırlar. Yönetici marka bilgileri ve onaylı örnekler ekler; kullanıcı sonucu kontrol edip stüdyoya aktarır. Model ağırlıkları eğitilmez. Sağlayıcının günlük 10.000 Neuron ücretsiz kotası içinde uygulama 9.000 Neuron güvenli rezervasyon bütçesi kullanır; ücretli plan açılmaz. [Kullanım ve sınırlar](docs/AI_YOL_HARITASI.md).
 
-**Görsel + kısa özet:** Fotoğrafı asistan ekranında yükleyin. Cloudflare Gemma 4 görseli inceler; Qwen3, sosyal medya uzmanı çalışma rehberi ve şirket hafızasıyla her platforma ayrı metin/etiket/görsel açıklaması üretir. Metin ve görsel birlikte stüdyoya aktarılır. Gerçek yayın bağlantıları henüz kurulmadığından otomatik paylaşım yapılmaz.
+**Görsel + kısa özet:** Fotoğrafı asistan ekranında yükleyin. Cloudflare Gemma 4 görseli inceler; Gemma 4, sosyal medya uzmanı çalışma rehberi ve şirket hafızasıyla her platforma ayrı metin/etiket/görsel açıklaması üretir. Metin ve görsel birlikte stüdyoya aktarılır. Gerçek yayın bağlantıları henüz kurulmadığından otomatik paylaşım yapılmaz.
 
 ## Cloudflare üzerinde yayın
 

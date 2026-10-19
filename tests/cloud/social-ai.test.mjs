@@ -126,7 +126,7 @@ test("Görsel özel depodan okunur; iki modelin bütçesi önceden ayrılır ve 
       (await db.prepare("SELECT reserved_neurons FROM ai_budget").first())
         .reserved_neurons > visionReservation(),
     );
-    if (name === VISION_MODEL) {
+    if (Array.isArray(options.messages[0].content)) {
       assert.equal(options.max_completion_tokens, 768);
       assert.equal(options.chat_template_kwargs.enable_thinking, false);
       const url = options.messages[0].content[1].image_url.url;
@@ -230,8 +230,8 @@ test("Görsel modeli başarısızsa metin modeli çağrılmaz, sonuç kaydedilme
 
 test("Görsel okuma D1 yedek depoda da çalışır; genel URL veya R2 gerektirmez", async () => {
   const { media } = await image(companies[0], "d1");
-  model.run = async (name) =>
-    name === VISION_MODEL
+  model.run = async (_name, options) =>
+    Array.isArray(options.messages[0].content)
       ? { response: "A red product on white." }
       : { response: "Görselde kırmızı bir ürün var." };
   const result = await call("/api/ai/ask", {
@@ -360,7 +360,7 @@ test("Model yalnızca seçili şirket hafızasını alır; kendi sohbet geçmiş
   });
   model.run = async (name, options) => {
     assert.equal(name, AI_MODEL);
-    assert.equal(options.max_tokens, AI_LIMITS.replyTokens);
+    assert.equal(options.max_completion_tokens, AI_LIMITS.replyTokens);
     const prompt = JSON.stringify(options.messages);
     assert.match(prompt, /Sivas/);
     assert.doesNotMatch(prompt, /DİĞER-ŞİRKET-ÖZEL-BİLGİ|Şirket B/);
@@ -478,7 +478,10 @@ test("Aynı platform metinleri en fazla bir kez düzeltilir; iki çağrının b�
       await db.prepare("SELECT reserved_neurons FROM ai_budget").first()
     ).reserved_neurons;
     if (attempts === 1) {
-      firstCost = aiReservation(options.messages, options.max_tokens);
+      firstCost = aiReservation(
+        options.messages,
+        options.max_completion_tokens,
+      );
       assert.ok(budget > firstCost);
       return { response: JSON.stringify(initial) };
     }
@@ -487,9 +490,11 @@ test("Aynı platform metinleri en fazla bir kez düzeltilir; iki çağrının b�
     assert.equal(options.messages.at(-2).content, JSON.stringify(initial));
     assert.match(options.messages.at(-1).content, /denetimden geçmedi/);
     assert.match(options.messages.at(-1).content, /\["facebook"\]/);
-    assert.equal(options.max_tokens, AI_LIMITS.repairTokens);
+    assert.equal(options.max_completion_tokens, AI_LIMITS.repairTokens);
     assert.ok(
-      budget >= firstCost + aiReservation(options.messages, options.max_tokens),
+      budget >=
+        firstCost +
+          aiReservation(options.messages, options.max_completion_tokens),
     );
     return {
       response: JSON.stringify({

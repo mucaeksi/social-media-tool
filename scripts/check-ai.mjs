@@ -5,6 +5,7 @@ import { hashPassword, randomToken } from "../shared/passwords.mjs";
 import { verifyWorkersAIFree } from "./cloudflare-free-tier.mjs";
 import sharp from "sharp";
 import { platforms } from "../server/platforms.mjs";
+import { AI_MODEL, aiPosts } from "../worker/social-ai.mjs";
 import { VISION_MODEL, observeImage } from "../worker/ai-vision.mjs";
 
 // Explicit live inference check with disposable data, never social credentials.
@@ -103,7 +104,7 @@ async function diagnoseObservation(original) {
     report.visionDiagnostic.status = error.status;
   }
 }
-try {
+async function runCheck() {
   report.stage = "configuration";
   const receipt = JSON.parse(
     await readFile("deployment/cloudflare.json", "utf8"),
@@ -153,16 +154,59 @@ try {
   if (!cookie) throw new Error("Giriş yok.");
   protectSecret(cookie, { emitMask: false });
   const status = (await http("/api/ai/status")).value;
-  if (status.visionModel !== VISION_MODEL)
+  if (status.visionModel !== VISION_MODEL || status.model !== AI_MODEL)
     throw new Error("Yayındaki görsel modeli güncel değil.");
   report.reservedNeuronsBefore = status.reservedNeurons;
   if (
     !status.enabled ||
-    status.reservedNeurons > status.limits.dailyNeurons - 900
+    status.reservedNeurons >
+      status.limits.dailyNeurons -
+        (process.env.AI_CHECK_MODE === "caption_probe" ? 200 : 900)
   )
     throw new Error("Ücretsiz test bütçesi yok.");
   report.model = status.model;
   report.visionModel = status.visionModel;
+  if (process.env.AI_CHECK_MODE === "caption_probe") {
+    report.stage = "caption-probe";
+    report.endToEndPending = true;
+    companyId = (
+      await http("/api/companies", {
+        method: "POST",
+        body: { name: "AI denetimi", tone: "Sade" },
+      })
+    ).value.id;
+    const generated = (
+      await http("/api/ai/ask", {
+        method: "POST",
+        body: {
+          companyId,
+          mode: "chat",
+          question:
+            '{"posts":[{"platform":"instagram","caption":"..."}]} biçiminde instagram,facebook,x,threads,pinterest,youtube,tiktok,linkedin için farklı kırmızı kupa duyuruları yaz. caption en fazla 80 karakter. Yalnızca JSON.',
+        },
+      })
+    ).value;
+    const selected = platforms.map((p) => p.id);
+    let posts;
+    try {
+      posts = aiPosts(generated.answer, selected);
+    } catch (error) {
+      report.duplicatePlatforms = error.duplicateIds ?? [];
+      throw error;
+    }
+    report.captionProbeVerified =
+      posts.length === 8 && generated.published === false;
+    if (!report.captionProbeVerified)
+      throw new Error("Metin modeli doğrulanamadı.");
+    report.contentPlatforms = posts.length;
+    report.distinctCaptions = new Set(posts.map((p) => p.caption)).size;
+    report.realModelAnswer = true;
+    const budget = (await http("/api/ai/status")).value;
+    report.reservedNeuronsAfter = budget.reservedNeurons;
+    report.applicationDailyLimit = budget.limits.dailyNeurons;
+    report.stage = "caption-probe-completed";
+    return;
+  }
   report.stage = "company-memory";
   companyId = (
     await http("/api/companies", {
@@ -292,6 +336,9 @@ try {
   report.applicationDailyLimit = finalBudget.limits.dailyNeurons;
   report.verified = true;
   report.stage = "completed";
+}
+try {
+  await runCheck();
 } catch {
   report.error =
     "Gerçek model yanıtı, şirket hafızası veya platform içeriği kontrolü tamamlanamadı.";

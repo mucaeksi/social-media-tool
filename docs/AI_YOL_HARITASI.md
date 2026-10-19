@@ -1,6 +1,6 @@
 # Sosyal medya uzmanı AI
 
-Kullanıcı 19 Ekim 2026'da **Cloudflare üzerinde entegre sosyal medya AI'ı** seçti. Görsel + kısa özet iş akışında önce `@cf/google/gemma-4-26b-a4b-it` görseli okur; `@cf/qwen/qwen3-30b-a3b-fp8` bu gözlemi, özeti ve şirket hafızasını kullanarak ayrı platform içerikleri hazırlar. Llama 3.2 ayrı hesap/lisans kabulü istediğinden (5016) kullanılmaz. İki model de Cloudflare Workers AI üzerindedir; kod GitHub'da, hafıza/sohbetler D1'de, görsel özel R2 veya D1 deposundadır. OpenAI anahtarı ve ChatGPT üyeliği gerekmez. Manuel ChatGPT aktarımı da korunur.
+Kullanıcı 19 Ekim 2026'da **Cloudflare üzerinde entegre sosyal medya AI'ı** seçti. Görsel + kısa özet iş akışında `@cf/google/gemma-4-26b-a4b-it` önce özel görseli inceler; ayrı metin çağrısında bu gözlemi, özeti ve şirket hafızasını kullanarak platform içerikleri hazırlar. İki aşama da Cloudflare Workers AI üzerindedir; kod GitHub'da, hafıza/sohbetler D1'de, görsel özel R2 veya D1 deposundadır. Llama 3.2 ayrı lisans kabulü istediğinden, Qwen3 bu örnekte aynı platform metinlerini düzeltmede tutarlı olmadığından kullanılmaz. OpenAI anahtarı ve ChatGPT üyeliği gerekmez. Manuel ChatGPT aktarımı korunur.
 
 ## Kullanım ve şirket hafızası
 
@@ -23,7 +23,7 @@ Uygulama tüm şirketler için ortak **9.000 Neuron/gün** güvenli bütçe kull
 
 Panel sayacı gerçek tüketim ölçümü değildir. UTF-8 girdi boyutu, mesaj çerçevesi payı ve azami çıktı token'ı üzerinden, incelenen model fiyatının iki katı payla hesaplanan üst sınırdır. Başarıda da hatada da geri verilmez; sağlayıcının tam tüketimi bilinmez. Bu yüzden ücretsiz kotanın tamamından önce uygulama durabilir. İçerik hazırlamada hatalı JSON veya kopya açıklama için en fazla bir düzeltme çağrısı yapılır. İkinci metin çağrısının 26.000 bayt girdi ve 2.048 çıktı token bütçesi ilk çağrıdan önce ayrılır; kullanılmasa da geri verilmez. Kopya açıklamalarda yalnızca tekrarlanan platformlar yeniden yazılır; ilk örnek ve diğer doğru metinler korunur. Birleştirilen sonuç bütün platformlarla tekrar doğrulanır. Düzeltme önceki çıktıyı ve doğrulama hatasını kullanır; girdiye sığmazsa kaynak kırpılmaz ve çağrı yapılmaz. Sağlayıcı, görsel veya kesilmiş metin hatasında otomatik tekrar yoktur. Yalnızca tüm kontrolleri geçen son sonuç kaydedilir. Danışma en fazla 2.048, içerik yanıtı 4.096 çıktı token'ıdır; iç düşünce de bu bütçeyi tüketebilir. Girdi sınırı 26.000 bayttır. Kesilmiş yanıt ve iç düşünce gösterilmez.
 
-Görsel varsa iki modelin toplam bütçesi **ilk model çağrısından önce tek rezervasyonda** ayrılır. Görsel modeli için 4.096 görsel token'ı, metin/çerçeve payı ve 768 çıktı token'ı, incelenen 9.091/27.273 Neuron/milyon token fiyatının iki katı payla ayrılır. Gemma 4 görüntü işleyicisi en fazla 1.120 soft token destekler; 4.096 payı ek çerçeve payıyla geniş tutulur; Gemma'nın iç düşünce üretimi kapatılır. Metin modeline eklenecek gözlem için ayrıca 6.000 bayt üst sınır ayrılır. Kaynak JPEG en fazla 4 MB ve uzun kenarı 2.560 pikseldir. Görsel okuma R2 Class B sayacını kullanır; sosyal tarayıcı süresini tüketmez. Aynı görsel tekrar gönderilirse tekrar incelenir ve bütçe ayrılır.
+Görsel varsa görsel ve metin çağrılarının toplam bütçesi **ilk model çağrısından önce tek rezervasyonda** ayrılır. Görsel modeli için 4.096 görsel token'ı, metin/çerçeve payı ve 768 çıktı token'ı, incelenen 9.091/27.273 Neuron/milyon token fiyatının iki katı payla ayrılır. Gemma 4 görüntü işleyicisi en fazla 1.120 soft token destekler; 4.096 payı ek çerçeve payıyla geniş tutulur; Gemma'nın iç düşünce üretimi kapatılır. Metin modeline eklenecek gözlem için ayrıca 6.000 bayt üst sınır ayrılır. Kaynak JPEG en fazla 4 MB ve uzun kenarı 2.560 pikseldir. Görsel okuma R2 Class B sayacını kullanır; sosyal tarayıcı süresini tüketmez. Aynı görsel tekrar gönderilirse tekrar incelenir ve bütçe ayrılır.
 
 Sayaç UTC gün başında, Türkiye saatiyle **03.00**'te yenilenir. Önceki iki dakika yeni istek başlatılmaz. Dağıtım veya sohbet temizleme bütçeyi sıfırlamaz. Bu bütçe yalnızca uygulama çağrılarını kapsar; hesaptaki diğer AI uygulamaları da sağlayıcı kotasını tüketebilir. Hesap planı dışarıdan değiştirilirse yeniden kontrol gerekir. R2, Zero Trust ve uzak tarayıcı sınırları ayrıca korunur.
 
@@ -48,7 +48,7 @@ Gerçek model kontrolü `.github/workflows/ai-check.yml` ile açıkça çalışt
 
 - [Fiyatlandırma ve ücretsiz kota](https://developers.cloudflare.com/workers-ai/platform/pricing/): resmi kaynak sürümü `8b0bdc299319a7819c5bdad9881532ccc1b8d519` (15 Ekim 2026).
 - [AI binding](https://developers.cloudflare.com/workers-ai/configuration/bindings/)
-- [Qwen3 model şeması](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/qwen3-30b-a3b-fp8.json)
+- [Gemma 4 model şeması](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/gemma-4-26b-a4b-it.json)
 - [JSON yanıt modu](https://developers.cloudflare.com/workers-ai/features/json-mode/)
 - [LoRA ile ince ayarlı model çalıştırma](https://developers.cloudflare.com/workers-ai/features/fine-tunes/)
 
@@ -56,3 +56,9 @@ Gerçek model kontrolü `.github/workflows/ai-check.yml` ile açıkça çalışt
 - [Workers AI hata kodları](https://developers.cloudflare.com/workers-ai/platform/errors/)
 
 - [Gemma 4 görsel token üst sınırı (Transformers)](https://github.com/huggingface/transformers/blob/main/src/transformers/models/gemma4/image_processing_gemma4.py): desteklenen üst değer 1.120 soft token.
+
+## Canlı kontrol durumu
+
+19 Ekim canlı kontrollerinde özel görsel tanıma ve şirket hafızası çalıştı; önceki Qwen metin modeli sekiz benzersiz açıklamayı tutarlı üretemedi. Metin de Gemma 4'e geçirildi. `caption_probe` kontrolü yalnızca gerçek metin modelini, kısa kurgu içerikle sekiz farklı açıklama ve mevcut bütçe içinde denetler. Bu kontrol tam görsel akışının başarısı sayılmaz; kayıtta `captionProbeVerified` ve `endToEndPending` ayrı tutulur. Günlük rezervasyonlar sıfırlanmaz veya geri verilmez.
+
+Tam görsel + hafıza + sekiz platform kontrolü, kota yenilendikten sonra **20 Ekim 2026 00.05 UTC / 03.05 Türkiye saati** için GitHub Actions'ta planlandı. GitHub zamanlayıcısı gecikebilir. Tarih kapısı yalnızca bu gün otomatik model çağrısına izin verir; sonraki yıllardaki aynı cron tarihi modeli çalıştırmaz. Sonuç `deployment/ai-check.json` içinde yayımlanır. `verified: true` görülmeden tam canlı akış doğrulandı denmez.
