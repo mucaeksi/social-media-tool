@@ -486,9 +486,9 @@
     "semantic_hash": ""
   },
   "scripts/check-ai.mjs": {
-    "mtime": 1792377702.3642826,
-    "seen": 1792377712.265406,
-    "ast_hash": "6b55fb964a2edee553f2f7e02d112622",
+    "mtime": 1792377936.3037496,
+    "seen": 1792377937.9411883,
+    "ast_hash": "c88ebda00a60f625d911bc2a5b0b1a7d",
     "semantic_hash": ""
   },
   "src/SocialAI.tsx": {

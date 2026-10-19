@@ -5,7 +5,7 @@ import { hashPassword, randomToken } from "../shared/passwords.mjs";
 import { verifyWorkersAIFree } from "./cloudflare-free-tier.mjs";
 import sharp from "sharp";
 import { platforms } from "../server/platforms.mjs";
-import { VISION_MODEL } from "../worker/ai-vision.mjs";
+import { VISION_MODEL, observeImage } from "../worker/ai-vision.mjs";
 
 // Explicit live inference check with disposable data, never social credentials.
 const report = {
@@ -39,6 +39,22 @@ async function http(path, { method = "GET", body } = {}) {
         report.failureKind = "vision-model";
       else if (problem.error?.startsWith("Cloudflare AI yanıt veremedi."))
         report.failureKind = "text-model";
+      else if (problem.error?.startsWith("Görsel gözlemi doğrulanamadı."))
+        report.failureKind = "vision-observation";
+      else if (problem.error?.startsWith("Model tam bir yanıt üretemedi."))
+        report.failureKind = "text-incomplete";
+      else if (problem.error?.startsWith("Model yanıtı doğrulanamadı."))
+        report.failureKind = "text-observation";
+      else if (
+        problem.error?.startsWith("Model geçerli içerik verisi üretemedi.")
+      )
+        report.failureKind = "post-json";
+      else if (
+        problem.error?.startsWith("Modelin içerik biçimi doğrulanamadı.")
+      )
+        report.failureKind = "post-schema";
+      else if (problem.error?.startsWith("Model seçili platformların tamamını"))
+        report.failureKind = "post-platforms";
     }
     throw new Error("Canlı AI isteği tamamlanamadı.");
   }
@@ -46,6 +62,44 @@ async function http(path, { method = "GET", body } = {}) {
     response,
     value: response.status === 204 ? null : await response.json(),
   };
+}
+async function diagnoseObservation(original) {
+  // Only synthetic image data is used; persist shape flags, never response text.
+  report.visionDiagnostic = { acceptedObservation: false };
+  try {
+    await observeImage(
+      {
+        run: async (model, input) => {
+          const result = await cfApi(
+            `/accounts/${deployment.accountId}/ai/run/${model}`,
+            { method: "POST", body: input },
+          );
+          const content =
+            result?.response ?? result?.choices?.[0]?.message?.content;
+          Object.assign(report.visionDiagnostic, {
+            responseType: typeof result?.response,
+            contentType: typeof content,
+            contentLength: typeof content === "string" ? content.length : 0,
+            hasThink:
+              typeof content === "string" && content.includes("<think>"),
+            finishReason: ["stop", "length", "content_filter"].includes(
+              result?.choices?.[0]?.finish_reason,
+            )
+              ? result.choices[0].finish_reason
+              : "other",
+            reasoningTokens:
+              result?.usage?.completion_tokens_details?.reasoning_tokens ??
+              null,
+          });
+          return result;
+        },
+      },
+      `data:image/jpeg;base64,${original.toString("base64")}`,
+    );
+    report.visionDiagnostic.acceptedObservation = true;
+  } catch (error) {
+    report.visionDiagnostic.status = error.status;
+  }
 }
 try {
   report.stage = "configuration";
@@ -106,6 +160,7 @@ try {
     throw new Error("Ücretsiz test bütçesi yok.");
   report.model = status.model;
   report.visionModel = status.visionModel;
+  report.reservedNeuronsBefore = status.reservedNeurons;
   report.stage = "company-memory";
   companyId = (
     await http("/api/companies", {
@@ -187,19 +242,26 @@ try {
     "tiktok",
     "linkedin",
   ];
-  const generated = (
-    await http("/api/ai/ask", {
-      method: "POST",
-      body: {
-        companyId,
-        mode: "posts",
-        question:
-          "Yeni ürünümüz için görseldeki nesneyi ve rengini esas alan kısa tanıtım metinleri hazırla. Özellik, fiyat, indirim, kalite veya malzeme iddiası uydurma. Her platforma farklı bir anlatım yaz.",
-        selected,
-        mediaId: media.id,
-      },
-    })
-  ).value;
+  let generated;
+  try {
+    generated = (
+      await http("/api/ai/ask", {
+        method: "POST",
+        body: {
+          companyId,
+          mode: "posts",
+          question:
+            "Yeni ürünümüz için görseldeki nesneyi ve rengini esas alan kısa tanıtım metinleri hazırla. Özellik, fiyat, indirim, kalite veya malzeme iddiası uydurma. Her platforma farklı bir anlatım yaz.",
+          selected,
+          mediaId: media.id,
+        },
+      })
+    ).value;
+  } catch (error) {
+    if (report.failureKind === "vision-observation")
+      await diagnoseObservation(original);
+    throw error;
+  }
   if (
     generated.published !== false ||
     generated.posts?.length !== 8 ||
