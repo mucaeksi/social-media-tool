@@ -47,59 +47,6 @@ async function http(path, { method = "GET", body } = {}) {
     value: response.status === 204 ? null : await response.json(),
   };
 }
-async function diagnoseVision(original) {
-  // Only the synthetic fixture is probed. Persist status/codes, never provider
-  // messages, prompts, image data, credentials or generated content.
-  const image = `data:image/jpeg;base64,${original.toString("base64")}`;
-  const prompt = "Describe the visible object and its color in one sentence.";
-  const formats = {
-    messages: {
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: image } },
-          ],
-        },
-      ],
-    },
-    legacy: { prompt, image: [...original] },
-  };
-  report.visionDiagnostic = {};
-  for (const [format, input] of Object.entries(formats)) {
-    try {
-      const result = await cfApi(
-        `/accounts/${deployment.accountId}/ai/run/${VISION_MODEL}`,
-        {
-          method: "POST",
-          body: { ...input, max_tokens: 128, temperature: 0.2 },
-        },
-      );
-      report.visionDiagnostic[format] = {
-        success:
-          typeof result?.response === "string" &&
-          /cup|mug|fincan|kupa|bardak/i.test(result.response),
-      };
-    } catch (error) {
-      const message = String(error.message).toLowerCase();
-      report.visionDiagnostic[format] = {
-        success: false,
-        status: error.status,
-        codes: error.codes,
-        reason: /neurons|quota|rate limit|capacity/.test(message)
-          ? "capacity"
-          : /validat|schema|input|image|argument/.test(message)
-            ? "input"
-            : /permission|authoriz|forbidden|access/.test(message)
-              ? "access"
-              : /model.*not found|model.*available/.test(message)
-                ? "model"
-                : "provider",
-      };
-    }
-  }
-}
 try {
   report.stage = "configuration";
   const receipt = JSON.parse(
@@ -150,12 +97,15 @@ try {
   if (!cookie) throw new Error("Giriş yok.");
   protectSecret(cookie, { emitMask: false });
   const status = (await http("/api/ai/status")).value;
+  if (status.visionModel !== VISION_MODEL)
+    throw new Error("Yayındaki görsel modeli güncel değil.");
   if (
     !status.enabled ||
     status.reservedNeurons > status.limits.dailyNeurons - 1500
   )
     throw new Error("Ücretsiz test bütçesi yok.");
   report.model = status.model;
+  report.visionModel = status.visionModel;
   report.stage = "company-memory";
   companyId = (
     await http("/api/companies", {
@@ -237,25 +187,19 @@ try {
     "tiktok",
     "linkedin",
   ];
-  let generated;
-  try {
-    generated = (
-      await http("/api/ai/ask", {
-        method: "POST",
-        body: {
-          companyId,
-          mode: "posts",
-          question:
-            "Yeni ürünümüz için görseldeki nesneyi ve rengini esas alan kısa tanıtım metinleri hazırla. Özellik, fiyat, indirim, kalite veya malzeme iddiası uydurma. Her platforma farklı bir anlatım yaz.",
-          selected,
-          mediaId: media.id,
-        },
-      })
-    ).value;
-  } catch (error) {
-    if (report.failureKind === "vision-model") await diagnoseVision(original);
-    throw error;
-  }
+  const generated = (
+    await http("/api/ai/ask", {
+      method: "POST",
+      body: {
+        companyId,
+        mode: "posts",
+        question:
+          "Yeni ürünümüz için görseldeki nesneyi ve rengini esas alan kısa tanıtım metinleri hazırla. Özellik, fiyat, indirim, kalite veya malzeme iddiası uydurma. Her platforma farklı bir anlatım yaz.",
+        selected,
+        mediaId: media.id,
+      },
+    })
+  ).value;
   if (
     generated.published !== false ||
     generated.posts?.length !== 8 ||

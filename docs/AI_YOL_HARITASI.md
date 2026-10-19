@@ -1,6 +1,6 @@
 # Sosyal medya uzmanı AI
 
-Kullanıcı 19 Ekim 2026'da **Cloudflare üzerinde entegre sosyal medya AI'ı** seçti. Görsel + kısa özet iş akışında önce `@cf/meta/llama-3.2-11b-vision-instruct` görseli okur; `@cf/qwen/qwen3-30b-a3b-fp8` bu gözlemi, özeti ve şirket hafızasını kullanarak ayrı platform içerikleri hazırlar. İki model de Cloudflare Workers AI üzerindedir; kod GitHub'da, hafıza/sohbetler D1'de, görsel özel R2 veya D1 deposundadır. OpenAI anahtarı ve ChatGPT üyeliği gerekmez. Manuel ChatGPT aktarımı da korunur.
+Kullanıcı 19 Ekim 2026'da **Cloudflare üzerinde entegre sosyal medya AI'ı** seçti. Görsel + kısa özet iş akışında önce `@cf/google/gemma-4-26b-a4b-it` görseli okur; `@cf/qwen/qwen3-30b-a3b-fp8` bu gözlemi, özeti ve şirket hafızasını kullanarak ayrı platform içerikleri hazırlar. Llama 3.2 ayrı hesap/lisans kabulü istediğinden (5016) kullanılmaz. İki model de Cloudflare Workers AI üzerindedir; kod GitHub'da, hafıza/sohbetler D1'de, görsel özel R2 veya D1 deposundadır. OpenAI anahtarı ve ChatGPT üyeliği gerekmez. Manuel ChatGPT aktarımı da korunur.
 
 ## Kullanım ve şirket hafızası
 
@@ -23,7 +23,7 @@ Uygulama tüm şirketler için ortak **9.000 Neuron/gün** güvenli bütçe kull
 
 Panel sayacı gerçek tüketim ölçümü değildir. UTF-8 girdi boyutu, mesaj çerçevesi payı ve azami çıktı token'ı üzerinden, incelenen model fiyatının iki katı payla hesaplanan üst sınırdır. Başarıda da hatada da geri verilmez; sağlayıcının tam tüketimi bilinmez. Bu yüzden ücretsiz kotanın tamamından önce uygulama durabilir. Danışma en fazla 2.048, içerik yanıtı 4.096 çıktı token'ıdır; iç düşünce de bu bütçeyi tüketebilir. Girdi sınırı 26.000 bayttır. Kesilmiş yanıt ve iç düşünce gösterilmez.
 
-Görsel varsa iki modelin toplam bütçesi **ilk model çağrısından önce tek rezervasyonda** ayrılır. Görsel modeli için 32.768 görsel token'ı, metin/çerçeve payı ve 768 çıktı token'ı, incelenen 4.410/61.493 Neuron/milyon token fiyatının iki katı payla ayrılır. Llama 3.2 dört adet 448 piksel karo kullanır; 32K pay bilinçli olarak geniş tutulur. Metin modeline eklenecek gözlem için ayrıca 6.000 bayt üst sınır ayrılır. Kaynak JPEG en fazla 4 MB ve uzun kenarı 2.560 pikseldir. Görsel okuma R2 Class B sayacını kullanır; sosyal tarayıcı süresini tüketmez. Aynı görsel tekrar gönderilirse tekrar incelenir ve bütçe ayrılır.
+Görsel varsa iki modelin toplam bütçesi **ilk model çağrısından önce tek rezervasyonda** ayrılır. Görsel modeli için 32.768 görsel token'ı, metin/çerçeve payı ve 768 çıktı token'ı, incelenen 9.091/27.273 Neuron/milyon token fiyatının iki katı payla ayrılır. Görselin kenar/boyut sınırları için 32K pay bilinçli olarak geniş tutulur; Gemma'nın iç düşünce üretimi kapatılır. Metin modeline eklenecek gözlem için ayrıca 6.000 bayt üst sınır ayrılır. Kaynak JPEG en fazla 4 MB ve uzun kenarı 2.560 pikseldir. Görsel okuma R2 Class B sayacını kullanır; sosyal tarayıcı süresini tüketmez. Aynı görsel tekrar gönderilirse tekrar incelenir ve bütçe ayrılır.
 
 Sayaç UTC gün başında, Türkiye saatiyle **03.00**'te yenilenir. Önceki iki dakika yeni istek başlatılmaz. Dağıtım veya sohbet temizleme bütçeyi sıfırlamaz. Bu bütçe yalnızca uygulama çağrılarını kapsar; hesaptaki diğer AI uygulamaları da sağlayıcı kotasını tüketebilir. Hesap planı dışarıdan değiştirilirse yeniden kontrol gerekir. R2, Zero Trust ve uzak tarayıcı sınırları ayrıca korunur.
 
@@ -51,3 +51,6 @@ Gerçek model kontrolü `.github/workflows/ai-check.yml` ile açıkça çalışt
 - [Qwen3 model şeması](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/qwen3-30b-a3b-fp8.json)
 - [JSON yanıt modu](https://developers.cloudflare.com/workers-ai/features/json-mode/)
 - [LoRA ile ince ayarlı model çalıştırma](https://developers.cloudflare.com/workers-ai/features/fine-tunes/)
+
+- [Gemma 4 görsel model şeması](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/gemma-4-26b-a4b-it.json)
+- [Workers AI hata kodları](https://developers.cloudflare.com/workers-ai/platform/errors/)

@@ -120,15 +120,15 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792377225.1494937,
-    "seen": 1792377228.046166,
-    "ast_hash": "1106c1ea8607bceb9dc6c3deaafdd9b6",
+    "mtime": 1792377688.5434098,
+    "seen": 1792377712.2670586,
+    "ast_hash": "bd68f235846925800c6a4acd66209478",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792377224.993494,
-    "seen": 1792377228.0461671,
-    "ast_hash": "1e0382dbd4acd9ecf18831cbfd177eb6",
+    "mtime": 1792377702.4641228,
+    "seen": 1792377712.2670603,
+    "ast_hash": "f9e359b0fc3c6b2ccc3337078e43040d",
     "semantic_hash": ""
   },
   "docs/MIMARI.md": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
-    "mtime": 1792377224.8374944,
-    "seen": 1792377228.0461686,
-    "ast_hash": "2fc923c4041b963b6269db8b8a6114b2",
+    "mtime": 1792377688.543294,
+    "seen": 1792377712.2670617,
+    "ast_hash": "4b3d77511fa45f4f3bb13a4f6e75f521",
     "semantic_hash": ""
   },
   "docs/CLOUDFLARE.md": {
@@ -486,9 +486,9 @@
     "semantic_hash": ""
   },
   "scripts/check-ai.mjs": {
-    "mtime": 1792377585.4045763,
-    "seen": 1792377587.0334382,
-    "ast_hash": "e31faaab8c0f16b9242e368036f08121",
+    "mtime": 1792377702.3642826,
+    "seen": 1792377712.265406,
+    "ast_hash": "6b55fb964a2edee553f2f7e02d112622",
     "semantic_hash": ""
   },
   "src/SocialAI.tsx": {
@@ -504,9 +504,9 @@
     "semantic_hash": ""
   },
   "tests/cloud/social-ai.test.mjs": {
-    "mtime": 1792377071.337846,
-    "seen": 1792377228.0456169,
-    "ast_hash": "5a81ef13d809fd215325c1d6cbb3b95c",
+    "mtime": 1792377703.0802808,
+    "seen": 1792377712.2664387,
+    "ast_hash": "7213bd1f9c4bab2f7fb82e2f5cfbd750",
     "semantic_hash": ""
   },
   "worker/social-ai.mjs": {
@@ -528,9 +528,9 @@
     "semantic_hash": ""
   },
   "worker/ai-vision.mjs": {
-    "mtime": 1792377113.1697512,
-    "seen": 1792377228.0458372,
-    "ast_hash": "f932a6a4ab92493737fa32d6d457f4cc",
+    "mtime": 1792377688.432315,
+    "seen": 1792377712.2666252,
+    "ast_hash": "27706abd2563e6ffdf1590b71f7a0f41",
     "semantic_hash": ""
   }
 }

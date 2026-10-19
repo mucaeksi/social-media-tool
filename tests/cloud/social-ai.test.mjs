@@ -127,10 +127,19 @@ test("Görsel özel depodan okunur; iki modelin bütçesi önceden ayrılır ve 
         .reserved_neurons > visionReservation(),
     );
     if (name === VISION_MODEL) {
+      assert.equal(options.max_completion_tokens, 768);
+      assert.equal(options.chat_template_kwargs.enable_thinking, false);
       const url = options.messages[0].content[1].image_url.url;
       assert.ok(url.startsWith("data:image/jpeg;base64,"));
       assert.deepEqual(Buffer.from(url.split(",")[1], "base64"), bytes);
-      return { response: "A red ceramic mug on a white background." };
+      return {
+        choices: [
+          {
+            message: { content: "A red ceramic mug on a white background." },
+            finish_reason: "stop",
+          },
+        ],
+      };
     }
     const prompt = JSON.stringify(options.messages);
     assert.match(prompt, /red ceramic mug/);
