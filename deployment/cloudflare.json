@@ -1,8 +1,8 @@
 {
   "status": "success",
-  "source_commit": "02a2fce2a28ae945ded83514fad8fbc6e08bc060",
-  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39193349178",
-  "updated_at": "2026-10-19T03:11:57.758Z",
+  "source_commit": "ff8f6085a990cb840caaeab910a575df3097b2dd",
+  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39211051118",
+  "updated_at": "2026-10-19T06:41:20.641Z",
   "url": "https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev",
   "zero_trust": {
     "plan": "Teams Free Base",
@@ -15,7 +15,7 @@
       "serviceTokens": 50,
       "policiesPerApp": 1000
     },
-    "checkedAt": "2026-10-19T03:11:58.966Z",
+    "checkedAt": "2026-10-19T06:41:21.896Z",
     "seatEnforcement": "Cloudflare Free planı girişte 50 aktif koltuğu uygular"
   },
   "workers_ai": {
@@ -23,8 +23,13 @@
     "price": 0,
     "dailyNeurons": 10000,
     "applicationBudget": 9000,
-    "checkedAt": "2026-10-19T03:11:59.254Z",
+    "checkedAt": "2026-10-19T06:41:22.198Z",
     "paidSubscriptionFound": false
+  },
+  "social_profiles": {
+    "woodMoodProfiles": 9,
+    "expectedWoodMoodProfiles": 9,
+    "socialLoginsVerified": false
   },
   "verified": true,
   "components": {
