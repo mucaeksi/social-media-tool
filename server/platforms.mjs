@@ -42,7 +42,7 @@ export const platforms = [
     needsVideo: false,
     docs: "https://docs.x.com/x-api/posts/create-post",
     requirement:
-      "X geliştirici uygulaması ve kullanıcı adına yazma izni gerekir. Erişim planı ayrıca değerlendirilir.",
+      "X API ücretlidir. Ücretsiz çalışma koşuluyla bu API etkinleştirilmeyecek; X'te otomatik paylaşım hazır değildir.",
   },
   {
     id: "threads",

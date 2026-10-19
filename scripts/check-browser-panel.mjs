@@ -151,7 +151,10 @@ try {
     .find((p) => p.url().startsWith("https://www.instagram.com/"));
   if (!page) throw new Error("Gerçek giriş sayfası bulunamadı.");
   await page
-    .locator('input[name="username"]')
+    .locator(
+      'input[autocomplete="username"], input[name="username"], input[type="password"]',
+    )
+    .first()
     .waitFor({ state: "visible", timeout: 10000 });
   report.loginFieldsVisible = true;
   report.liveViewAvailable = true;

@@ -1782,6 +1782,11 @@ main {
   max-width: 660px;
 }
 .remote-browser-dialog .modal { max-width: 1180px; padding: 20px; }
+.api-setup-note { padding: 22px; margin-bottom: 20px; }
+.api-setup-note h2 { font-size: 18px; color: #40563a; }
+.api-setup-note p { max-width: 78ch; margin: 10px 0 15px; color: #53654a; font-size: 13px; line-height: 1.8; }
+.api-setup-note > div { display: flex; flex-wrap: wrap; gap: 10px; }
+.api-setup-note small { display: block; margin-top: 14px; font-size: 11px; color: #67745f; line-height: 1.7; }
 .remote-browser-frame { display: block; width: 100%; height: min(58dvh, 620px); min-height: 320px; border: 1px solid #dbe4d4; border-radius: 8px; background: #fff; }
 .browser-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: #326f61; font-size: 13px; }
 .browser-toolbar span, .browser-limit-note { display: flex; align-items: center; gap: 9px; }

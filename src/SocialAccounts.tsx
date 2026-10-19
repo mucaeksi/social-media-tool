@@ -180,6 +180,37 @@ export function SocialAccounts({
 
   return (
     <>
+      <section className="card api-setup-note">
+        <h2>Ücretsiz resmi API bağlantıları</h2>
+        <p>
+          Facebook ve Instagram için önce Meta hesabınızda ücretsiz bir
+          geliştirici uygulaması oluşturun. Sonrasında sosyal hesaplar normal
+          giriş ekranından yetki verecek. Resmi API bağlantısı ve toplu
+          yayınlama henüz kurulmadı.
+        </p>
+        <div>
+          <a
+            className="primary"
+            href="https://developers.facebook.com/apps/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Meta uygulaması oluştur
+          </a>
+          <a
+            className="secondary"
+            href="https://github.com/mucaeksi/social-media-tool/blob/main/docs/META_KURULUM.md"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Kurulum adımları
+          </a>
+        </div>
+        <small>
+          X API ücretlidir ve ücretsiz plana alınmayacak. Aşağıdaki uzak
+          tarayıcı ayrı, deneysel bir seçenektir.
+        </small>
+      </section>
       <div className="connection-banner">
         <Monitor size={28} />
         <div>

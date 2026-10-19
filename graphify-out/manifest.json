@@ -24,9 +24,9 @@
     "semantic_hash": ""
   },
   "server/platforms.mjs": {
-    "mtime": 1792339973.3277762,
-    "seen": 1792339990.7323747,
-    "ast_hash": "749466ee536b0bdd6ba021d89efd6b78",
+    "mtime": 1792373819.8415387,
+    "seen": 1792373838.7466867,
+    "ast_hash": "f38abb6086ab149aaf2345b0a6fc1683",
     "semantic_hash": ""
   },
   "server/store.mjs": {
@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792373006.0395298,
-    "seen": 1792373141.053727,
-    "ast_hash": "5f200e8c658b1fd501c7118b2a3091b7",
+    "mtime": 1792373819.9975383,
+    "seen": 1792373838.7476742,
+    "ast_hash": "b20cf26b13dec8efaa92f64d3270639c",
     "semantic_hash": ""
   },
   "README.md": {
@@ -390,9 +390,9 @@
     "semantic_hash": ""
   },
   "scripts/check-browser-panel.mjs": {
-    "mtime": 1792373445.3724854,
-    "seen": 1792373446.4939964,
-    "ast_hash": "f273419f8878c9b03081ebb177dc8658",
+    "mtime": 1792373829.9815195,
+    "seen": 1792373838.7463295,
+    "ast_hash": "adfe0c7b30690ddb0aba2b510cdcdb54",
     "semantic_hash": ""
   },
   "src/Modal.tsx": {
@@ -402,9 +402,9 @@
     "semantic_hash": ""
   },
   "src/SocialAccounts.tsx": {
-    "mtime": 1792373139.6756654,
-    "seen": 1792373141.0532205,
-    "ast_hash": "7c02bb1dda4d083426ff77b8f5347b12",
+    "mtime": 1792373830.1135192,
+    "seen": 1792373838.7468903,
+    "ast_hash": "ef676ce59727eb76addecbf0af9faa0a",
     "semantic_hash": ""
   },
   "src/api.ts": {
@@ -450,9 +450,15 @@
     "semantic_hash": ""
   },
   "docs/HESAP_GIRISI.md": {
-    "mtime": 1792373138.6952195,
-    "seen": 1792373141.0537546,
-    "ast_hash": "c6cb48b04ec18c03fe0b7e85ac43b6b1",
+    "mtime": 1792373820.165538,
+    "seen": 1792373838.7477384,
+    "ast_hash": "1663f0c2fdef82ffade64eda586c4c16",
+    "semantic_hash": ""
+  },
+  "docs/META_KURULUM.md": {
+    "mtime": 1792373819.2815394,
+    "seen": 1792373838.7477405,
+    "ast_hash": "930c69685c93fb927c1dbfd6ca86defc",
     "semantic_hash": ""
   }
 }
