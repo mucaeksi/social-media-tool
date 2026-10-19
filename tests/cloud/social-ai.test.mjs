@@ -420,7 +420,7 @@ test("Sekiz platform verisi doğrulanır; eksik/tekrarlanan/hatalı model yanıt
   const posts = selected.map((platform) => ({
     platform,
     title: "",
-    caption: "Doğrulanmış içerik",
+    caption: `${platform} için doğrulanmış içerik`,
     hashtags: ["#marka"],
     alt: "",
   }));
@@ -435,6 +435,12 @@ test("Sekiz platform verisi doğrulanır; eksik/tekrarlanan/hatalı model yanıt
   for (const response of [
     '{"posts":[]}',
     JSON.stringify({ posts: [posts[0], posts[0]] }),
+    JSON.stringify({
+      posts: posts.map((p, i) => ({
+        ...p,
+        caption: i % 2 ? "  AYNI   İÇERİK  " : "aynı içerik",
+      })),
+    }),
     "geçersiz json",
   ]) {
     model.run = async () => ({ response });

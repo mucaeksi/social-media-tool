@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
-    "mtime": 1792377688.543294,
-    "seen": 1792377712.2670617,
-    "ast_hash": "4b3d77511fa45f4f3bb13a4f6e75f521",
+    "mtime": 1792378044.9225297,
+    "seen": 1792378053.428123,
+    "ast_hash": "9bec61d0af2a492e187c64f56449e087",
     "semantic_hash": ""
   },
   "docs/CLOUDFLARE.md": {
@@ -486,9 +486,9 @@
     "semantic_hash": ""
   },
   "scripts/check-ai.mjs": {
-    "mtime": 1792377936.3037496,
-    "seen": 1792377937.9411883,
-    "ast_hash": "c88ebda00a60f625d911bc2a5b0b1a7d",
+    "mtime": 1792378044.8194988,
+    "seen": 1792378053.4264362,
+    "ast_hash": "2bcaac368e6aab4232e09afbc41b51c4",
     "semantic_hash": ""
   },
   "src/SocialAI.tsx": {
@@ -504,15 +504,15 @@
     "semantic_hash": ""
   },
   "tests/cloud/social-ai.test.mjs": {
-    "mtime": 1792377703.0802808,
-    "seen": 1792377712.2664387,
-    "ast_hash": "7213bd1f9c4bab2f7fb82e2f5cfbd750",
+    "mtime": 1792378045.651497,
+    "seen": 1792378053.427504,
+    "ast_hash": "ba88c7bc26edcc59011aed267b68e9d3",
     "semantic_hash": ""
   },
   "worker/social-ai.mjs": {
-    "mtime": 1792377114.2057486,
-    "seen": 1792377228.0459948,
-    "ast_hash": "2a7fd7d66f98c7a2a69862122532d9b6",
+    "mtime": 1792378045.5585444,
+    "seen": 1792378053.4279149,
+    "ast_hash": "64492dbbfd9fd8b334839b9d9f8b10a4",
     "semantic_hash": ""
   },
   ".github/workflows/ai-check.yml": {

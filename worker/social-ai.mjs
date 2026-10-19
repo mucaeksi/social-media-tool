@@ -212,7 +212,7 @@ export function aiMessages({
               hasMedia: Boolean(imageObservation),
               visualContext: Boolean(imageObservation),
             }) +
-            "\nÇıktı bütçesi sınırlı: açıklamaları kısa tut, önemli kaynak bilgisini koru. X için etiketlerle birlikte 280, Threads için 500 karakteri aşma. Her platformun anlatımı farklı olsun. Görsel gözlemi verilmişse alt alanına yalnızca bu gözlemden nesnel bir açıklama yaz. Geçerli JSON nesnesi döndür. /no_think"
+            "\nÇıktı bütçesi sınırlı: her title en fazla 70, caption en fazla 400, alt en fazla 160 karakter olsun; önemli kaynak bilgisini koru. X için etiketlerle birlikte 280 karakteri aşma. Instagram görsel ayrıntısıyla, Facebook topluluk bağlamıyla, X somut bir duyuruyla, Threads doğal bir soruyla, Pinterest arama niyetiyle, LinkedIn iş/kullanım bağlamıyla başlasın. YouTube video açıklaması hazırlığı, TikTok kısa bir fotoğraf/video anlatımı olsun; elde olmayan video veya ek kare varmış gibi yazma. Sekiz caption alanını son kez karşılaştır: iki platformda aynı cümleyi veya açıklamayı ASLA kullanma; yalnızca etiketleri değiştirmek yeterli değil. Görsel gözlemi verilmişse alt alanına yalnızca bu gözlemden nesnel bir açıklama yaz. Geçerli JSON nesnesi döndür. /no_think"
           : input.question + "\n/no_think",
     },
   ];
@@ -261,6 +261,18 @@ export function aiPosts(text, selected) {
     fail(
       502,
       "Model seçili platformların tamamını doğru hazırlayamadı. Önceki gönderiler korundu.",
+    );
+  const captions = posts.map((post) =>
+    post.caption
+      .normalize("NFKC")
+      .trim()
+      .replace(/\s+/gu, " ")
+      .toLocaleLowerCase("tr-TR"),
+  );
+  if (new Set(captions).size !== posts.length)
+    fail(
+      502,
+      "Model bazı platformlara aynı metni yazdı. Platformlara özel içerik doğrulanamadı; önceki gönderiler korundu. Tekrar deneyin.",
     );
   return selected.map((id) => posts.find((p) => p.platform === id));
 }

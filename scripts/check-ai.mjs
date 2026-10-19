@@ -55,6 +55,8 @@ async function http(path, { method = "GET", body } = {}) {
         report.failureKind = "post-schema";
       else if (problem.error?.startsWith("Model seçili platformların tamamını"))
         report.failureKind = "post-platforms";
+      else if (problem.error?.startsWith("Model bazı platformlara aynı metni"))
+        report.failureKind = "post-duplicates";
     }
     throw new Error("Canlı AI isteği tamamlanamadı.");
   }
