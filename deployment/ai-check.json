@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-19T02:38:41.956Z",
-  "sourceCommit": "3ffc187d35a1e430026ed94b35f0267ce3842ef0",
+  "checkedAt": "2026-10-19T02:40:19.439Z",
+  "sourceCommit": "813f642502cf2daffb27f6081ed90af4037e7fad",
   "verified": false,
   "socialCredentialsSubmitted": false,
   "postsPublished": false,
@@ -9,5 +9,24 @@
   "knowledgeApplied": true,
   "realModelAnswer": true,
   "httpStatus": 503,
+  "failureKind": "vision-model",
+  "visionDiagnostic": {
+    "messages": {
+      "success": false,
+      "status": 403,
+      "codes": [
+        5016
+      ],
+      "reason": "provider"
+    },
+    "legacy": {
+      "success": false,
+      "status": 403,
+      "codes": [
+        5016
+      ],
+      "reason": "provider"
+    }
+  },
   "error": "Gerçek model yanıtı, şirket hafızası veya platform içeriği kontrolü tamamlanamadı."
 }
