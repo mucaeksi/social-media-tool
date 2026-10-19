@@ -1,32 +1,14 @@
 {
-  "checkedAt": "2026-10-19T02:40:19.439Z",
-  "sourceCommit": "813f642502cf2daffb27f6081ed90af4037e7fad",
+  "checkedAt": "2026-10-19T02:44:27.243Z",
+  "sourceCommit": "bbf1dc588463b9356ce21bab32426b6b831eeac3",
   "verified": false,
   "socialCredentialsSubmitted": false,
   "postsPublished": false,
   "stage": "platform-content",
   "model": "@cf/qwen/qwen3-30b-a3b-fp8",
+  "visionModel": "@cf/google/gemma-4-26b-a4b-it",
   "knowledgeApplied": true,
   "realModelAnswer": true,
-  "httpStatus": 503,
-  "failureKind": "vision-model",
-  "visionDiagnostic": {
-    "messages": {
-      "success": false,
-      "status": 403,
-      "codes": [
-        5016
-      ],
-      "reason": "provider"
-    },
-    "legacy": {
-      "success": false,
-      "status": 403,
-      "codes": [
-        5016
-      ],
-      "reason": "provider"
-    }
-  },
+  "httpStatus": 502,
   "error": "Gerçek model yanıtı, şirket hafızası veya platform içeriği kontrolü tamamlanamadı."
 }
