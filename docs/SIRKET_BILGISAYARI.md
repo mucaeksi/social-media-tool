@@ -6,7 +6,7 @@ Panel, şirket kayıtları, taslaklar ve AI verileri Cloudflare'de; kaynak kod G
 
 1. Şirket bilgisayarında [Node.js 24 veya üzeri LTS](https://nodejs.org/en/download) ve [Mozilla Firefox](https://www.mozilla.org/firefox/new/) kurulu olmalı. Yardımcı, 64 veya 32 bit Program Files klasörlerinde Firefox'u arar. Farklı kurulumda `STUDIO_FIREFOX` ortam değişkenine `firefox.exe` dosyasının tam yolunu verin.
 2. Panelde yönetici olarak **Hesap bağlantıları** sayfasına girin ve **Windows yardımcısını indir** bağlantısından ZIP'i indirin. ZIP'in tamamını `C:\SosyalStudio-Bilgisayar` gibi kalıcı bir klasöre çıkarın. İçindeki `companion`, `shared`, `worker`, `docs` klasörleri birlikte kalmalı. İsterseniz yanındaki `.sha256` dosyasıyla ZIP özetini kontrol edin.
-3. `companion\Kur-ve-Baslat.cmd` dosyasına çift tıklayın. Paket kilidindeki npm bağımlılıkları doğrulanarak kurulur; ayrı bir tarayıcı indirilmez. Windows güvenlik uyarısı çıkarsa kaynak depoyu ve dosyaları inceleyin; imzasız bir kaynak paketidir.
+3. `companion\Kur-ve-Baslat.cmd` dosyasına çift tıklayın. Paket kilidindeki npm bağımlılıkları özetleri doğrulanarak, kurulum betikleri çalıştırılmadan kurulur; ayrı bir tarayıcı indirilmez. Windows güvenlik uyarısı çıkarsa kaynak depoyu ve dosyaları inceleyin; imzasız bir kaynak paketidir.
 4. Panelde **Bilgisayarı eşleştir** düğmesine basın. Gösterilen tek kullanımlık kodu yardımcı penceresine yapıştırıp Enter'a basın. Kod 10 dakika geçerlidir; sonraki kod öncekinin yerine geçer. Kod ve cihaz dosyasını paylaşmayın. Cihaz kaydı en fazla birdir; değiştirmek için önce panelden eski bilgisayarı kaldırın.
 5. Panel **Bilgisayar çevrimiçi** gösterdiğinde şirketi seçip **Hesap ekranını aç** düğmesine basın. Sosyal ağdaki alana ekran üzerinden tıklayın; altındaki gizli metin alanına kullanıcı adını/şifreyi/kodu yazıp **Seçili alana yaz** düğmesiyle aktarın. **Sonraki alan**, **Enter** ve kaydırma düğmeleriyle ilerleyin. İsterseniz şirket bilgisayarında açılan Firefox penceresinde doğrudan giriş yapın.
 6. **Firefox'u kapat, girişi koru** yalnızca ilgili tarayıcıyı kapatır. Sosyal ağdan çıkış yapılmaz; sonraki açılış aynı Firefox profilini kullanır. Şirket/hesap başına ayrı profil; en fazla üç tarayıcı süreci aynı anda açıktır. Diğer hesapların profilleri diskte korunur.
@@ -18,6 +18,20 @@ Panel, şirket kayıtları, taslaklar ve AI verileri Cloudflare'de; kaynak kod G
 Sonraki açılışlarda `companion\Baslat.cmd` yeterlidir. Yardımcı penceresi açık, Windows kullanıcı oturumu ve internet bağlantısı etkin olmalıdır. Bilgisayar uyursa/kapanırsa panel çevrimdışı olur; profiller silinmez. Bağlantı kesilince yardımcı yeniden bağlanmayı dener. Uzak ekranın kapanması veya operatör süresinin dolması hesaptan çıkış değildir.
 
 Windows başlangıcında çalışması için `Win+R` → `shell:startup` klasörünü açın ve `Baslat.cmd` dosyasının **kısayolunu** buraya koyun. Bu kullanıcı oturum açtığında başlar; Windows servisi veya otomatik Windows oturumu kurulmaz. Bilgisayar uyku ayarını iş ihtiyacınıza göre düzenleyin. Firefox özel profilini yardımcının dışında aynı anda açmayın.
+
+## Otomatik güncelleme
+
+Bu paketle birlikte otomatik güncelleme etkindir. Yardımcı açılışta ve açıkken **10 dakikada bir** Cloudflare'deki yeni yardımcı sürümünü kontrol eder. Panel güncellemeleri web sayfasını yenileyince görünür; yardımcı dosyaları değişmediyse bilgisayarda yeniden kurulum gerekmez.
+
+Yeni kaynak paketi yalnızca derlemede sabitlenmiş panel HTTPS adresinden indirilir; yönlendirme izlenmez. Boyut sınırı, SHA-256 özeti, ZIP dosya yolları ve içerik sürümü denetlenir. Kilitli npm bağımlılıkları kurulum betikleri kapatılarak kurulur. Bu, HTTPS ve içerik özeti doğrulamasıdır; Windows kod imzası olduğu iddia edilmez. Güncellemelerin kaynağı bu GitHub deposundan Cloudflare'e yaptığımız yayındır.
+
+İndirme/kurulum arka planda ayrı sürüm klasöründe yapılır. **Açık Firefox hesap ekranı veya devam eden komut varken yeniden başlatılmaz.** Panelde “Firefox'u kapat, girişi koru” ile açık ekranları kapattığınızda güncelleme uygulanır; yardımcı kısa süre çevrimdışı olup tekrar bağlanır. Terminalde güncellemenin hazır olduğu yazılır. Firefox pencerelerini açık bırakırsanız uygulama bekler; gerektiğinde yardımcıyı normal kapatıp `Baslat.cmd` ile yeniden açın.
+
+İnternet/indirme/kurulum hatasında mevcut sürüm çalışmaya devam eder; kontrol sonraki aralıkta tekrarlanır. Başlangıcı doğrulanamayan yeni sürümden önceki sürüme otomatik dönülür ve o hatalı sürüm tekrar denenmez. Sonraki farklı sürüm yine alınır. Çalışmaya başladıktan sonraki tüm olası uygulama hatalarının otomatik algılandığı iddia edilmez.
+
+Cihaz eşleştirmesi ve Firefox profilleri güncellenen koddan ayrıdır; silinmez veya yeniden oluşturulmaz. Kod ve en fazla bir önceki sürüm `%LOCALAPPDATA%\SosyalStudio\updates` altında tutulur. Node.js ve Firefox'un kendi güncellemelerini bu yardımcı yapmaz; Node.js LTS kurulumunu ve Firefox'un yerleşik güncellemesini kullanın. Yardımcı açık/Windows oturumu etkin olmalıdır. Bilgisayar kapalıyken kod kontrol edilmez.
+
+Otomatik güncellemesiz eski ZIP'i indirdiyseniz bu yeni paketi **bir kez** indirip çıkarın ve `Kur-ve-Baslat.cmd` ile başlatın. Sonraki kod güncellemeleri otomatik gelir. Eski yardımcı penceresini önce kapatın. Aynı bilgisayarda tek yardımcı çalışır; yalnızca yerel döngü adresinde tutulan 43975 numaralı kilit portu komut kabul etmez ve ağa açılmaz.
 
 ## Verilerin yeri ve erişim
 

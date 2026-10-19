@@ -1,22 +1,19 @@
 import { readFile, writeFile, mkdir, access, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { homedir, hostname } from "node:os";
+import { hostname } from "node:os";
 import { createInterface } from "node:readline/promises";
 import { ProfileBrowsers } from "./browser.mjs";
 import { COMPUTER_LIMITS } from "../shared/computer-protocol.mjs";
 
-const production =
-  "https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev";
-const directory = join(
-  process.env.LOCALAPPDATA || join(homedir(), ".local", "share"),
-  "SosyalStudio",
-);
+import { production, directory } from "./locations.mjs";
+
 const configPath = join(directory, "device.json");
 let socket,
   pool,
   stopping = false,
   reconnect,
-  heartbeat;
+  heartbeat,
+  commandsInFlight = 0;
 function safeOrigin(value) {
   const u = new URL(value);
   if (
@@ -78,6 +75,7 @@ async function configuration() {
     console.log(
       "Sosyal Studio bilgisayar yardımcısı\nPanelde Hesap bağlantıları → Bilgisayarı eşleştir adımından kod oluşturun.",
     );
+    process.send?.({ type: "pairing" });
     const code = (
       await terminal.question("Tek kullanımlık eşleştirme kodu: ")
     ).trim();
@@ -142,15 +140,19 @@ function connect(config) {
       return;
     }
     if (message.type === "revoked") {
-      stopping = true;
       console.log(
         "Panelden cihaz bağlantısı kaldırıldı. Yeniden eşleme için Baslat.cmd --reset kullanın.",
       );
-      socket.close();
-      await pool.closeAll();
+      await stop();
       return;
     }
-    if (message.type !== "command" || typeof message.id !== "string") return;
+    if (
+      message.type !== "command" ||
+      typeof message.id !== "string" ||
+      stopping
+    )
+      return;
+    commandsInFlight++;
     try {
       const result = await pool.execute(message.account, message.command);
       if (socket.readyState === WebSocket.OPEN)
@@ -159,17 +161,18 @@ function connect(config) {
       // Never log provider errors, URLs, typed text, screenshots or tokens.
       if (socket.readyState === WebSocket.OPEN)
         socket.send(JSON.stringify({ type: "error", id: message.id }));
+    } finally {
+      commandsInFlight--;
     }
   });
   socket.addEventListener("error", () => {});
   socket.addEventListener("close", (event) => {
     clearInterval(heartbeat);
     if (event.code === 4000) {
-      stopping = true;
       console.log(
         "Başka bir yardımcı bağlantısı açıldı. Bu pencereyi kapatabilirsiniz.",
       );
-      void pool.closeAll();
+      void stop();
     }
     if (!stopping) {
       console.log(
@@ -179,28 +182,48 @@ function connect(config) {
     }
   });
 }
-async function stop() {
+async function stop(code = 0) {
   if (stopping) return;
   stopping = true;
   clearTimeout(reconnect);
   clearInterval(heartbeat);
   socket?.close();
+  await pool?.queue;
   await pool?.closeAll();
-  process.exit(0);
+  if (code === 75 && process.connected)
+    await new Promise((resolve) =>
+      process.send({ type: "update-ready" }, resolve),
+    );
+  process.exit(code);
 }
-process.on("SIGINT", stop);
-process.on("SIGTERM", stop);
+process.on("SIGINT", () => void stop());
+process.on("SIGTERM", () => void stop());
+// Only the local supervisor can request a restart. Cloud commands cannot update
+// or run code. Never interrupt an open login or an in-flight/queued operation.
+process.on("message", (message) => {
+  if (message?.type === "stop") void stop();
+  if (
+    message?.type === "prepare-update" &&
+    !stopping &&
+    pool &&
+    commandsInFlight === 0 &&
+    pool.opened.size === 0
+  )
+    void stop(75);
+});
 try {
   if (Number(process.versions.node.split(".")[0]) < 24)
     throw new Error("Node.js 24 veya üzerini kurun.");
-  const executablePath = await firefoxPath(),
-    config = await configuration();
+  const executablePath = await firefoxPath();
+  const config = await configuration();
   pool = new ProfileBrowsers({
     directory: join(directory, "profiles"),
     executablePath,
   });
   connect(config);
+  process.send?.({ type: "ready" });
 } catch (error) {
   console.error(error.message);
   process.exitCode = 1;
+  process.disconnect?.();
 }

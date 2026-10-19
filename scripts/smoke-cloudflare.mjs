@@ -1,4 +1,9 @@
 import sharp from "sharp";
+import {
+  manifestPath,
+  archivePath,
+  extractRelease,
+} from "../companion/release.mjs";
 import { createHash } from "node:crypto";
 import { protectSecret } from "./cloudflare-api.mjs";
 import { databaseQuery } from "./admin-provision.mjs";
@@ -79,6 +84,16 @@ export async function smokeCloudflare(deployment, adminVerification) {
       createHash("sha256").update(archive).digest("hex") !== checksum
     )
       throw new Error("Windows Firefox kurulum paketi doğrulanamadı.");
+    const update = await (await http(manifestPath)).json();
+    if (
+      update.protocol !== 1 ||
+      update.nodeMajor !== 24 ||
+      update.archive !== archivePath ||
+      update.bytes !== archive.length ||
+      update.sha256 !== checksum
+    )
+      throw new Error("Otomatik güncelleme bildirimi paketle eşleşmiyor.");
+    extractRelease(archive, update.version);
     const anonymous = await fetch(`${deployment.url}/api/companies`, {
       redirect: "manual",
     });

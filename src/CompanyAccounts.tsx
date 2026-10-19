@@ -295,6 +295,8 @@ export function CompanyAccounts({
                   Node.js 24 veya üzeri ile Mozilla Firefox kurulu olmalı. ZIP'i
                   kalıcı bir klasöre çıkarıp{" "}
                   <b>companion → Kur-ve-Baslat.cmd</b> dosyasını çalıştırın.
+                  Yeni sürümler otomatik alınır; açık hesap ekranlarını
+                  kapatınca uygulanır. Giriş profilleri korunur.
                 </p>
                 <a
                   className="secondary"
