@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   CircleAlert,
@@ -14,16 +14,29 @@ import {
 } from "lucide-react";
 import { api } from "./api.ts";
 import { Modal } from "./Modal.tsx";
-import { socialConnections, browserObservation, browserCheckedAt } from "./socialConnections.ts";
-import type { AuthUser, Company, Platform, PlatformId, Post } from "./types.ts";
+import {
+  socialConnections,
+  browserObservation,
+  browserCheckedAt,
+} from "./socialConnections.ts";
+import type {
+  AuthUser,
+  Company,
+  Platform,
+  PlatformId,
+  SocialPlatformId,
+  Post,
+} from "./types.ts";
 
 type Account = {
   id: string;
   companyId: string;
-  platform: PlatformId;
+  platform: SocialPlatformId;
   label: string;
   hasSession: boolean;
   savedAt: string | null;
+  profileUrl?: string;
+  authDetected?: boolean | null;
 };
 type View = {
   accountId: string;
@@ -41,6 +54,24 @@ type Status = {
     owned: boolean;
   } | null;
 };
+type AccountPlatform = { id: SocialPlatformId; name: string };
+type Saved = {
+  saved: boolean;
+  hasSession: boolean;
+  closed?: boolean;
+  storageComplete: boolean;
+  savedAt: string | null;
+};
+function saveOnLeave(accountId: string) {
+  // Best effort only; the server alarm still closes the browser at its deadline.
+  void fetch(`/api/social/accounts/${accountId}/save`, {
+    method: "POST",
+    credentials: "same-origin",
+    keepalive: true,
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  }).catch(() => {});
+}
 const caption = (post?: Post) =>
   post
     ? [post.caption.trim(), post.hashtags.join(" ")]
@@ -51,7 +82,9 @@ const seconds = (ms: number) =>
   `${Math.floor(Math.max(0, ms) / 60000)}:${String(Math.floor(Math.max(0, ms) / 1000) % 60).padStart(2, "0")}`;
 const savedDate = (value: string) =>
   new Intl.DateTimeFormat("tr-TR", {
-    dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Istanbul",
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Europe/Istanbul",
   }).format(new Date(value));
 
 export function SocialAccounts({
@@ -74,16 +107,37 @@ export function SocialAccounts({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
-  const [adding, setAdding] = useState<Platform | null>(null);
+  const [adding, setAdding] = useState<AccountPlatform | null>(null);
   const [label, setLabel] = useState("");
+  const [profileUrl, setProfileUrl] = useState("");
   const [view, setView] = useState<View | null>(null);
+  const [checkpointNote, setCheckpointNote] = useState("");
+  const currentCompany = useRef(company?.id);
+  currentCompany.current = company?.id;
+  const live = useRef<View | null>(null);
+  const mounted = useRef(true);
+  const accountPlatforms: AccountPlatform[] = [
+    ...platforms,
+    { id: "tumblr", name: "Tumblr" },
+  ];
+  const visibleAccounts = accounts.filter((a) => a.companyId === company?.id);
   const [now, setNow] = useState(Date.now());
   const admin = user.role === "admin";
   const available = enabled && admin && Boolean(company);
-  const activeAccount = accounts.find((a) => a.id === view?.accountId);
+  const activeAccount = visibleAccounts.find((a) => a.id === view?.accountId);
   const prepared = caption(
     posts.find((p) => p.platform === activeAccount?.platform),
   );
+  function show(next: View | null) {
+    live.current = next;
+    setView(next);
+  }
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   async function refresh() {
     if (!available || !company) return;
@@ -91,14 +145,18 @@ export function SocialAccounts({
       api<Account[]>(`/api/social/accounts?companyId=${company.id}`),
       api<Status>("/api/social/status"),
     ]);
-    setAccounts(list);
-    setStatus(usage);
+    if (mounted.current && currentCompany.current === company.id) {
+      setAccounts(list);
+      setStatus(usage);
+    }
   }
   useEffect(() => {
     setAccounts([]);
     setStatus(null);
     setError("");
     setNotice("");
+    setAdding(null);
+    show(null);
     let valid = true;
     if (available && company) {
       Promise.all([
@@ -117,16 +175,61 @@ export function SocialAccounts({
     }
     return () => {
       valid = false;
+      if (live.current) {
+        saveOnLeave(live.current.accountId);
+        live.current = null;
+      }
     };
   }, [company?.id, available]);
   useEffect(() => {
     if (!view) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+    let pending = false,
+      valid = true;
+    const checkpoint = setInterval(() => {
+      if (pending || Date.now() >= view.expiresAt) return;
+      pending = true;
+      api<Saved>(`/api/social/accounts/${view.accountId}/checkpoint`, {
+        method: "POST",
+      })
+        .then((result) => {
+          if (!valid) return;
+          setCheckpointNote(
+            result.saved && result.savedAt
+              ? `Şifreli profil kaydedildi: ${savedDate(result.savedAt)}`
+              : result.storageComplete
+                ? "Henüz kaydedilecek giriş verisi bulunamadı."
+                : "Profil tam okunamadı; önceki kayıt korundu. Kaydetmeyi yeniden deneyin.",
+          );
+          if (result.saved) void refresh().catch(() => {});
+        })
+        .catch(() => {
+          if (valid)
+            setCheckpointNote(
+              "Otomatik kayıt tamamlanamadı. Ayrılmadan önce Kaydet ve kapat'ı deneyin.",
+            );
+        })
+        .finally(() => {
+          pending = false;
+        });
+    }, 15000);
+    const leave = () => {
+      if (live.current?.accountId === view.accountId) {
+        saveOnLeave(view.accountId);
+        live.current = null;
+      }
+    };
+    window.addEventListener("pagehide", leave);
+    return () => {
+      valid = false;
+      clearInterval(timer);
+      clearInterval(checkpoint);
+      window.removeEventListener("pagehide", leave);
+    };
   }, [view]);
   useEffect(() => {
     if (view && now >= view.expiresAt) {
-      setView(null);
+      show(null);
       setNotice(
         "Tarayıcı süresi doldu. Kaydedilen oturum durumunu hesap kartından kontrol edin.",
       );
@@ -139,10 +242,12 @@ export function SocialAccounts({
     setBusy(true);
     setError("");
     setNotice("");
+    const scope = currentCompany.current;
     try {
       await action();
     } catch (e) {
-      setError((e as Error).message);
+      if (mounted.current && currentCompany.current === scope)
+        setError((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -152,33 +257,41 @@ export function SocialAccounts({
       const next = await api<View>(`/api/social/accounts/${account.id}/open`, {
         method: "POST",
       });
+      if (!mounted.current || currentCompany.current !== account.companyId) {
+        saveOnLeave(account.id);
+        return;
+      }
       setNow(Date.now());
-      setView(next);
+      setCheckpointNote(
+        "Giriş verileri 15 saniyede bir şifreli kaydedilmeye çalışılır.",
+      );
+      show(next);
       await refresh();
     });
   }
   async function close(save: boolean) {
     if (!view || busy) return;
     await run(async () => {
-      const result = await api<{
-        saved: boolean;
-        hasSession: boolean;
-        closed: boolean;
-      }>(`/api/social/accounts/${view.accountId}/${save ? "save" : "close"}`, {
-        method: "POST",
-      });
+      const scope = company?.id;
+      const result = await api<Saved>(
+        `/api/social/accounts/${view.accountId}/${save ? "save" : "close"}`,
+        {
+          method: "POST",
+        },
+      );
       if (!result.closed)
         throw new Error(
           "Tarayıcının kapanışı doğrulanamadı. Kapatma otomatik yeniden denenecek.",
         );
-      setView(null);
+      if (!mounted.current || currentCompany.current !== scope) return;
+      show(null);
       await refresh();
       setNotice(
         save
           ? result.saved
-            ? "Hesap oturumu şifreli olarak kaydedildi. Platform tekrar doğrulama isteyebilir."
+            ? "Giriş profili şifreli kaydedildi ve tarayıcı uykuya alındı. Platform yeniden giriş veya doğrulama isteyebilir."
             : "Yeni bir giriş oturumu kaydedilemedi. Varsa önceki kayıt korundu; girişin tamamlandığını kontrol edin."
-          : "Tarayıcı kapatıldı; bu oturumdaki değişiklikler kaydedilmedi.",
+          : "Tarayıcı kapatıldı. Son otomatik kayıt korundu; sonraki değişiklikler kaydedilmedi.",
       );
     });
   }
@@ -221,7 +334,8 @@ export function SocialAccounts({
         </div>
         <small>
           Ücretli API veya abonelik açılmayacak. API uygun değilse aşağıdaki
-          deneysel web girişi denenebilir; platformun erişime izin vermesi gerekir.
+          deneysel web girişi denenebilir; platformun erişime izin vermesi
+          gerekir.
         </small>
       </section>
       <div className="connection-banner">
@@ -230,9 +344,11 @@ export function SocialAccounts({
           <h2>Hesaplarınıza normal giriş yapın.</h2>
           <p>
             Giriş ve doğrulama kodunu sosyal ağın kendi ekranında girin. Her
-            şirket ve hesap için ayrı oturum saklanır. Şifreler uygulamaya
-            kaydedilmez. Kaydettiğiniz oturum tarayıcı kapalıyken de korunur;
-            platform süreyi doldurursa veya yeniden doğrulama isterse tekrar giriş yaparsınız.
+            şirket ve hesap için ayrı, şifreli giriş profili saklanır (çerezler
+            ve yerel depolama). Şifreyi sosyal ağın kendisine girersiniz.
+            Kaydedilen profil, tarayıcı kapalıyken süre harcamadan bekler;
+            platform süreyi doldurursa veya yeniden doğrulama isterse tekrar
+            giriş yaparsınız.
           </p>
         </div>
       </div>
@@ -255,11 +371,10 @@ export function SocialAccounts({
       <div className="inline-warning">
         <CircleAlert size={18} />
         <span>
-          Bu özellik deneyseldir. Her platformun son giriş ekranı kontrolü
-          kendi kartında gösterilir. Giriş formunun açılması, hesabınıza giriş
-          yapılabildiğini doğrulamaz. Toplu
-          otomatik paylaşım henüz yoktur; açık tarayıcıda paylaşımı siz
-          tamamlarsınız.
+          Bu özellik deneyseldir. Her platformun son giriş ekranı kontrolü kendi
+          kartında gösterilir. Giriş formunun açılması, hesabınıza giriş
+          yapılabildiğini doğrulamaz. Toplu otomatik paylaşım henüz yoktur; açık
+          tarayıcıda paylaşımı siz tamamlarsınız.
         </span>
       </div>
       {!enabled && (
@@ -310,8 +425,8 @@ export function SocialAccounts({
         </div>
       )}
       <div className="connections-grid">
-        {platforms.map((p) => {
-          const list = accounts.filter((a) => a.platform === p.id);
+        {accountPlatforms.map((p) => {
+          const list = visibleAccounts.filter((a) => a.platform === p.id);
           const connection = socialConnections[p.id];
           const observation = browserObservation(p.id);
           return (
@@ -320,7 +435,9 @@ export function SocialAccounts({
               className="card connection-card social-account-card"
             >
               <div className="connection-card-top">
-                <span className="platform-logo">{icon(p.id)}</span>
+                <span className="platform-logo">
+                  {p.id === "tumblr" ? "t" : icon(p.id)}
+                </span>
                 <span className="not-connected">
                   <span />
                   {list.length ? `${list.length} hesap` : "Hesap eklenmedi"}
@@ -332,7 +449,9 @@ export function SocialAccounts({
                   <summary>API: {connection.api}</summary>
                   <p>{connection.detail}</p>
                   <a href={connection.setup} target="_blank" rel="noreferrer">
-                    {p.id === "x" || p.id === "tiktok" ? "Resmi koşulları incele" : "Geliştirici hesabını aç"}
+                    {p.id === "x" || p.id === "tiktok"
+                      ? "Resmi koşulları incele"
+                      : "Geliştirici hesabını aç"}
                   </a>
                 </details>
                 <p className={`browser-observation ${observation.tone}`}>
@@ -343,14 +462,37 @@ export function SocialAccounts({
                 {list.map((account) => (
                   <article key={account.id}>
                     <strong>{account.label}</strong>
+                    {account.profileUrl && (
+                      <a
+                        href={account.profileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Hesap / sayfa bağlantısı ↗
+                      </a>
+                    )}
                     <small>
                       {account.hasSession
-                        ? "Oturum kaydedildi · Yeniden doğrulama gerekebilir"
+                        ? status?.active?.accountId === account.id
+                          ? "Tarayıcı açık"
+                          : "Şifreli profil kayıtlı · Uyku modunda"
                         : "Giriş bekliyor"}
                     </small>
+                    {account.hasSession && (
+                      <small>
+                        {account.authDetected === true
+                          ? "Giriş çerezi bulundu; platform geçerliliği kontrol edilmedi."
+                          : account.authDetected === false
+                            ? "Giriş tamamlanmadı; hesabı açıp giriş yapın."
+                            : "Hesaba giriş durumu doğrulanmadı."}
+                      </small>
+                    )}
                     {account.savedAt && (
                       <small>
-                        Son kayıt: <time dateTime={account.savedAt}>{savedDate(account.savedAt)}</time>
+                        Son kayıt:{" "}
+                        <time dateTime={account.savedAt}>
+                          {savedDate(account.savedAt)}
+                        </time>
                       </small>
                     )}
                     <div>
@@ -360,7 +502,9 @@ export function SocialAccounts({
                         onClick={() => void open(account)}
                       >
                         <LogIn size={14} />
-                        {account.hasSession ? "Hesabı aç" : "Giriş yap"}
+                        {account.hasSession && account.authDetected !== false
+                          ? "Hesabı aç"
+                          : "Giriş yap"}
                       </button>
                       <button
                         className="icon-button"
@@ -392,6 +536,7 @@ export function SocialAccounts({
                 onClick={() => {
                   setAdding(p);
                   setLabel(`${company?.name ?? ""} — ${p.name}`);
+                  setProfileUrl("");
                 }}
               >
                 <Plus size={15} />
@@ -402,8 +547,10 @@ export function SocialAccounts({
         })}
       </div>
       <p className="browser-message browser-check-date">
-        Giriş ekranı kontrolü: <time dateTime={browserCheckedAt}>{savedDate(browserCheckedAt)}</time> (Türkiye saati).
-        {" "}Gerçek hesap girişi ve paylaşım denenmedi. Kayıtlı oturum, platformun girişinizi hâlâ geçerli saydığını garanti etmez.
+        Giriş ekranı kontrolü:{" "}
+        <time dateTime={browserCheckedAt}>{savedDate(browserCheckedAt)}</time>{" "}
+        (Türkiye saati). Gerçek hesap girişi ve paylaşım denenmedi. Kayıtlı
+        oturum, platformun girişinizi hâlâ geçerli saydığını garanti etmez.
       </p>
       {adding && (
         <Modal
@@ -422,6 +569,7 @@ export function SocialAccounts({
                     companyId: company?.id,
                     platform: adding.id,
                     label,
+                    profileUrl,
                   }),
                 });
                 setAdding(null);
@@ -436,6 +584,16 @@ export function SocialAccounts({
                 onChange={(e) => setLabel(e.target.value)}
                 maxLength={80}
                 required
+              />
+            </label>
+            <label className="browser-field">
+              Hesap / sayfa bağlantısı (isteğe bağlı)
+              <input
+                type="url"
+                value={profileUrl}
+                onChange={(e) => setProfileUrl(e.target.value)}
+                maxLength={2048}
+                placeholder="https://…"
               />
             </label>
             <p className="modal-description">
@@ -480,10 +638,40 @@ export function SocialAccounts({
             </div>
             <p className="modal-description">
               Girişinizi ve istenen doğrulamayı burada tamamlayın. Ekrandan
-              ayrılmadan önce oturumu kaydedin. Süre dolunca varsa hesap oturumu
+              ayrılmadan önce oturumu kaydedin. Profil 15 saniyede bir
+              kaydedilmeye çalışılır. Süre dolunca varsa hesap oturumu
               kaydedilir ve tarayıcı kapatılır. Platform erişimi reddederse bu
               hesap bu yöntemle bağlanamaz.
             </p>
+            <p className="browser-message" role="status">
+              {checkpointNote}
+            </p>
+            <div className="browser-toolbar">
+              {(
+                [
+                  ["login", "Giriş ekranını aç"],
+                  ["profile", "Kayıtlı sayfayı aç"],
+                ] as const
+              ).map(([action, title]) => (
+                <button
+                  key={action}
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(async () => {
+                      const next = await api<View>(
+                        `/api/social/accounts/${view.accountId}/${action}`,
+                        { method: "POST" },
+                      );
+                      if (live.current?.accountId === next.accountId)
+                        show(next);
+                    })
+                  }
+                >
+                  {title}
+                </button>
+              ))}
+            </div>
             {view.navigationFailed && (
               <p className="browser-message error">
                 Platform sayfası açılırken hata oluştu. Erişim engeli olabilir;
@@ -542,7 +730,7 @@ export function SocialAccounts({
                 disabled={busy}
                 onClick={() => void close(false)}
               >
-                Kaydetmeden kapat
+                Son kaydı koruyup kapat
               </button>
               <button
                 className="primary"

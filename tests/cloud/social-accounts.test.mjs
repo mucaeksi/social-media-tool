@@ -2,15 +2,20 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { Miniflare } from "miniflare";
+import { runInNewContext } from "node:vm";
 import { tokenDigest } from "../../shared/passwords.mjs";
 import {
   accountCookies,
   sealCookies,
   openCookies,
+  sealBrowserState,
+  openBrowserState,
+  accountProfileUrl,
   reserveBrowserTime,
   settleBrowserTime,
 } from "../../worker/browser-state.mjs";
 import { SocialBrowser } from "../../worker/social-browser.mjs";
+import { restoreBrowserState } from "../../worker/browser-profile.mjs";
 
 const secret = Buffer.alloc(32, 7).toString("base64url");
 const base = "https://studio.example",
@@ -51,6 +56,7 @@ before(async () => {
     "0003_r2_budget.sql",
     "0004_users.sql",
     "0005_social_accounts.sql",
+    "0008_social_profiles.sql",
   ])
     for (const sql of (await readFile(`migrations/${name}`, "utf8"))
       .split(";")
@@ -283,6 +289,10 @@ function controller() {
       editable: false,
       failClose: false,
       writes: [],
+      origins: [],
+      restoredOrigins: [],
+      failStorage: false,
+      urls: [],
     };
   const storage = {
     async get(key) {
@@ -309,8 +319,23 @@ function controller() {
     url: () => url,
     async goto(next) {
       url = next;
+      state.urls.push(next);
     },
     async setViewport() {},
+    frames() {
+      return [
+        {
+          url: () => url,
+          async evaluate() {
+            if (state.failStorage) throw new Error("storage blocked");
+            return state.origins;
+          },
+        },
+      ];
+    },
+    async evaluateOnNewDocument(_fn, origins) {
+      state.restoredOrigins = origins;
+    },
     async evaluate() {
       return state.editable;
     },
@@ -378,9 +403,17 @@ function controller() {
     BROWSER: {},
     BROWSER_STATE_KEY: secret,
     DB: {
-      prepare() {
+      prepare(sql) {
         return {
           bind(...args) {
+            if (sql.startsWith("SELECT encrypted_cookies"))
+              return {
+                async first() {
+                  return saved.length
+                    ? { encrypted_cookies: saved.at(-1)[0] }
+                    : null;
+                },
+              };
             saved.push(args);
             return {
               async run() {
@@ -474,4 +507,237 @@ test("Kapanışı belirsiz tarayıcı için yeni hesap açılmaz; bütçe ve yen
   f.state.failClose = false;
   await f.object.alarm();
   assert.equal(f.state.closed, true);
+});
+
+test("Giriş profili yerel depolamayı şifreler, yabancı kaynakları eler ve eski çerez kaydını açar", async () => {
+  const account = { id: "a", companyId: "c", platform: "instagram" };
+  const cookie = {
+    name: "sessionid",
+    value: "fixture-only",
+    domain: ".instagram.com",
+    expires: -1,
+  };
+  const state = {
+    cookies: [cookie],
+    origins: [
+      {
+        origin: "https://www.instagram.com",
+        items: [["session-token", "fixture-local-value"]],
+      },
+      { origin: "https://evilinstagram.com", items: [["bad", "discard"]] },
+    ],
+  };
+  const encrypted = await sealBrowserState(state, account, secret);
+  assert.ok(!encrypted.includes("fixture-local-value"));
+  const opened = await openBrowserState(encrypted, account, secret);
+  assert.deepEqual(opened, { ...state, origins: [state.origins[0]] });
+  await assert.rejects(
+    openBrowserState(encrypted, { ...account, companyId: "other" }, secret),
+  );
+  await assert.rejects(
+    openBrowserState(encrypted, { ...account, id: "other" }, secret),
+  );
+  await assert.rejects(
+    openBrowserState(encrypted, { ...account, platform: "tumblr" }, secret),
+  );
+  assert.deepEqual(
+    await openBrowserState(
+      await sealCookies([cookie], account, secret),
+      account,
+      secret,
+    ),
+    { cookies: [cookie], origins: [] },
+  );
+  await assert.rejects(
+    sealBrowserState(
+      {
+        cookies: [],
+        origins: [
+          {
+            origin: "https://www.instagram.com",
+            items: [["big", "x".repeat(1048576)]],
+          },
+        ],
+      },
+      account,
+      secret,
+    ),
+    /1 MB/,
+  );
+});
+
+test("Ara kayıt tarayıcıyı kapatmadan profili saklar, yeniden açılış doğru sayfa ve yerel depolamayı yükler", async () => {
+  const f = controller();
+  const account = {
+    ...f.account,
+    profileUrl: "https://www.instagram.com/fixture-company",
+  };
+  await f.command("open", { account });
+  f.state.cookies = [
+    {
+      name: "sessionid",
+      value: "fixture",
+      domain: ".instagram.com",
+      expires: -1,
+    },
+  ];
+  f.state.origins = [["session-token", "fixture-local-value"]];
+  const reserved = await f.storage.get("budget");
+  const checkpoint = await (await f.command("checkpoint")).json();
+  assert.equal(checkpoint.saved, true);
+  assert.equal(checkpoint.authDetected, true);
+  assert.equal(f.state.closed, false);
+  assert.deepEqual(await f.storage.get("budget"), reserved);
+  const encrypted = f.saved[0][0];
+  f.state.failStorage = true;
+  const partial = await (await f.command("checkpoint")).json();
+  assert.equal(partial.saved, false);
+  assert.equal(partial.storageComplete, false);
+  assert.equal(f.saved.length, 1);
+  await f.command("close");
+  f.state.failStorage = false;
+  await f.command("open", {
+    account: { ...account, encryptedCookies: encrypted },
+  });
+  assert.equal(f.state.urls.at(-1), account.profileUrl);
+  assert.deepEqual(f.state.restoredOrigins, [
+    { origin: "https://www.instagram.com", items: f.state.origins },
+  ]);
+  await f.command("profile");
+  assert.equal((await f.command("checkpoint")).status, 200);
+  await f.command("save");
+  assert.equal(f.state.closed, true);
+});
+
+test("Yerel depolama ilk ziyarette yüklenir; canlı anahtarlar ezilmez ve çıkıştan sonra eski belirteç tekrar zorlanmaz", async () => {
+  let script;
+  await restoreBrowserState(
+    {
+      async evaluateOnNewDocument(fn, ...args) {
+        script = { fn, args };
+      },
+    },
+    {
+      cookies: [],
+      origins: [
+        {
+          origin: "https://www.instagram.com",
+          items: [
+            ["token", "saved-fixture"],
+            ["theme", "dark"],
+          ],
+        },
+      ],
+    },
+  );
+  const values = new Map([["theme", "light"]]),
+    markers = new Map();
+  const storage = (map) => ({
+    getItem: (k) => map.get(k) ?? null,
+    setItem: (k, v) => map.set(k, v),
+  });
+  const context = {
+    location: { origin: "https://unrelated.example" },
+    localStorage: storage(values),
+    sessionStorage: storage(markers),
+    args: script.args,
+  };
+  const run = () =>
+    runInNewContext(`(${script.fn.toString()})(...args)`, context);
+  run();
+  assert.equal(values.has("token"), false);
+  context.location.origin = "https://www.instagram.com";
+  run();
+  assert.equal(values.get("token"), "saved-fixture");
+  assert.equal(values.get("theme"), "light");
+  values.delete("token");
+  run();
+  assert.equal(values.has("token"), false);
+});
+
+test("Sayfa bağlantısı sağlayıcıya aittir, sorgu bilgileri atılır, Tumblr giriş kaydı da eklenir", async () => {
+  assert.equal(
+    accountProfileUrl(
+      "https://tr.pinterest.com/fixture?token=discard#discard",
+      "pinterest",
+    ),
+    "https://tr.pinterest.com/fixture",
+  );
+  for (const url of [
+    "invalid",
+    "http://www.instagram.com/fixture",
+    "https://evilinstagram.com",
+    "https://user:pass@instagram.com",
+  ]) {
+    assert.throws(() => accountProfileUrl(url, "instagram"), { status: 400 });
+  }
+  const response = await request("/api/social/accounts", {
+    method: "POST",
+    body: {
+      companyId,
+      platform: "tumblr",
+      label: "Tumblr",
+      profileUrl: "https://www.tumblr.com/fixture",
+    },
+  });
+  assert.equal(response.status, 201);
+  const account = await response.json();
+  assert.equal(account.authDetected, null);
+  assert.equal(account.hasSession, false);
+  const duplicate = await request("/api/social/accounts", {
+    method: "POST",
+    body: {
+      companyId,
+      platform: "tumblr",
+      label: "Kopya",
+      profileUrl: account.profileUrl,
+    },
+  });
+  assert.equal(duplicate.status, 409);
+  assert.equal(
+    (await request(`/api/social/accounts/${account.id}`, { method: "DELETE" }))
+      .status,
+    204,
+  );
+});
+
+test("Gezinmede önceki kaynağın verisi korunur; gözlenen boş depolama ve çerezler güncel kayda geçer", async () => {
+  const f = controller();
+  f.account.profileUrl = "https://instagram.com/fixture";
+  await f.command("open");
+  f.state.cookies = [
+    {
+      name: "sessionid",
+      value: "fixture",
+      domain: ".instagram.com",
+      expires: -1,
+    },
+  ];
+  f.state.origins = [["original", "fixture-original"]];
+  await f.command("checkpoint");
+  await f.command("profile");
+  f.state.origins = [["next", "fixture-next"]];
+  await f.command("checkpoint");
+  const next = await openBrowserState(f.saved.at(-1)[0], f.account, secret);
+  assert.deepEqual(next.origins.map((o) => o.origin).sort(), [
+    "https://instagram.com",
+    "https://www.instagram.com",
+  ]);
+  assert.equal(
+    next.origins.find((o) => o.origin === "https://www.instagram.com")
+      .items[0][1],
+    "fixture-original",
+  );
+  f.state.origins = [];
+  f.state.cookies = [];
+  const loggedOut = await (await f.command("checkpoint")).json();
+  assert.equal(loggedOut.saved, true);
+  assert.equal(loggedOut.authDetected, false);
+  const cleared = await openBrowserState(f.saved.at(-1)[0], f.account, secret);
+  assert.deepEqual(cleared.cookies, []);
+  assert.deepEqual(
+    cleared.origins.find((o) => o.origin === "https://instagram.com").items,
+    [],
+  );
+  await f.command("close");
 });

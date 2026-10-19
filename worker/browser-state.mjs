@@ -2,6 +2,12 @@ export const BROWSER_LIMITS = Object.freeze({
   dailyMs: 600_000,
   sessionMs: 180_000,
   idleMs: 30_000,
+  checkpointMs: 15_000,
+});
+export const PROFILE_LIMITS = Object.freeze({
+  bytes: 1_048_576,
+  origins: 24,
+  entries: 1000,
 });
 
 export const browserPlatforms = {
@@ -54,7 +60,69 @@ export const browserPlatforms = {
     roots: ["linkedin.com"],
     cookie: "li_at",
   },
+  tumblr: {
+    login: "https://www.tumblr.com/login",
+    home: "https://www.tumblr.com/dashboard",
+    roots: ["tumblr.com"],
+    cookie: null,
+  },
 };
+
+export function accountProfileUrl(value, platform) {
+  if (!value) return "";
+  let url;
+  try {
+    url = new URL(value);
+  } catch {}
+  if (
+    !url ||
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    !domainMatches(url.hostname, browserPlatforms[platform].roots)
+  )
+    throw Object.assign(
+      new Error("Bu platforma ait https hesap/sayfa bağlantısı girin."),
+      { status: 400, public: true },
+    );
+  // A profile link must never retain OAuth codes or access tokens in its query.
+  return url.origin + url.pathname;
+}
+
+function profileState(value, platform) {
+  if (!value || !Array.isArray(value.cookies) || !Array.isArray(value.origins))
+    throw new Error("Giriş profili okunamadı.");
+  const origins = [];
+  for (const entry of value.origins) {
+    let url;
+    try {
+      url = new URL(entry.origin);
+    } catch {
+      continue;
+    }
+    if (
+      url.protocol !== "https:" ||
+      url.origin !== entry.origin ||
+      !domainMatches(url.hostname, browserPlatforms[platform].roots)
+    )
+      continue;
+    if (
+      !Array.isArray(entry.items) ||
+      entry.items.length > PROFILE_LIMITS.entries ||
+      entry.items.some(
+        (item) =>
+          !Array.isArray(item) ||
+          item.length !== 2 ||
+          item.some((v) => typeof v !== "string"),
+      )
+    )
+      throw new Error("Giriş profili depolama sınırını aşıyor.");
+    origins.push({ origin: url.origin, items: entry.items });
+  }
+  if (origins.length > PROFILE_LIMITS.origins)
+    throw new Error("Giriş profili depolama sınırını aşıyor.");
+  return { cookies: accountCookies(value.cookies, platform), origins };
+}
 
 export function domainMatches(hostname, roots) {
   const host = hostname.replace(/^\./, "").toLowerCase();
@@ -116,8 +184,51 @@ export async function sealCookies(cookies, account, secret) {
   for (const byte of data) binary += String.fromCharCode(byte);
   return JSON.stringify({ v: 1, iv: encode(iv), data: btoa(binary) });
 }
+export async function sealBrowserState(state, account, secret) {
+  const bytes = new TextEncoder().encode(
+    JSON.stringify(profileState(state, account.platform)),
+  );
+  if (bytes.length > PROFILE_LIMITS.bytes)
+    throw new Error("Giriş profili 1 MB kayıt sınırını aşıyor.");
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv, additionalData: identity(account) },
+    await key(secret),
+    bytes,
+  );
+  let binary = "";
+  for (const byte of new Uint8Array(encrypted))
+    binary += String.fromCharCode(byte);
+  return JSON.stringify({ v: 2, iv: encode(iv), data: btoa(binary) });
+}
+export async function openBrowserState(value, account, secret) {
+  const envelope = JSON.parse(value);
+  if (envelope.v === 1)
+    return { cookies: await openCookies(value, account, secret), origins: [] };
+  if (
+    envelope.v !== 2 ||
+    typeof envelope.data !== "string" ||
+    envelope.data.length > Math.ceil((PROFILE_LIMITS.bytes + 16) / 3) * 4
+  )
+    throw new Error("Giriş profili okunamadı.");
+  const bytes = await crypto.subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv: decode(envelope.iv),
+      additionalData: identity(account),
+    },
+    await key(secret),
+    Uint8Array.from(atob(envelope.data), (c) => c.charCodeAt(0)),
+  );
+  return profileState(
+    JSON.parse(new TextDecoder().decode(bytes)),
+    account.platform,
+  );
+}
 export async function openCookies(value, account, secret) {
   const envelope = JSON.parse(value);
+  if (envelope.v === 2)
+    return (await openBrowserState(value, account, secret)).cookies;
   if (
     envelope.v !== 1 ||
     typeof envelope.data !== "string" ||

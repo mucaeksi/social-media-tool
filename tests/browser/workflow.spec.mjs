@@ -14,7 +14,14 @@ test("Türkçe panel: şirket, ChatGPT aktarımı, görsel, taslak, yeniden açm
   page.on("dialog", (dialog) => dialog.accept());
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("lang", "tr");
-  await page.getByRole("button", { name: "İlk şirketimi ekle" }).click();
+  if (await page.getByRole("button", { name: "İlk şirketimi ekle" }).count()) {
+    await page.getByRole("button", { name: "İlk şirketimi ekle" }).click();
+  } else {
+    await page.getByRole("button", { name: "Şirketler", exact: false }).click();
+    await page
+      .getByRole("button", { name: "Şirket ekle", exact: true })
+      .click();
+  }
   await page.getByLabel("Şirket adı").fill("Tarayıcı Deneme Şirketi");
   await page.getByLabel("Marka kullanıcı adı").fill("@denemesirketi");
   await page
@@ -27,6 +34,12 @@ test("Türkçe panel: şirket, ChatGPT aktarımı, görsel, taslak, yeniden açm
   await expect(
     page.getByRole("combobox", { name: "Aktif şirket" }),
   ).toContainText("Tarayıcı Deneme Şirketi");
+  await page
+    .getByRole("combobox", { name: "Aktif şirket" })
+    .selectOption({ label: "Tarayıcı Deneme Şirketi" });
+  await page
+    .getByRole("button", { name: "İçerik stüdyosu", exact: true })
+    .click();
   ids.push(
     await page.getByRole("combobox", { name: "Aktif şirket" }).inputValue(),
   );
@@ -82,6 +95,9 @@ test("Türkçe panel: şirket, ChatGPT aktarımı, görsel, taslak, yeniden açm
     page.getByText("Taslak kaydedildi", { exact: true }),
   ).toBeVisible();
   await page.reload();
+  await page
+    .getByRole("combobox", { name: "Aktif şirket" })
+    .selectOption(ids[0]);
   await page.getByRole("button", { name: "Taslaklar", exact: false }).click();
   await expect(
     page.getByRole("heading", { name: "Koleksiyon duyurusu", exact: true }),
@@ -97,9 +113,15 @@ test("Türkçe panel: şirket, ChatGPT aktarımı, görsel, taslak, yeniden açm
   await page.getByRole("button", { name: "Metinleri indir" }).click();
   expect((await jsonDownload).suggestedFilename()).toContain("Koleksiyon");
   await page.getByRole("button", { name: "Hesap bağlantıları" }).click();
-  await expect(page.getByText("Hesap eklenmedi", { exact: true })).toHaveCount(8);
-  await expect(page.getByRole("button", { name: "Hesap ekle", exact: true }).first()).toBeDisabled();
-  await expect(page.getByText("Toplu otomatik paylaşım henüz yoktur", { exact: false })).toBeVisible();
+  await expect(page.getByText("Hesap eklenmedi", { exact: true })).toHaveCount(
+    9,
+  );
+  await expect(
+    page.getByRole("button", { name: "Hesap ekle", exact: true }).first(),
+  ).toBeDisabled();
+  await expect(
+    page.getByText("Toplu otomatik paylaşım henüz yoktur", { exact: false }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
 

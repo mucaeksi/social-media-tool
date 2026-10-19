@@ -7,6 +7,7 @@ export type PlatformId =
   | "youtube"
   | "tiktok"
   | "linkedin";
+export type SocialPlatformId = PlatformId | "tumblr";
 export type Platform = {
   id: PlatformId;
   name: string;

@@ -2,13 +2,17 @@ import puppeteer from "@cloudflare/puppeteer";
 import {
   BROWSER_LIMITS,
   browserPlatforms,
-  accountCookies,
   domainMatches,
-  openCookies,
-  sealCookies,
+  accountProfileUrl,
+  openBrowserState,
+  sealBrowserState,
   reserveBrowserTime,
   settleBrowserTime,
 } from "./browser-state.mjs";
+import {
+  captureBrowserState,
+  restoreBrowserState,
+} from "./browser-profile.mjs";
 
 function failure(status, message) {
   throw Object.assign(new Error(message), { status, public: true });
@@ -83,7 +87,10 @@ export class SocialBrowser {
         }
         if (
           active &&
-          (active.account.id !== account.id || active.userId !== userId)
+          (active.account.id !== account.id ||
+            active.account.companyId !== account.companyId ||
+            active.account.platform !== account.platform ||
+            active.userId !== userId)
         )
           failure(
             409,
@@ -99,6 +106,10 @@ export class SocialBrowser {
               id: account.id,
               companyId: account.companyId,
               platform: account.platform,
+              profileUrl: accountProfileUrl(
+                account.profileUrl,
+                account.platform,
+              ),
             },
             userId,
             startedAt: Date.now(),
@@ -123,18 +134,12 @@ export class SocialBrowser {
             const pages = await browser.pages();
             const page = pages[0] || (await browser.newPage());
             if (account.encryptedCookies) {
-              const cookies = await openCookies(
+              const state = await openBrowserState(
                 account.encryptedCookies,
                 account,
                 this.env.BROWSER_STATE_KEY,
               );
-              const cdp = await page.createCDPSession();
-              try {
-                if (cookies.length)
-                  await cdp.send("Storage.setCookies", { cookies });
-              } finally {
-                await cdp.detach();
-              }
+              await restoreBrowserState(page, state);
             }
             await page.setViewport({ width: 1280, height: 800 });
             // This is a real visible browser. No stealth, CAPTCHA solver, login
@@ -142,10 +147,15 @@ export class SocialBrowser {
             const config = browserPlatforms[account.platform];
             let navigationFailed = false;
             await page
-              .goto(account.encryptedCookies ? config.home : config.login, {
-                waitUntil: "domcontentloaded",
-                timeout: 20000,
-              })
+              .goto(
+                account.encryptedCookies && account.authDetected !== false
+                  ? active.account.profileUrl || config.home
+                  : config.login,
+                {
+                  waitUntil: "domcontentloaded",
+                  timeout: 20000,
+                },
+              )
               .catch(() => {
                 navigationFailed = true;
               });
@@ -164,6 +174,45 @@ export class SocialBrowser {
           }
         }
         if (!active) failure(410, "Tarayıcı kapandı. Hesabı yeniden açın.");
+        if (action === "checkpoint") {
+          const browser = await this.driver.connect(
+            this.env.BROWSER,
+            active.sessionId,
+          );
+          try {
+            return Response.json(await this.checkpoint(active, browser));
+          } finally {
+            await disconnect(browser);
+          }
+        }
+        if (action === "profile" || action === "login") {
+          const browser = await this.driver.connect(
+            this.env.BROWSER,
+            active.sessionId,
+          );
+          try {
+            const page =
+              (await browser.pages())[0] || (await browser.newPage());
+            const config = browserPlatforms[active.account.platform];
+            let navigationFailed = false;
+            await page
+              .goto(
+                action === "login"
+                  ? config.login
+                  : active.account.profileUrl || config.home,
+                { waitUntil: "domcontentloaded", timeout: 20000 },
+              )
+              .catch(() => {
+                navigationFailed = true;
+              });
+            return Response.json({
+              ...(await this.view(active, browser)),
+              navigationFailed,
+            });
+          } finally {
+            await disconnect(browser);
+          }
+        }
         if (action === "paste") {
           if (typeof text !== "string" || !text.trim() || text.length > 70000)
             failure(400, "Aktarılacak metin geçersiz.");
@@ -259,48 +308,90 @@ export class SocialBrowser {
       if (!connected) await disconnect(browser);
     }
   }
+  async checkpoint(active, browser) {
+    const { state, storageComplete } = await captureBrowserState(
+      browser,
+      active.account.platform,
+    );
+    const cookieName = browserPlatforms[active.account.platform].cookie;
+    const authDetected = cookieName
+      ? state.cookies.some((c) => c.name === cookieName)
+      : null;
+    const result = {
+      saved: false,
+      hasSession: authDetected === true,
+      authDetected,
+      storageComplete,
+      cookieReadVerified: true,
+      savedAt: null,
+    };
+    // An incomplete read must never replace a good existing profile.
+    const hasData =
+      state.cookies.length || state.origins.some((o) => o.items.length);
+    if (!storageComplete || (!hasData && !state.origins.length)) return result;
+    // Navigation can leave a previously captured origin with no open frame.
+    // Keep those origins; a currently open origin (including an empty store
+    // after logout) always replaces its own previous values.
+    const previous = await this.env.DB.prepare(
+      "SELECT encrypted_cookies FROM social_accounts WHERE id=? AND company_id=? AND platform=?",
+    )
+      .bind(
+        active.account.id,
+        active.account.companyId,
+        active.account.platform,
+      )
+      .first();
+    if (!hasData && !previous?.encrypted_cookies) return result;
+    if (previous?.encrypted_cookies) {
+      const old = await openBrowserState(
+        previous.encrypted_cookies,
+        active.account,
+        this.env.BROWSER_STATE_KEY,
+      );
+      const origins = new Map(old.origins.map((o) => [o.origin, o]));
+      for (const origin of state.origins) origins.set(origin.origin, origin);
+      state.origins = [...origins.values()];
+    }
+    const encrypted = await sealBrowserState(
+      state,
+      active.account,
+      this.env.BROWSER_STATE_KEY,
+    );
+    const savedAt = new Date().toISOString();
+    const update = await this.env.DB.prepare(
+      "UPDATE social_accounts SET encrypted_cookies=?, saved_at=?, auth_detected=? WHERE id=? AND company_id=? AND platform=?",
+    )
+      .bind(
+        encrypted,
+        savedAt,
+        authDetected === null ? null : Number(authDetected),
+        active.account.id,
+        active.account.companyId,
+        active.account.platform,
+      )
+      .run();
+    return {
+      ...result,
+      saved: update.meta.changes > 0,
+      savedAt: update.meta.changes > 0 ? savedAt : null,
+    };
+  }
   async finish(active, save) {
     let browser,
       closed = !active.sessionId,
-      saved = false,
-      hasSession = false,
-      cookieReadVerified = false;
+      checkpoint = {
+        saved: false,
+        hasSession: false,
+        authDetected: null,
+        storageComplete: false,
+        cookieReadVerified: false,
+        savedAt: null,
+      };
     try {
       if (active.sessionId) {
         browser = await this.driver.connect(this.env.BROWSER, active.sessionId);
         if (save) {
-          const page = (await browser.pages())[0] || (await browser.newPage());
-          const cdp = await page.createCDPSession();
-          let allCookies;
-          try {
-            allCookies = (await cdp.send("Storage.getCookies")).cookies;
-            cookieReadVerified = Array.isArray(allCookies);
-          } finally {
-            await cdp.detach();
-          }
-          const cookies = accountCookies(allCookies, active.account.platform);
-          hasSession = cookies.some(
-            (c) => c.name === browserPlatforms[active.account.platform].cookie,
-          );
-          if (hasSession) {
-            const encrypted = await sealCookies(
-              cookies,
-              active.account,
-              this.env.BROWSER_STATE_KEY,
-            );
-            const result = await this.env.DB.prepare(
-              "UPDATE social_accounts SET encrypted_cookies=?, saved_at=? WHERE id=? AND company_id=? AND platform=?",
-            )
-              .bind(
-                encrypted,
-                new Date().toISOString(),
-                active.account.id,
-                active.account.companyId,
-                active.account.platform,
-              )
-              .run();
-            saved = result.meta.changes > 0;
-          }
+          checkpoint = await this.checkpoint(active, browser);
         }
       }
     } catch {
@@ -355,7 +446,7 @@ export class SocialBrowser {
         await this.ctx.storage.setAlarm(Date.now() + 5000);
       }
     }
-    return { saved, hasSession, closed, cookieReadVerified };
+    return { ...checkpoint, closed };
   }
   async alarm() {
     await this.exclusive(async () => {

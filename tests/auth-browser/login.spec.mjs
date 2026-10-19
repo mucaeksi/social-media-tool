@@ -31,9 +31,7 @@ test("Türkçe giriş: hatalı şifre, güvenli oturum, yenileme, şirket kaydı
     "text",
   );
   await page.getByRole("button", { name: "Giriş yap", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "İlk şirketimi ekle" }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Çıkış yap" })).toBeVisible();
   const cookie = (await page.context().cookies()).find(
     (c) => c.name === "studio_session",
   );
@@ -44,7 +42,8 @@ test("Türkçe giriş: hatalı şifre, güvenli oturum, yenileme, şirket kaydı
   );
   await page.reload();
   await expect(page.getByRole("button", { name: "Çıkış yap" })).toBeVisible();
-  await page.getByRole("button", { name: "İlk şirketimi ekle" }).click();
+  await page.getByRole("button", { name: "Şirketler", exact: false }).click();
+  await page.getByRole("button", { name: "Şirket ekle", exact: true }).click();
   await page.getByLabel("Şirket adı").fill("Şifreli oturum denemesi");
   await page
     .getByRole("button", { name: "Şirketi oluştur", exact: true })
@@ -52,6 +51,9 @@ test("Türkçe giriş: hatalı şifre, güvenli oturum, yenileme, şirket kaydı
   await expect(
     page.getByRole("combobox", { name: "Aktif şirket" }),
   ).toContainText("Şifreli oturum denemesi");
+  await page
+    .getByRole("combobox", { name: "Aktif şirket" })
+    .selectOption({ label: "Şifreli oturum denemesi" });
   const companyId = await page
     .getByRole("combobox", { name: "Aktif şirket" })
     .inputValue();

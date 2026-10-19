@@ -59,7 +59,10 @@ try {
   wrangler(["deploy"]);
   await ensureBrowserSecret(deployment);
   await detachLegacyAccess(deployment);
-  await smokeCloudflare(deployment, adminVerification);
+  receipt.social_profiles = await smokeCloudflare(
+    deployment,
+    adminVerification,
+  );
   receipt.status = "success";
   receipt.verified = true;
   receipt.components = {

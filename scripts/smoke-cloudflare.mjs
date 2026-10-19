@@ -155,6 +155,32 @@ export async function smokeCloudflare(deployment, adminVerification) {
       );
     }
     const configs = await (await http("/api/platforms")).json();
+    // Check public company provisioning without opening a browser or spending
+    // any Browser Run minutes. Never select encrypted login data here.
+    const preparedAccounts = await databaseQuery(
+      deployment,
+      "SELECT a.platform,a.profile_url FROM social_accounts a JOIN companies c ON c.id=a.company_id WHERE lower(trim(json_extract(c.data,'$.name'))) IN ('wood mood','wood mood mobilya') OR lower(json_extract(c.data,'$.website')) LIKE 'https://woodmoodmobilya.com/%' OR lower(json_extract(c.data,'$.website'))='https://woodmoodmobilya.com'",
+    );
+    const expectedProfiles = {
+      facebook: "https://www.facebook.com/mobilyawoodmood",
+      instagram: "https://www.instagram.com/mobilyawoodmood",
+      tumblr: "https://www.tumblr.com/mobilyawoodmood",
+      x: "https://x.com/mobilyawoodmood",
+      youtube: "https://www.youtube.com/@mobilyawoodmood",
+      tiktok: "https://www.tiktok.com/@mobilyawoodmood",
+      pinterest: "https://tr.pinterest.com/mobilyawoodmood",
+      threads: "https://www.threads.com/@mobilyawoodmood",
+      linkedin: "https://www.linkedin.com/company/145273536",
+    };
+    const woodMoodProfiles = Object.entries(expectedProfiles).filter(
+      ([platform, url]) =>
+        preparedAccounts.some(
+          (a) => a.platform === platform && a.profile_url === url,
+        ),
+    ).length;
+    console.log(
+      `Wood Mood: ${woodMoodProfiles}/9 sosyal hesap bağlantısı D1 üzerinde bulundu; hesaplara giriş yapılmadı.`,
+    );
     const aiStatus = await (await http("/api/ai/status")).json();
     if (!aiStatus.enabled || aiStatus.limits?.dailyNeurons !== 9000)
       throw new Error("Canlı AI binding veya ücretsiz bütçe doğrulanamadı.");
@@ -226,6 +252,11 @@ export async function smokeCloudflare(deployment, adminVerification) {
     console.log(
       "Canlı arayüz, D1 kayıt/okuma ve Cloudflare görsel yükleme/indirme kontrolü başarılı. Deneme verileri silindi.",
     );
+    return {
+      woodMoodProfiles,
+      expectedWoodMoodProfiles: 9,
+      socialLoginsVerified: false,
+    };
   } finally {
     let cleanupError;
     try {

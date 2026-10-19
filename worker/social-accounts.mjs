@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { browserPlatforms } from "./browser-state.mjs";
+import { browserPlatforms, accountProfileUrl } from "./browser-state.mjs";
 
 const inputSchema = z.object({
   companyId: z.uuid(),
   platform: z.enum(Object.keys(browserPlatforms)),
   label: z.string().trim().min(1).max(80),
+  profileUrl: z.string().trim().max(2048).default(""),
 });
 const publicAccount = (row) => ({
   id: row.id,
@@ -13,6 +14,8 @@ const publicAccount = (row) => ({
   label: row.label,
   savedAt: row.saved_at,
   hasSession: Boolean(row.encrypted_cookies),
+  profileUrl: row.profile_url ?? "",
+  authDetected: row.auth_detected == null ? null : Boolean(row.auth_detected),
 });
 export async function browserCommand(env, payload) {
   return env.SOCIAL_BROWSER.get(env.SOCIAL_BROWSER.idFromName("primary")).fetch(
@@ -49,6 +52,7 @@ export function registerSocialAccounts(app) {
   });
   app.post("/api/social/accounts", async (c) => {
     const input = inputSchema.parse(await c.req.json());
+    input.profileUrl = accountProfileUrl(input.profileUrl, input.platform);
     if (
       !(await c.env.DB.prepare("SELECT id FROM companies WHERE id=?")
         .bind(input.companyId)
@@ -57,7 +61,7 @@ export function registerSocialAccounts(app) {
       return c.json({ error: "Şirket bulunamadı." }, 404);
     const id = crypto.randomUUID();
     const result = await c.env.DB.prepare(
-      "INSERT INTO social_accounts(id,company_id,platform,label,created_at) SELECT ?,?,?,?,? WHERE (SELECT COUNT(*) FROM social_accounts WHERE company_id=?) < 25",
+      "INSERT INTO social_accounts(id,company_id,platform,label,created_at,profile_url) SELECT ?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM social_accounts WHERE company_id=?) < 25 ON CONFLICT DO NOTHING",
     )
       .bind(
         id,
@@ -65,15 +69,19 @@ export function registerSocialAccounts(app) {
         input.platform,
         input.label,
         new Date().toISOString(),
+        input.profileUrl,
         input.companyId,
       )
       .run();
     if (!result.meta.changes)
       return c.json(
-        { error: "Şirket başına en fazla 25 sosyal hesap eklenebilir." },
+        { error: "Bu sayfa zaten ekli veya şirketin 25 hesap sınırı dolu." },
         409,
       );
-    return c.json({ id, ...input, savedAt: null, hasSession: false }, 201);
+    return c.json(
+      { id, ...input, savedAt: null, hasSession: false, authDetected: null },
+      201,
+    );
   });
   app.post("/api/social/accounts/:id/:action", async (c) => {
     const row = await c.env.DB.prepare(
@@ -83,7 +91,17 @@ export function registerSocialAccounts(app) {
       .first();
     if (!row) return c.json({ error: "Sosyal hesap bulunamadı." }, 404);
     const action = c.req.param("action");
-    if (!["open", "save", "close", "paste"].includes(action))
+    if (
+      ![
+        "open",
+        "save",
+        "close",
+        "paste",
+        "checkpoint",
+        "profile",
+        "login",
+      ].includes(action)
+    )
       return c.json({ error: "Geçersiz işlem." }, 400);
     const text =
       action === "paste"

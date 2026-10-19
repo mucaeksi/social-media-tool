@@ -54,9 +54,9 @@
     "semantic_hash": ""
   },
   "src/types.ts": {
-    "mtime": 1792344132.834427,
-    "seen": 1792346364.9543355,
-    "ast_hash": "e2d870470a76d0e355c7d63bb49ecd58",
+    "mtime": 1792391504.0919197,
+    "seen": 1792391762.0396695,
+    "ast_hash": "23ebaf5887b25bddb65bf36c11e0562b",
     "semantic_hash": ""
   },
   "src/vite-env.d.ts": {
@@ -114,15 +114,15 @@
     "semantic_hash": ""
   },
   "tests/browser/workflow.spec.mjs": {
-    "mtime": 1792346837.1682277,
-    "seen": 1792373141.0533838,
-    "ast_hash": "efdc4dd6a9afded4f3a9626ee4516806",
+    "mtime": 1792391766.3513227,
+    "seen": 1792391865.3572955,
+    "ast_hash": "1719edfc09206423a93950ca7466880d",
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792379321.258604,
-    "seen": 1792379330.29927,
-    "ast_hash": "fda533b5df4a295d70a38dd2d2eeb6d4",
+    "mtime": 1792391704.0913033,
+    "seen": 1792391762.0403938,
+    "ast_hash": "4d0d3d9c639d9f3ba74d257d28130766",
     "semantic_hash": ""
   },
   "README.md": {
@@ -168,9 +168,9 @@
     "semantic_hash": ""
   },
   "scripts/deploy-cloudflare.mjs": {
-    "mtime": 1792377070.6298478,
-    "seen": 1792377228.044864,
-    "ast_hash": "fdc72af4b13ed7df43ec8a2e2b56089d",
+    "mtime": 1792391704.8824205,
+    "seen": 1792391762.039117,
+    "ast_hash": "248f5be64ae57f271604dd846ca0c8ac",
     "semantic_hash": ""
   },
   "scripts/e2e-cloud-server.mjs": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "scripts/smoke-cloudflare.mjs": {
-    "mtime": 1792377070.4738483,
-    "seen": 1792377228.04507,
-    "ast_hash": "cd3e09d1f11286c36f67ef7df7e0b81d",
+    "mtime": 1792391808.8952258,
+    "seen": 1792391865.3567095,
+    "ast_hash": "efb17dd866638efef0153c92e5db234d",
     "semantic_hash": ""
   },
   "scripts/wrangler.mjs": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
-    "mtime": 1792379321.258335,
-    "seen": 1792379330.299273,
-    "ast_hash": "519984b8fd1b58fa318e9c300ad83530",
+    "mtime": 1792391704.0915322,
+    "seen": 1792391762.0404148,
+    "ast_hash": "af8d890ee56653598dd314eb9677120e",
     "semantic_hash": ""
   },
   "docs/CLOUDFLARE.md": {
@@ -330,9 +330,9 @@
     "semantic_hash": ""
   },
   "tests/auth-browser/login.spec.mjs": {
-    "mtime": 1792344132.834427,
-    "seen": 1792346364.9543808,
-    "ast_hash": "f33baf8ecc172e2a78822e2ce15a6c6c",
+    "mtime": 1792391849.5209293,
+    "seen": 1792391865.3572407,
+    "ast_hash": "1e17beb4453672d10c90a8c5182d0420",
     "semantic_hash": ""
   },
   "tests/cloud/password-auth.test.mjs": {
@@ -402,9 +402,9 @@
     "semantic_hash": ""
   },
   "src/SocialAccounts.tsx": {
-    "mtime": 1792374592.0116756,
-    "seen": 1792374687.238255,
-    "ast_hash": "9414790a2a5c70959fffcf85dc40b348",
+    "mtime": 1792391705.0085464,
+    "seen": 1792391762.0395842,
+    "ast_hash": "1792620178a4476ac561b6587cb2b1f1",
     "semantic_hash": ""
   },
   "src/api.ts": {
@@ -414,15 +414,15 @@
     "semantic_hash": ""
   },
   "tests/browser/social-accounts.spec.mjs": {
-    "mtime": 1792373139.7152174,
-    "seen": 1792373141.0533822,
-    "ast_hash": "55afd167e50eba1a0e247d0b739f7e1a",
+    "mtime": 1792391704.7874627,
+    "seen": 1792391762.0397377,
+    "ast_hash": "f4f8b2b7fdb36a97d8144effa7892ef6",
     "semantic_hash": ""
   },
   "tests/cloud/social-accounts.test.mjs": {
-    "mtime": 1792373973.0044267,
-    "seen": 1792373976.9653716,
-    "ast_hash": "42bf0736f593bacbe568b5bd306769e6",
+    "mtime": 1792391849.5951333,
+    "seen": 1792391865.35735,
+    "ast_hash": "661f71905d837954186737be5fb9e008",
     "semantic_hash": ""
   },
   "tests/deploy/browser-secret.test.mjs": {
@@ -432,27 +432,27 @@
     "semantic_hash": ""
   },
   "worker/browser-state.mjs": {
-    "mtime": 1792373018.7554965,
-    "seen": 1792373141.0535586,
-    "ast_hash": "e4af59705d271f1f2a61546eed32d261",
+    "mtime": 1792391571.2317662,
+    "seen": 1792391762.0401442,
+    "ast_hash": "4beccdb5d8add8210353b783e3a693f7",
     "semantic_hash": ""
   },
   "worker/social-accounts.mjs": {
-    "mtime": 1792373018.8234963,
-    "seen": 1792373141.0536504,
-    "ast_hash": "08d8482ba30e2eab83dc72dd292be331",
+    "mtime": 1792391571.3443696,
+    "seen": 1792391762.0402496,
+    "ast_hash": "de2dda5b3b720212521b9539d1722baa",
     "semantic_hash": ""
   },
   "worker/social-browser.mjs": {
-    "mtime": 1792373972.9211905,
-    "seen": 1792373976.9657438,
-    "ast_hash": "2e32f8cbba5aa9c1972102081f49f9dc",
+    "mtime": 1792391849.648406,
+    "seen": 1792391865.3578577,
+    "ast_hash": "d8719be649c3cac76ba8f5d40875305d",
     "semantic_hash": ""
   },
   "docs/HESAP_GIRISI.md": {
-    "mtime": 1792374672.951495,
-    "seen": 1792374687.239155,
-    "ast_hash": "d23753c3f005deaf243e1746048edacb",
+    "mtime": 1792391704.091696,
+    "seen": 1792391762.040438,
+    "ast_hash": "7f2de71c33c5924ee46c9a9dfcc63aec",
     "semantic_hash": ""
   },
   "docs/META_KURULUM.md": {
@@ -474,9 +474,9 @@
     "semantic_hash": ""
   },
   "src/socialConnections.ts": {
-    "mtime": 1792374591.6676764,
-    "seen": 1792374687.2383437,
-    "ast_hash": "850da911dfaae119d3bab1d95eeeb396",
+    "mtime": 1792391571.5277655,
+    "seen": 1792391762.0396683,
+    "ast_hash": "60ecda8c48d51ab7d5492bb5a4b761f5",
     "semantic_hash": ""
   },
   "docs/PLATFORM_BAGLANTILARI.md": {
@@ -516,9 +516,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/ai-check.yml": {
-    "mtime": 1792379321.1565268,
-    "seen": 1792379330.2991965,
-    "ast_hash": "4254d082e5bc10f35867d71d0dbf9a9d",
+    "mtime": 1792391503.89192,
+    "seen": 1792391762.040318,
+    "ast_hash": "5a170b4195487e5e4c7b58b81344ace5",
     "semantic_hash": ""
   },
   "shared/social-expert.mjs": {
@@ -531,6 +531,18 @@
     "mtime": 1792379258.992669,
     "seen": 1792379330.2989478,
     "ast_hash": "4689febcd08208ea9cdba324cd25a74e",
+    "semantic_hash": ""
+  },
+  "tests/deploy/social-profiles.test.mjs": {
+    "mtime": 1792391611.699674,
+    "seen": 1792391762.0400593,
+    "ast_hash": "9b70db9b8832de908db35bc3a2dbfd1d",
+    "semantic_hash": ""
+  },
+  "worker/browser-profile.mjs": {
+    "mtime": 1792391571.2517662,
+    "seen": 1792391762.0401428,
+    "ast_hash": "58fe995d96de780b9ee13c3337140d97",
     "semantic_hash": ""
   }
 }
