@@ -2,7 +2,7 @@
 
 Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Türkçe bir panel. Facebook, Instagram, X / Twitter, Threads, Pinterest, YouTube, TikTok ve LinkedIn için metin ve görsel hazırlama alanları içerir.
 
-**Bu sürüm içerik hazırlama içindir. Gerçek hesap bağlantısı, otomatik yayınlama veya zamanlama yapmaz.** Bu işlevler için sonraki aşamada resmi OAuth entegrasyonları ve platform izinleri gerekir.
+**İçerik hazırlama ve deneysel sosyal hesap tarayıcısı.** Canlı Cloudflare sürümünde yönetici, şirketlere ayrı hesaplar ekleyip platformun kendi ekranında giriş yapabilir; oturumlar şifreli saklanır. Hazırlanan metin açık gönderi alanına aktarılabilir. Toplu otomatik yayınlama, görseli uzak forma yükleme ve zamanlama henüz yoktur. [Hesap girişi ve doğrulanan kapsam](docs/HESAP_GIRISI.md).
 
 ## Cloudflare üzerinde yayın
 

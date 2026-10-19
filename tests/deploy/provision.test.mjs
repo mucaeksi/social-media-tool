@@ -104,6 +104,10 @@ test("Mevcut Cloudflare kaynakları tekrar oluşturulmaz; üretim yerel giriş i
     assert.equal(config.vars.LOCAL_AUTH_BYPASS, undefined);
     assert.equal(config.d1_databases[0].database_id, "database-id");
     assert.equal(config.assets.run_worker_first, true);
+    assert.equal(config.browser.binding, "BROWSER");
+    assert.equal(config.durable_objects.bindings[0].class_name, "SocialBrowser");
+    assert.deepEqual(config.migrations[0].new_sqlite_classes, ["SocialBrowser"]);
+    assert.ok(config.compatibility_flags.includes("nodejs_compat"));
   });
 });
 test("Birden fazla hesapta rastgele hesap seçilmez ve kaynak oluşturulmaz", async () => {

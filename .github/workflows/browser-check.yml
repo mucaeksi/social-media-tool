@@ -4,6 +4,11 @@ on:
     branches: [main]
     paths: [.github/workflows/browser-check.yml]
   workflow_dispatch:
+    inputs:
+      panel:
+        description: Yayındaki panelin gerçek giriş ve kapanış akışını denetle
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:
@@ -13,6 +18,7 @@ env:
   NPM_CONFIG_CACHE: /tmp/sosyal-studio-npm-cache
 jobs:
   check:
+    if: ${{ !inputs.panel }}
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     steps:
@@ -32,3 +38,24 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           RECEIPT_SOURCE: .cloudflare/browser-check.json
           RECEIPT_DESTINATION: deployment/browser-check.json
+  panel:
+    if: ${{ inputs.panel }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: node scripts/check-browser-panel.mjs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - if: ${{ always() && hashFiles('.cloudflare/browser-panel.json') != '' }}
+        run: node scripts/record-deployment.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RECEIPT_SOURCE: .cloudflare/browser-panel.json
+          RECEIPT_DESTINATION: deployment/browser-panel.json

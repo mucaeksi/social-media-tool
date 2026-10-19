@@ -9,6 +9,7 @@ import {
 } from "./admin-provision.mjs";
 import { detachLegacyAccess } from "./password-deployment.mjs";
 import { safeMessage } from "./cloudflare-api.mjs";
+import { ensureBrowserSecret } from "./browser-secret.mjs";
 
 const receipt = {
   status: "running",
@@ -55,6 +56,7 @@ try {
     );
   await prepareAdminKey(deployment);
   wrangler(["deploy"]);
+  await ensureBrowserSecret(deployment);
   await detachLegacyAccess(deployment);
   await smokeCloudflare(deployment, adminVerification);
   receipt.status = "success";
@@ -64,6 +66,7 @@ try {
     database: "Cloudflare D1",
     media: deployment.mediaStorage === "d1" ? "Cloudflare D1" : "Cloudflare R2",
     login: "Kullanıcı adı ve şifre — D1 oturumları",
+    socialBrowser: "Cloudflare Browser Run — deneysel hesap girişi",
   };
   if (process.env.GITHUB_STEP_SUMMARY)
     await appendFile(

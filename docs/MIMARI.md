@@ -25,7 +25,7 @@ Node.js 24'ün yerleşik SQLite sürücüsü kullanılır. Veritabanı `data/stu
 
 ## Mevcut sınırlar
 
-- Otomatik yayınlama, OAuth hesap bağlantıları, zamanlama ve analitik uygulanmadı. Bağlantılar ekranındaki sekiz sağlayıcı gereksinimi bir uygulama planıdır; aktif bir entegrasyon değildir.
+- Toplu otomatik yayınlama, OAuth bağlantıları, zamanlama ve analitik uygulanmadı. Cloudflare sürümünde yöneticiye özel, şirketlere ayrı hesap kayıtları ve deneysel uzak tarayıcı girişi vardır. [Doğrulanan kapsam ve sınırlar](HESAP_GIRISI.md).
 - ChatGPT hesabına uygulama içinden giriş yapılmaz; iframe, oturum çerezi kopyalama veya tarayıcı otomasyonu kullanılmaz. API olmadan seçilen yöntem manuel aktarım olduğundan tüm işlem otomatik değildir.
 - Görsel boyutlandırma, beyaz dolgu veya merkezden kırpmadır. Yapay zekâ rötuşu, video yükleme, video üretimi ve çok görselli gönderi bu sürümde yoktur. YouTube için metin ve kapak hazırlamak tek başına video yayını sağlamaz.
 - Karakter sınırları düzenleme yardımcısıdır. X'in ağırlıklı Unicode ve bağlantı hesabı yaklaşık gösterilir. Gerçek yayınlama eklenince her sağlayıcının güncel doğrulaması ayrıca gerekir.
@@ -33,7 +33,9 @@ Node.js 24'ün yerleşik SQLite sürücüsü kullanılır. Veritabanı `data/stu
 
 ## Gerçek yayınlama için sonraki geliştirme
 
-Her sağlayıcı için resmi geliştirici uygulaması ve gerekli inceleme/izinler alınmalıdır. Sunucuda OAuth başlatma ve callback, CSRF durum doğrulaması, şifreli belirteç saklama, yenileme ve bağlantıyı kesme uygulanmalıdır. Şirket–platform–hesap ilişkisi kurulmalı; yayın öncesi önizleme/onay, platform başına iş durumu, yeniden deneme ve yinelenen gönderiyi engelleme eklenmelidir. Başarı yalnızca sağlayıcının gerçek gönderi kimliği döndüğünde kaydedilmelidir. Hesap şifreleri kaynak koda eklenmemelidir.
+Kullanıcı, geliştirici uygulaması yerine normal hesap oturumlarıyla ve yalnızca web panelinden çalışmayı seçti. Bu nedenle Cloudflare Browser Run + Live View ile insanın giriş yaptığı ayrı tarayıcı oturumları eklendi. Şirket–platform–hesap ilişkisi D1'de, çerezler AES-256-GCM ile şifreli saklanır; anahtar Worker secret'tır. Şifre ve doğrulama kodları uygulamanın veri modeline girmez. Bu yöntem platform erişimini veya kalıcı giriş garantisini sağlamaz. Instagram giriş ekranı gerçek Cloudflare tarayıcısıyla doğrulandı; X ilk denemede erişimi reddetti.
+
+Metin aktarımı, kullanıcının tıkladığı textarea/contenteditable alanına yazma ile sınırlıdır ve paylaş düğmesine basmaz. Toplu yayın için her sağlayıcıda gerçek hesaplarla test edilmiş yayın adımları, medya aktarımı, hedef sayfa/kanal doğrulaması, önizleme/onay, iş durumu, yeniden deneme ve yinelenen gönderi engeli gerekir. Başarı ancak gerçek gönderi kimliği/bağlantısı doğrulandığında kaydedilmelidir. API seçeneğine geçilirse resmi geliştirici uygulamaları, OAuth ve sağlayıcı izinleri ayrıca gerekir.
 
 ## Doğrulama
 

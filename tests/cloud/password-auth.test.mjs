@@ -42,6 +42,7 @@ before(async () => {
     modules: true,
     scriptPath: ".worker-build/index.js",
     compatibilityDate: "2026-07-01",
+    compatibilityFlags: ["nodejs_compat"],
     d1Databases: { DB: "password-auth" },
     bindings: {
       APP_ENV: "production",

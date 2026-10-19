@@ -1781,6 +1781,23 @@ main {
 .modal-wide {
   max-width: 660px;
 }
+.remote-browser-dialog .modal { max-width: 1180px; padding: 20px; }
+.remote-browser-frame { display: block; width: 100%; height: min(58dvh, 620px); min-height: 320px; border: 1px solid #dbe4d4; border-radius: 8px; background: #fff; }
+.browser-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: #326f61; font-size: 13px; }
+.browser-toolbar span, .browser-limit-note { display: flex; align-items: center; gap: 9px; }
+.browser-limit-note { align-items: flex-start; padding: 16px 0; font-size: 12px; line-height: 1.8; color: #53654a; }
+.browser-limit-note > svg { flex-shrink: 0; margin-top: 3px; }
+.browser-message { padding: 12px 0; font-size: 13px; line-height: 1.7; color: #326f61; }
+.browser-message.error { color: #9a382c; }
+.social-account-card > .secondary { margin-top: 12px; }
+.social-account-list article { border-top: 1px solid #e8eedf; padding: 14px 0; }
+.social-account-list strong, .social-account-list small { display: block; overflow-wrap: anywhere; }
+.social-account-list strong { font-size: 13px; color: #40563a; }
+.social-account-list small, .browser-transfer small { display: block; font-size: 11px; color: #67745f; line-height: 1.7; margin: 7px 0; }
+.social-account-list article > div { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.browser-field { display: grid; gap: 8px; margin: 18px 0; font-size: 13px; }
+.browser-field input { border: 1px solid #dbe4d4; border-radius: 6px; padding: 10px; background: #fff; width: 100%; }
+.browser-transfer { margin-top: 14px; font-size: 12px; line-height: 1.7; }
 .modal-heading {
   display: flex;
   justify-content: space-between;

@@ -18,6 +18,8 @@ Rules:
 - Kullanıcı arayüzü, bildirimler ve yeni kullanım dokümanı tamamen Türkçe olmalıdır. Dış kaynak becerilerin asıllarını ve lisanslarını koruyun.
 - Kullanıcı ChatGPT için API yerine manuel kopyala–yapıştır yöntemini seçti. Model oturumu, API kullanımı veya sosyal medya paylaşımı gerçekleşmiş gibi gösterilmemelidir.
 - Gerçek OAuth bağlantısı ve yayınlama servisi henüz yoktur. Şifreleri veya erişim belirteçlerini koda, test verisine ya da becerilere eklemeyin.
+- Kullanıcı sosyal hesaplar için geliştirici uygulaması yerine normal giriş ve yalnızca web panelini seçti; eklenti istemiyor. Cloudflare Browser Run + Live View deneyseldir. Instagram giriş formu doğrulandı; X ilk Cloudflare erişimlerini reddetti. Gerçek kullanıcı girişi ve otomatik yayın doğrulanmış değildir. Detaylar `docs/HESAP_GIRISI.md` içinde.
+- `BROWSER_STATE_KEY` mevcut Worker secret'ıdır; yeniden üretmeyin veya değerini çıkarmayın. D1 sosyal hesap çerezleri bu anahtarla şifrelidir. İmzalı Live View URL'leri, çerezler ve kodlar loglara/Git'e yazılmaz. Günlük 600 saniye bütçesi, tek tarayıcı ve 3 dakika alarm sınırı korunur. Kapanışı belirsiz oturum varken yeni hesap açılamaz.
 - Mevcut checkout'u kullanın; kullanıcı açıkça istemedikçe yeni Git worktree oluşturmayın.
 - Bulut ortamında Graphify: `/workspace/.tools/bin/graphify`. `export PATH="/workspace/.tools/bin:$PATH"` ile etkinleştirin. Yerel kod analizi için `GRAPHIFY_BACKEND=none` kullanın.
 - Kaynak beceri kopyaları `skills-lock.json` ile sabittir. İlgili beceriyi uygulamadan önce kendi `SKILL.md` dosyasını ve gerekli başvuru dosyalarını okuyun. Kurulu liste `docs/SKILLER.md` içindedir.

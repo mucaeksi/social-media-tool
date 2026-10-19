@@ -9,9 +9,12 @@ const source = process.env.RECEIPT_SOURCE || ".cloudflare/deployment.json";
 const destination =
   process.env.RECEIPT_DESTINATION || "deployment/cloudflare.json";
 if (
-  !["deployment/cloudflare.json", "deployment/auth-bootstrap.json", "deployment/browser-check.json"].includes(
-    destination,
-  )
+  ![
+    "deployment/cloudflare.json",
+    "deployment/auth-bootstrap.json",
+    "deployment/browser-check.json",
+    "deployment/browser-panel.json",
+  ].includes(destination)
 )
   throw new Error("Dağıtım sonuç yolu geçersiz.");
 const file = JSON.parse(await readFile(source, "utf8"));

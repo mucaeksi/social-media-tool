@@ -97,14 +97,9 @@ test("Türkçe panel: şirket, ChatGPT aktarımı, görsel, taslak, yeniden açm
   await page.getByRole("button", { name: "Metinleri indir" }).click();
   expect((await jsonDownload).suggestedFilename()).toContain("Koleksiyon");
   await page.getByRole("button", { name: "Hesap bağlantıları" }).click();
-  await expect(page.getByText("Bağlı değil", { exact: true })).toHaveCount(8);
-  await page
-    .getByRole("button", { name: "Bağlantı gereksinimleri", exact: true })
-    .first()
-    .click();
-  await expect(page.getByRole("dialog")).toContainText(
-    "OAuth bağlantısı ve yayınlama servisi uygulanmadı",
-  );
+  await expect(page.getByText("Hesap eklenmedi", { exact: true })).toHaveCount(8);
+  await expect(page.getByRole("button", { name: "Hesap ekle", exact: true }).first()).toBeDisabled();
+  await expect(page.getByText("Toplu otomatik paylaşım henüz yoktur", { exact: false })).toBeVisible();
   expect(errors).toEqual([]);
 });
 

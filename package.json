@@ -26,6 +26,7 @@
     "test:e2e:auth": "STUDIO_AUTH=password playwright test --config playwright.auth.config.mjs"
   },
   "dependencies": {
+    "@cloudflare/puppeteer": "1.4.0",
     "express": "5.3.0",
     "hono": "4.13.13",
     "jose": "6.2.12",

@@ -10,6 +10,8 @@ Uygulamanın kaynak kodu `mucaeksi/social-media-tool` deposunun `main` dalında 
 | Şirketler, taslaklar, görsel kayıtları | Cloudflare D1, `sosyal-studio` |
 | İşlenmiş görseller | Cloudflare R2, `sosyal-studio-media`; R2 etkin değilse D1 |
 | Kullanıcılar, şifre özetleri, oturumlar | Cloudflare D1 |
+| Sosyal hesap kayıtları, şifreli çerezler | Cloudflare D1 |
+| Deneysel sosyal hesap tarayıcısı, tek oturum ve süre bütçesi | Cloudflare Browser Run + SQLite Durable Object |
 | Kaynak kod, testler, dağıtım otomasyonu | GitHub |
 
 Görseller kullanıcının tarayıcısında üstveriden arındırılmış JPEG olarak hazırlanır ve Cloudflare'e yüklenir. Kaynak görselin uzun kenarı en fazla 2560 piksel olur; her platform için beyaz dolgu ve merkezden kırpma seçenekleri ayrı dosyalardır. Tek paket en fazla 16 MB, dosya en fazla 4 MB olabilir. D1 taslak kayıtları 1 MB ile sınırlandırılır. Sunucu, JPEG başlıklarını ve hedef boyutlarını denetler; dosyalar Cloudflare'de özel kalır ve yalnızca doğrulanmış isteklerle sunulur. Harici bir görsel dönüştürme servisi veya ayrı Node sunucusu kullanılmaz.
@@ -48,6 +50,12 @@ Sayaç ve dosya boyutları D1 içinde kalıcıdır; Worker yeniden başlaması v
 Giriş gerektiren `GET /api/storage/usage`, sınırları ve o ayın kullanımını döndürür. Kota aşıldığında API, Türkçe açıklamayla HTTP 429 verir. Bu koruma uygulamanın R2 veri işlemlerini kapsar; Cloudflare hesabının genel faturalandırma kilidi değildir. Başka bucket/uygulama kullanımı, Dashboard/S3 üzerinden dışarıdan yapılan işlemler ve kurulumdaki bucket yönetimi bu sayaçlara dahil değildir. Workers, D1 ve Access kendi planlarına tabidir. Bucket'a uygulama dışından dosya yüklemeyin veya yaşam döngüsüyle farklı depolama sınıfına geçirmeyin.
 
 Kaynak: [Cloudflare R2 fiyatlandırması](https://developers.cloudflare.com/r2/pricing/).
+
+## Sosyal hesap tarayıcısı
+
+Üretimde `BROWSER` tarayıcı bağlantısı ve `SOCIAL_BROWSER` SQLite Durable Object eklenir. `social-browser-v1` migration mevcut D1/R2 verilerini değiştirmez; sosyal hesap tablosu eklemeli `0005_social_accounts.sql` ile kurulur. `BROWSER_STATE_KEY` yalnızca Worker secret olarak hazırlanır; her dağıtımda var olan anahtar korunur. Tarayıcıyı yöneten API, uygulamanın mevcut şifreli girişini ve admin rolünü zorunlu tutar. Yerel sürümde gerçek Cloudflare tarayıcısı etkin değildir.
+
+[Kullanım, doğrulanan platformlar ve 10 dakikalık günlük sınır](HESAP_GIRISI.md). Canlı panel kontrolü `Sosyal hesap tarayıcısı kontrolü` workflow'unda `panel=true` ile açıkça çalıştırılır. Geçici yönetici, şirket ve Instagram kayıtları oluşturur; gerçek giriş formunu ve oturumsuz sayfanın kaydedilmeden kapanmasını sınar, ardından test kayıtlarını temizler. Kullanıcının açık tarayıcısı varsa kontrol durur. Gerçek sosyal hesap şifresi veya gönderi kullanılmaz.
 
 ## Zero Trust Free sınırları
 

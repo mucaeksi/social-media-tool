@@ -21,6 +21,8 @@ import { registerPasswordRoutes } from "./password-auth.mjs";
 import { createD1Media } from "./d1-media.mjs";
 import { createR2Media, R2_LIMITS, r2Usage } from "./r2-media.mjs";
 import { parseMediaForm, objectKey, removeCompanyObjects } from "./media.mjs";
+import { browserCommand, registerSocialAccounts } from "./social-accounts.mjs";
+export { SocialBrowser } from "./social-browser.mjs";
 
 const app = new Hono();
 function fail(status, message) {
@@ -71,7 +73,7 @@ app.use("*", async (c, next) => {
   c.header("X-Frame-Options", "DENY");
   c.header(
     "Content-Security-Policy",
-    "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self'; frame-src https://live.browser.run; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
   );
   if (c.req.path.startsWith("/api/")) c.header("Cache-Control", "no-store");
   const url = new URL(c.req.url),
@@ -127,6 +129,7 @@ app.use(
   }),
 );
 registerPasswordRoutes(app);
+registerSocialAccounts(app);
 
 app.get("/api/health", async (c) => {
   await c.env.DB.prepare("SELECT 1").first();
@@ -136,6 +139,7 @@ app.get("/api/health", async (c) => {
     storage: storageMode(c),
     mediaProcessing: "browser",
     publishing: false,
+    socialBrowser: Boolean(c.env.SOCIAL_BROWSER && c.env.BROWSER_STATE_KEY),
     ai: "manual-chatgpt",
     auth: c.env.AUTH_MODE === "password" ? "password" : "development",
   });
@@ -168,6 +172,27 @@ app.put("/api/companies/:id", async (c) => {
 app.delete("/api/companies/:id", async (c) => {
   const id = c.req.param("id");
   await company(c, id);
+  if (c.env.SOCIAL_BROWSER) {
+    const hasAccounts = await c.env.DB.prepare(
+      "SELECT id FROM social_accounts WHERE company_id=? LIMIT 1",
+    )
+      .bind(id)
+      .first();
+    if (hasAccounts && c.get("identity")?.role !== "admin")
+      return c.json(
+        {
+          error:
+            "Sosyal hesabı olan şirketi silmek için yönetici yetkisi gerekli.",
+        },
+        403,
+      );
+    const response = await browserCommand(c.env, {
+      action: "remove-company",
+      account: { companyId: id },
+      userId: c.get("identity").id,
+    });
+    if (!response.ok) return response;
+  }
   await removeCompanyObjects(createD1Media(c.env.DB), id);
   if (c.env.MEDIA) await removeCompanyObjects(mediaStore(c, "r2"), id);
   await store(c).deleteCompany(id);

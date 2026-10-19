@@ -68,6 +68,7 @@ before(async () => {
     modules: true,
     scriptPath: ".worker-build/index.js",
     compatibilityDate: "2026-07-01",
+    compatibilityFlags: ["nodejs_compat"],
     d1Databases: { DB: "studio-test" },
     r2Buckets: { MEDIA: "studio-test-media" },
     bindings: {
@@ -389,6 +390,7 @@ test("R2 bağlantısı olmadan D1 üzerinde görsel yükleme, indirme ve şirket
     modules: true,
     scriptPath: ".worker-build/index.js",
     compatibilityDate: "2026-07-01",
+    compatibilityFlags: ["nodejs_compat"],
     d1Databases: { DB: "d1-media-only" },
     bindings: {
       APP_ENV: "development",

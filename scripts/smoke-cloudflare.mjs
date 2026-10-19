@@ -45,6 +45,7 @@ export async function smokeCloudflare(deployment, adminVerification) {
           result.ok &&
           result.auth === "password" &&
           result.database === "d1" &&
+          result.socialBrowser === true &&
           result.storage === deployment.mediaStorage
         ) {
           ready = true;

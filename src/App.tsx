@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { prepareCloudMedia } from "./prepareMedia.ts";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
+import { Modal } from "./Modal.tsx";
+import { api } from "./api.ts";
+import { SocialAccounts } from "./SocialAccounts.tsx";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -88,26 +91,6 @@ const count = (value: string) => [...value].length;
 const mediaPath = (id: string, target = "original", fit = "contain") =>
   `/api/media/${id}/${target}.jpg?fit=${fit}`;
 
-async function api<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...(typeof options.body === "string"
-        ? { "Content-Type": "application/json" }
-        : {}),
-      ...options.headers,
-    },
-  });
-  if (response.status === 204) return undefined as T;
-  const data = await response
-    .json()
-    .catch(() => ({ error: "Sunucudan geçerli bir yanıt alınamadı." }));
-  if (response.status === 401)
-    window.dispatchEvent(new Event("studio:session-expired"));
-  if (!response.ok) throw new Error(data.error ?? "İşlem tamamlanamadı.");
-  return data as T;
-}
-
 function PlatformIcon({ id, size = 18 }: { id: PlatformId; size?: number }) {
   if (id === "instagram") return <Instagram size={size} />;
   if (id === "linkedin") return <Linkedin size={size} />;
@@ -133,90 +116,6 @@ function PlatformIcon({ id, size = 18 }: { id: PlatformId; size?: number }) {
   );
 }
 
-function Modal({
-  title,
-  children,
-  onClose,
-  wide = false,
-}: {
-  title: string;
-  children: ReactNode;
-  onClose: () => void;
-  wide?: boolean;
-}) {
-  const root = useRef<HTMLDivElement>(null);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    const before = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    root.current?.focus();
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeRef.current();
-      if (event.key === "Tab") {
-        const nodes = [
-          ...(root.current?.querySelectorAll<HTMLElement>(
-            'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href], [tabindex="0"]',
-          ) ?? []),
-        ];
-        const first = nodes[0];
-        const last = nodes.at(-1);
-        if (
-          event.shiftKey &&
-          (document.activeElement === first ||
-            document.activeElement === root.current)
-        ) {
-          event.preventDefault();
-          last?.focus();
-        } else if (
-          !event.shiftKey &&
-          (document.activeElement === last ||
-            document.activeElement === root.current)
-        ) {
-          event.preventDefault();
-          first?.focus();
-        }
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => {
-      document.body.style.overflow = before;
-      document.removeEventListener("keydown", handler);
-      previous?.focus();
-    };
-  }, []);
-  return (
-    <div
-      className="modal-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={root}
-        className={`modal ${wide ? "modal-wide" : ""}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        tabIndex={-1}
-      >
-        <div className="modal-heading">
-          <h2>{title}</h2>
-          <button
-            className="icon-button"
-            aria-label="Pencereyi kapat"
-            onClick={onClose}
-          >
-            <X size={20} />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 export default function App({
   user,
   onLogout,
@@ -226,6 +125,7 @@ export default function App({
 }) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [cloud, setCloud] = useState(false);
+  const [socialBrowser, setSocialBrowser] = useState(false);
   const [mediaStorage, setMediaStorage] = useState("r2");
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [companyId, setCompanyId] = useState("");
@@ -240,9 +140,6 @@ export default function App({
     error?: boolean;
   } | null>(null);
   const [companyDialog, setCompanyDialog] = useState<Company | "new" | null>(
-    null,
-  );
-  const [connectionDialog, setConnectionDialog] = useState<Platform | null>(
     null,
   );
   const [help, setHelp] = useState(false);
@@ -282,10 +179,13 @@ export default function App({
       const [list, configs, health] = await Promise.all([
         api<Company[]>("/api/companies"),
         api<Platform[]>("/api/platforms"),
-        api<{ database: string; storage?: string }>("/api/health"),
+        api<{ database: string; storage?: string; socialBrowser?: boolean }>(
+          "/api/health",
+        ),
       ]);
       setCompanies(list);
       setCloud(health.database === "d1");
+      setSocialBrowser(Boolean(health.socialBrowser));
       setMediaStorage(health.storage ?? "local");
       setPlatforms(configs);
       setCompanyId(list[0]?.id ?? "");
@@ -733,7 +633,7 @@ export default function App({
                     ? "Fikirleriniz kaybolmasın. Hazırladığınız içeriklere kaldığınız yerden devam edin."
                     : page === "companies"
                       ? "Her şirketin kimliği, anlatımı ve içerikleri kendi alanında."
-                      : "Hangi hesap için ne gerekiyor? Platform bağlantılarını buradan planlayın."}
+                      : "Şirketinizi seçin, sosyal hesaplarınıza uzak tarayıcıdan giriş yapın."}
               </p>
             </div>
             <div className="company-picker">
@@ -1111,7 +1011,7 @@ export default function App({
                         gönderim henüz bağlı değil.
                       </p>
                       <button onClick={() => setPage("connections")}>
-                        Bağlantı gereksinimleri <ArrowRight size={13} />
+                        Hesapları aç <ArrowRight size={13} />
                       </button>
                     </div>
                   </section>
@@ -1497,7 +1397,7 @@ export default function App({
                         onClick={() =>
                           setConfirm({
                             title: `${item.name} silinsin mi?`,
-                            text: "Bu şirketin tüm taslakları ve görselleri kalıcı olarak silinir. Bu işlem geri alınamaz.",
+                            text: "Bu şirketin tüm taslakları, görselleri ve kayıtlı sosyal hesap oturumları kalıcı olarak silinir. Bu işlem geri alınamaz.",
                             action: () =>
                               void run("delete-company", async () => {
                                 await api(`/api/companies/${item.id}`, {
@@ -1512,7 +1412,7 @@ export default function App({
                                   setCompanyId(remaining[0]?.id ?? "");
                                 }
                                 setNotice({
-                                  text: "Şirket ve bu şirkete ait yerel kayıtlar silindi.",
+                                  text: "Şirket ve bu şirkete ait kayıtlar silindi.",
                                 });
                               }),
                           })
@@ -1643,57 +1543,14 @@ export default function App({
             </>
           ) : (
             <>
-              <div className="connection-banner">
-                <ShieldCheck size={27} />
-                <div>
-                  <h2>Hesap şifreleri kodda saklanmaz.</h2>
-                  <p>
-                    Gerçek yayınlama bağlantıları, platformların resmi OAuth
-                    izinleriyle kurulmalıdır. Bu ilk sürüm içerik hazırlama ve
-                    dışa aktarma sağlar; henüz hesap girişi veya otomatik
-                    gönderim yapmaz.
-                  </p>
-                </div>
-              </div>
-              <div className="connections-grid">
-                {platforms.map((p) => (
-                  <section key={p.id} className="card connection-card">
-                    <div className="connection-card-top">
-                      <span
-                        className="platform-logo"
-                        style={{
-                          color: platformColors[p.id],
-                          background: `${platformColors[p.id]}0c`,
-                        }}
-                      >
-                        <PlatformIcon id={p.id} size={24} />
-                      </span>
-                      <span className="not-connected">
-                        <span /> Bağlı değil
-                      </span>
-                    </div>
-                    <h2>{p.name}</h2>
-                    <p>{p.requirement}</p>
-                    <button
-                      className="secondary"
-                      onClick={() => setConnectionDialog(p)}
-                    >
-                      Bağlantı gereksinimleri <ArrowUpRight size={15} />
-                    </button>
-                  </section>
-                ))}
-              </div>
-              <div className="additional-platforms">
-                <MessageCircle size={22} />
-                <div>
-                  <strong>Sonraki adım için iki öneri</strong>
-                  <p>
-                    Yerel müşterilere ulaşmak için Google İşletme Profili;
-                    doğrudan topluluk iletişimi için Telegram kanalı
-                    değerlendirilebilir. Bunlar bu sürümde desteklenmiyor.
-                  </p>
-                </div>
-              </div>
+              <SocialAccounts
+                company={company}
+                platforms={platforms}
+                user={user}
+                enabled={socialBrowser}
+                posts={posts}
+                icon={(id) => <PlatformIcon id={id} size={24} />}
+              />
             </>
           )}
           <footer className="page-footer">
@@ -1871,37 +1728,6 @@ export default function App({
           </div>
         </Modal>
       )}
-      {connectionDialog && (
-        <Modal
-          title={`${connectionDialog.name} bağlantısı`}
-          onClose={() => setConnectionDialog(null)}
-        >
-          <div
-            className="modal-platform-icon"
-            style={{ color: platformColors[connectionDialog.id] }}
-          >
-            <PlatformIcon id={connectionDialog.id} size={32} />
-          </div>
-          <p className="modal-description">{connectionDialog.requirement}</p>
-          <div className="inline-warning">
-            <CircleAlert size={17} />
-            <span>
-              Bu sürümde OAuth bağlantısı ve yayınlama servisi uygulanmadı.
-              Hesap bilgilerinizi buraya veya koda yazmayın.
-            </span>
-          </div>
-          <div className="modal-actions">
-            <a
-              className="primary"
-              href={connectionDialog.docs}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Resmi geliştirici belgesi <ExternalLink size={16} />
-            </a>
-          </div>
-        </Modal>
-      )}
       {help && (
         <Modal
           title="Sosyal Studio nasıl kullanılır?"
@@ -1940,7 +1766,8 @@ export default function App({
                 {cloud
                   ? `Taslaklar Cloudflare D1, görseller ${mediaStorage === "d1" ? "Cloudflare D1" : "Cloudflare R2"} üzerinde saklanır. Kullanıcı adı ve şifreyle giriş yapılır; hesapları yönetici oluşturur. Yetkili kullanıcılar aynı şirket ve taslak alanını kullanır; şirket bazında kullanıcı yetkileri henüz yoktur. Görseller tarayıcıda hazırlanıp Cloudflare'e yüklenir.${mediaStorage === "r2" ? " Görsel depolama sınırı 10 GB; aylık işlem sınırları 1 milyon Class A ve 10 milyon Class B’dir." : ""}`
                   : "Taslaklar ve görseller bu ortamın yerel diskinde saklanır. Önemli içeriklerinizi ortam silinmeden önce dışa aktarın."}{" "}
-                Hesap bağlantısı ve otomatik yayınlama yoktur. ChatGPT
+                Sosyal hesap girişi, bulut tarayıcısı etkinse Hesap bağlantıları
+                ekranındadır. Toplu otomatik yayınlama henüz yoktur. ChatGPT
                 oturumunuza erişilmez.
               </p>
             </div>

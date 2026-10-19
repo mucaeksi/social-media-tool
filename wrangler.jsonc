@@ -3,6 +3,7 @@
   "name": "sosyal-studio",
   "main": "worker/index.mjs",
   "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "preview_urls": false,
   "assets": {

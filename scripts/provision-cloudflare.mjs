@@ -85,6 +85,14 @@ export async function provisionCloudflare() {
     main: "../worker/index.mjs",
     account_id: accountId,
     compatibility_date: "2026-07-01",
+    compatibility_flags: ["nodejs_compat"],
+    browser: { binding: "BROWSER" },
+    durable_objects: {
+      bindings: [{ name: "SOCIAL_BROWSER", class_name: "SocialBrowser" }],
+    },
+    migrations: [
+      { tag: "social-browser-v1", new_sqlite_classes: ["SocialBrowser"] },
+    ],
     workers_dev: true,
     preview_urls: false,
     assets: {
