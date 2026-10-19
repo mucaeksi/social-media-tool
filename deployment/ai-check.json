@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-10-19T02:14:22.215Z",
+  "sourceCommit": "da0eb5cea7bfd778ef0b5d7047c5749d2f569279",
+  "verified": true,
+  "socialCredentialsSubmitted": false,
+  "postsPublished": false,
+  "stage": "completed",
+  "model": "@cf/qwen/qwen3-30b-a3b-fp8",
+  "knowledgeApplied": true,
+  "realModelAnswer": true,
+  "contentPlatforms": 8,
+  "contentValidated": true,
+  "historyPersisted": true
+}
