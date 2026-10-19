@@ -1,8 +1,8 @@
 {
   "status": "success",
-  "source_commit": "213733aeb4c9d79de59ebca64774f67c1fa89224",
-  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39152253300",
-  "updated_at": "2026-10-18T18:03:49.855Z",
+  "source_commit": "8bc224237bb760f1da9570d8e183073ea046eeb2",
+  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39185326317",
+  "updated_at": "2026-10-19T01:28:00.391Z",
   "url": "https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev",
   "zero_trust": {
     "plan": "Teams Free Base",
@@ -15,7 +15,7 @@
       "serviceTokens": 50,
       "policiesPerApp": 1000
     },
-    "checkedAt": "2026-10-18T18:03:51.011Z",
+    "checkedAt": "2026-10-19T01:28:01.743Z",
     "seatEnforcement": "Cloudflare Free planı girişte 50 aktif koltuğu uygular"
   },
   "verified": true,
@@ -23,6 +23,7 @@
     "worker": "sosyal-studio",
     "database": "Cloudflare D1",
     "media": "Cloudflare R2",
-    "login": "Kullanıcı adı ve şifre — D1 oturumları"
+    "login": "Kullanıcı adı ve şifre — D1 oturumları",
+    "socialBrowser": "Cloudflare Browser Run — deneysel hesap girişi"
   }
 }
