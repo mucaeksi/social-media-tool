@@ -1,0 +1,123 @@
+{
+  "checkedAt": "2026-10-19T01:48:06.342607+00:00",
+  "sourceCommit": "6ce024678a5341affee433ff4c254752c5c6a0d8",
+  "publicSourcesOnly": true,
+  "results": [
+    {
+      "platform": "youtube",
+      "url": "https://developers.google.com/youtube/v3/getting-started",
+      "httpStatus": 200,
+      "title": "YouTube Data API Overview | Google for Developers Skip to main content YouTube Data API / English Deutsch Español Español – América Latina Français Indonesia It",
+      "excerpts": {
+        "quota": "Quickstarts Android Apps Script Go iOS Java JavaScript Node.js PHP Python Ruby Guides and Tutorials Quota costs for API requests Quota and Compliance Audits Upload a Video Send Resumable Uploads Find MadeForKids video status Subscribe to Push Notifications Work with Channel IDs Move from ClientLogin to OAuth Sample Requ",
+        "payment": "tarts Android Apps Script Go iOS Java JavaScript Node.js PHP Python Ruby Guides and Tutorials Quota costs for API requests Quota and Compliance Audits Upload a Video Send Resumable Uploads Find MadeForKids video status Subscribe to Push Notifications Work with Channel IDs Move from ClientLogin to OAuth Sample Requ",
+        "review": "ript Node.js PHP Python Ruby Guides and Tutorials Quota costs for API requests Quota and Compliance Audits Upload a Video Send Resumable Uploads Find MadeForKids video status Subscribe to Push Notifications Work with Channel IDs Move from ClientLogin to OAuth Sample Requests Implementation Guide Overview Activitie"
+      },
+      "retrieved": true
+    },
+    {
+      "platform": "youtube",
+      "url": "https://developers.google.com/youtube/v3/determine_quota_cost",
+      "httpStatus": 200,
+      "title": "Quota Calculator | YouTube Data API | Google for Developers Skip to main content YouTube Data API / English Deutsch Español Español – América Latina Français In",
+      "excerpts": {
+        "quota": "Quickstarts Android Apps Script Go iOS Java JavaScript Node.js PHP Python Ruby Guides and Tutorials Quota costs for API requests Quota and Compliance Audits Upload a Video Send Resumable Uploads Find MadeForKids video status Subscribe to Push Notifications Work with Channel IDs Move from ClientLogin to OAuth Sample Requ",
+        "payment": "tarts Android Apps Script Go iOS Java JavaScript Node.js PHP Python Ruby Guides and Tutorials Quota costs for API requests Quota and Compliance Audits Upload a Video Send Resumable Uploads Find MadeForKids video status Subscribe to Push Notifications Work with Channel IDs Move from ClientLogin to OAuth Sample Requ",
+        "review": "ript Node.js PHP Python Ruby Guides and Tutorials Quota costs for API requests Quota and Compliance Audits Upload a Video Send Resumable Uploads Find MadeForKids video status Subscribe to Push Notifications Work with Channel IDs Move from ClientLogin to OAuth Sample Requests Implementation Guide Overview Activitie"
+      },
+      "retrieved": true
+    },
+    {
+      "platform": "youtube",
+      "url": "https://developers.google.com/youtube/v3/docs/videos/insert",
+      "httpStatus": 200,
+      "title": "Videos: insert | YouTube Data API | Google for Developers Skip to main content YouTube Data API / English Deutsch Español Español – América Latina Français Indo",
+      "excerpts": {
+        "quota": "es: video/* , application/octet-stream Quota impact: 100 calls per day. A call to this method has a quota cost of 1 unit in the Video Uploads quota bucket. Common use cases Request HTTP request POST https://www.googleapis.com/upload/youtube/v3/videos Authorization This request requires authorization with at least one o",
+        "payment": "deo/* , application/octet-stream Quota impact: 100 calls per day. A call to this method has a quota cost of 1 unit in the Video Uploads quota bucket. Common use cases Request HTTP request POST https://www.googleapis.com/upload/youtube/v3/videos Authorization This request requires authorization with at least one o",
+        "review": "ned in the YouTube Help Center . Videos uploaded from unverified API projects are not restricted to private viewing mode. status.publicStatsViewable status.publishAt status.selfDeclaredMadeForKids status.containsSyntheticMedia recordingDetails.recordingDate Response If successful, this method returns a video resource in the",
+        "internal_tool": " higher. /// See https://developers.google.com/api-client-library/dotnet/get_started /// </summary> internal class UploadVideo { [ STAThread ] static void Main ( string [] args ) { Console . WriteLine ( \"YouTube Data API: Upload Video\" ); Console . WriteLine ( \"==============================\" ); try { new UploadVideo"
+      },
+      "retrieved": true
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://learn.microsoft.com/en-us/linkedin/marketing/community-management/community-management-api",
+      "retrieved": false,
+      "error": "HTTPError",
+      "httpStatus": 404
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api",
+      "httpStatus": 200,
+      "title": "Posts API - LinkedIn | Microsoft Learn Skip to main content Skip to Ask Learn chat experience This browser is no longer supported. Upgrade to Microsoft Edge to ",
+      "excerpts": {
+        "access": "APIs require the request header X-Restli-Protocol-Version: 2.0.0 Permissions Permission Description w_organization_social Post, comment, and like posts on behalf of an organization. Restricted to organizations where the authenticated member has one of the following company page roles: ADMINISTRATOR DIRECT_SPONSORED_CONTENT_POSTER",
+        "internal_tool": "EQUESTS The API rate limit has been exceeded. Reduce request frequency and retry after a delay. 500 INTERNAL_SERVER_ERROR An unexpected server-side error occurred. Retry the request. If the issue persists, contact LinkedIn support. 503 SERVICE_UNAVAILABLE The service is temporarily unavailable. Retry the request afte"
+      },
+      "retrieved": true
+    },
+    {
+      "platform": "tiktok",
+      "url": "https://developers.tiktok.com/doc/content-sharing-guidelines",
+      "httpStatus": 200,
+      "title": "Content Sharing Guidelines | TikTok for Developers Products Docs Support Blog Get started Developer Docs Introduction / ... / Content Sharing Guidelines EN Sear",
+      "excerpts": {
+        "payment": " this option is selected by the user, a prompt should state: \" Your photo/video will be labeled as 'Paid partnership' \" If both the above options are selected by the user, a prompt should state \" Your photo/video will be labeled as 'Paid partnership' \" It is a multiple selection, and at least one of the options a",
+        "review": " this API in an unverified status, but all content uploaded via this endpoint will be restricted to private viewing mode. To lift this restriction, your API client must undergo an audit to verify compliance with our Terms of Service . If your API client has not been audited, the following restrictions will apply: User cap :",
+        "internal_tool": "must not be limited to test applications and should be intended for a wide audience, not limited to internal groups/private use. Not acceptable: A utility tool to help upload contents to the account(s) you or your team manages. ❌ # Required UX Implementation in Your App 1) API Clients must retrieve the latest creator"
+      },
+      "retrieved": true
+    },
+    {
+      "platform": "tiktok",
+      "url": "https://developers.tiktok.com/doc/content-posting-api-get-started",
+      "httpStatus": 200,
+      "title": "Get Started - Direct Post | TikTok for Developers Products Docs Support Blog Get started Developer Docs Share to TikTok / ... / Get Started - Direct Post EN Sea",
+      "excerpts": {
+        "quota": "estamp_ms\": 1000 }, \"source_info\": { \"source\": \"FILE_UPLOAD\", \"video_size\": 50000123, \"chunk_size\": 10000000, \"total_chunk_count\": 5 } }' Response: 200 OK { \"data\": { \"publish_id\": \"v_pub_file~v2-1.123456789\", \"upload_url\": \"https://open-upload.tiktokapis.com/video/?upload_id=67890&upload_token=Xza123\" }, \"error\":",
+        "review": "authorized your app. Learn how to obtain the access token and open ID . Note: All content posted by unaudited clients will be restricted to private viewing mode. Once you have successfully tested your integration, to lift the restrictions on content visibility, your API client must undergo an audit to verify complianc"
+      },
+      "retrieved": true
+    },
+    {
+      "platform": "pinterest",
+      "url": "https://developers.pinterest.com/docs/getting-started/connect-app/",
+      "httpStatus": 200,
+      "title": "Pinterest Developers Skip to content Developer Platform Docs API reference My apps Search docs & API Log in Sign up Connect app Use with AI There are a few step",
+      "excerpts": {
+        "access": " letters or numbers (A-Z, a-z, 0-9) and can't contain the word \"Pinterest\". Submit your request for trial access. Application requests are reviewed each business day. As soon as your app has been reviewed you will receive an email notification letting you know if your app has been approved or denied access. If your app i"
+      },
+      "retrieved": true
+    },
+    {
+      "platform": "pinterest",
+      "url": "https://developers.pinterest.com/docs/getting-started/set-up-app/",
+      "httpStatus": 200,
+      "title": "Pinterest Developers Skip to content Developer Platform Docs API reference My apps Search docs & API Log in Sign up Connect app Use with AI There are a few step",
+      "excerpts": {
+        "access": " letters or numbers (A-Z, a-z, 0-9) and can't contain the word \"Pinterest\". Submit your request for trial access. Application requests are reviewed each business day. As soon as your app has been reviewed you will receive an email notification letting you know if your app has been approved or denied access. If your app i"
+      },
+      "retrieved": true
+    },
+    {
+      "platform": "threads",
+      "url": "https://developers.facebook.com/docs/threads/",
+      "httpStatus": 200,
+      "title": "Threads API | Meta for Developers Build with us Docs Blog Resources Developer centers Login Threads Threads Threads API Overview Get Started Get Started Create ",
+      "excerpts": {},
+      "retrieved": true
+    },
+    {
+      "platform": "threads",
+      "url": "https://developers.facebook.com/docs/threads/posts/",
+      "httpStatus": 200,
+      "title": "Threads Posts | Meta for Developers Build with us Docs Blog Resources Developer centers Login Threads Threads Threads API Overview Get Started Get Started Creat",
+      "excerpts": {
+        "access": " following permissions: threads_basic — Required for making any calls to all Threads API endpoints. threads_content_publish — Required for Threads publishing endpoints only. If your app has not been approved for advanced access for the threads_content_publish permission, you can only post on behalf of Threads testers on your app. A"
+      },
+      "retrieved": true
+    }
+  ]
+}
