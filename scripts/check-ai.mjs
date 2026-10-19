@@ -157,7 +157,7 @@ try {
     throw new Error("Yayındaki görsel modeli güncel değil.");
   if (
     !status.enabled ||
-    status.reservedNeurons > status.limits.dailyNeurons - 1500
+    status.reservedNeurons > status.limits.dailyNeurons - 2200
   )
     throw new Error("Ücretsiz test bütçesi yok.");
   report.model = status.model;
@@ -299,6 +299,9 @@ try {
   report.historyPersisted =
     workspace.turns.length === 2 && workspace.memory.length === 1;
   if (!report.historyPersisted) throw new Error("Kayıt doğrulanamadı.");
+  const finalBudget = (await http("/api/ai/status")).value;
+  report.reservedNeuronsAfter = finalBudget.reservedNeurons;
+  report.applicationDailyLimit = finalBudget.limits.dailyNeurons;
   report.verified = true;
   report.stage = "completed";
 } catch {
