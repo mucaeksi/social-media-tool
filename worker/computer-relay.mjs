@@ -1,3 +1,4 @@
+import { validLocalResult, LOCAL_AI_LIMITS } from "../shared/local-ai.mjs";
 import {
   COMPUTER_LIMITS,
   computerError,
@@ -12,6 +13,7 @@ export class CompanyComputer {
     this.env = env;
     this.pending = new Map();
     this.queue = Promise.resolve();
+    this.aiQueue = Promise.resolve();
   }
   async fetch(request) {
     if (request.headers.get("upgrade") === "websocket") {
@@ -34,6 +36,9 @@ export class CompanyComputer {
         headers: { "Sec-WebSocket-Protocol": "sosyal-device-v1" },
       });
     }
+    const input = await request.clone().json();
+    // Long local inference must never hold the browser/lease command queue.
+    if (input.action === "local-ai") return this.localAI(input);
     const run = this.queue.then(() => this.command(request));
     this.queue = run.catch(() => {});
     return run;
@@ -177,7 +182,87 @@ export class CompanyComputer {
       );
     }
   }
-  rpc(socket, payload) {
+  async localAI(input) {
+    try {
+      const gate = this.aiQueue.then(async () => {
+        const socket = this.ctx
+          .getWebSockets()
+          .find(
+            (s) =>
+              s.readyState === 1 &&
+              s.deserializeAttachment().id === input.deviceId &&
+              Date.now() - s.deserializeAttachment().seenAt < 90000,
+          );
+        if (!socket)
+          throw computerError(
+            503,
+            "Şirket bilgisayarı çevrimdışı. Yardımcıyı başlatın.",
+          );
+        if (!socket.deserializeAttachment().localAI)
+          throw computerError(
+            409,
+            "Yardımcı güncellenmeli. Açık hesap ekranlarını kapatın; otomatik güncellemeden sonra tekrar deneyin.",
+          );
+        if (input.input.action !== "status") {
+          const now = Date.now(),
+            day = new Date(now).toISOString().slice(0, 10);
+          const budget = (await this.ctx.storage.get("local-ai-budget")) || {};
+          const requests = (budget.requests || []).filter(
+            (r) => r.at > now - 3600000,
+          );
+          const count = budget.day === day ? budget.count : 0;
+          const setups = budget.day === day ? budget.setups : 0;
+          if (
+            (input.input.action === "generate" &&
+              (count >= LOCAL_AI_LIMITS.dailyRequests ||
+                requests.filter((r) => r.userId === input.userId).length >=
+                  LOCAL_AI_LIMITS.hourlyRequests)) ||
+            (input.input.action === "setup" && setups >= 3)
+          )
+            throw computerError(
+              429,
+              "Yerel AI istek sınırı doldu: günde 50 üretim, kullanıcı başına saatte 10 istek ve günde 3 kurulum denemesi.",
+            );
+          await this.ctx.storage.put("local-ai-budget", {
+            day,
+            count: count + (input.input.action === "generate" ? 1 : 0),
+            setups: setups + (input.input.action === "setup" ? 1 : 0),
+            requests:
+              input.input.action === "generate"
+                ? [...requests, { userId: input.userId, at: now }]
+                : requests,
+          });
+        }
+        return socket;
+      });
+      this.aiQueue = gate.catch(() => {});
+      const socket = await gate;
+      const result = await this.rpc(
+        socket,
+        { input: input.input },
+        {
+          type: "ai-command",
+          timeout: input.input.action === "generate" ? 280000 : 12000,
+          validate: validLocalResult,
+        },
+      );
+      return Response.json(result);
+    } catch (error) {
+      return Response.json(
+        {
+          error: error.public
+            ? error.message
+            : "Yerel AI bağlantısı tamamlanamadı.",
+        },
+        { status: error.status || 502 },
+      );
+    }
+  }
+  rpc(
+    socket,
+    payload,
+    { type = "command", timeout = 25000, validate = validComputerResult } = {},
+  ) {
     const id = crypto.randomUUID();
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -188,9 +273,11 @@ export class CompanyComputer {
             "Bilgisayar zamanında yanıt vermedi. Bağlantıyı kontrol edip yeniden deneyin.",
           ),
         );
-      }, 25000);
+      }, timeout);
       this.pending.set(id, {
         socket,
+        validate,
+        resultType: type === "ai-command" ? "ai-result" : "result",
         resolve: (value) => {
           clearTimeout(timer);
           resolve(value);
@@ -201,7 +288,7 @@ export class CompanyComputer {
         },
       });
       try {
-        socket.send(JSON.stringify({ type: "command", id, ...payload }));
+        socket.send(JSON.stringify({ type, id, ...payload }));
       } catch {
         this.pending
           .get(id)
@@ -231,6 +318,16 @@ export class CompanyComputer {
     }
     const info = socket.deserializeAttachment();
     socket.serializeAttachment({ ...info, seenAt: Date.now() });
+    if (value.type === "hello") {
+      socket.serializeAttachment({
+        ...info,
+        seenAt: Date.now(),
+        localAI:
+          Array.isArray(value.capabilities) &&
+          value.capabilities.includes("local-ai-v1"),
+      });
+      return;
+    }
     if (value.type === "ping") {
       socket.send('{"type":"pong"}');
       return;
@@ -238,7 +335,7 @@ export class CompanyComputer {
     const pending = this.pending.get(value.id);
     if (!pending || pending.socket !== socket) return;
     this.pending.delete(value.id);
-    if (value.type === "result" && validComputerResult(value.result))
+    if (value.type === pending.resultType && pending.validate(value.result))
       pending.resolve(value.result);
     else
       pending.reject(

@@ -72,7 +72,7 @@ try {
     login: "Kullanıcı adı ve şifre — D1 oturumları",
     socialBrowser: "Cloudflare Browser Run — deneysel hesap girişi",
     companyComputer:
-      "Windows Firefox — cihaz eşleştirme ve kalıcı yerel profiller; gerçek hesap girişi kullanıcı bilgisayarında doğrulanmalı",
+      "Windows Firefox — otomatik güncelleme, kalıcı profiller ve Qwen3.5-4B yerel AI bağlantısı; gerçek kullanıcı/model kontrolü bilgisayarda yapılmalı",
     ai: "Cloudflare Workers AI — görsel + özet, platform metinleri ve şirket hafızası",
   };
   if (process.env.GITHUB_STEP_SUMMARY)

@@ -438,7 +438,7 @@ export function CompanyAccounts({
         <p className="browser-message">Hesapları görmek için şirket seçin.</p>
       )}
       <div className="connections-grid">
-        {[...platforms, { id: "tumblr" as const, name: "Tumblr" }].map((p) => (
+        {platforms.map((p) => (
           <section
             className="card connection-card social-account-card"
             key={p.id}

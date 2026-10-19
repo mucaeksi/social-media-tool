@@ -3517,3 +3517,12 @@ main {
 .computer-input input { width:100%; padding:11px; border:1px solid #ccd7c5; border-radius:8px; }
 .computer-keys { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
 @media(max-width:800px) { .computer-steps { grid-template-columns:1fr; gap:20px; } .computer-setup { padding:20px; } .computer-heading { align-items:flex-start; } }
+
+.local-ai-status { display: grid; gap: 12px; padding: 22px; }
+.local-ai-status p, .local-ai-status small { margin: 0; color: var(--muted); line-height: 1.6; }
+.local-ai-status button { justify-self: start; }
+.local-ai-status progress { width: 100%; }
+.ai-engine-choice { display: grid; gap: 8px; margin: 18px 0; font-weight: 600; }
+.ai-engine-choice select { width: 100%; padding: 12px; border: 1px solid #dce4dc; border-radius: 9px; background: white; }
+
+.local-ai-status .ai-section-heading { flex-wrap: wrap; }

@@ -453,6 +453,7 @@ test(
           async closeAll() { this.opened.clear(); }
         }
       \` };
+      if (url.endsWith("/companion/local-ai.mjs")) return {format:"module", shortCircuit:true, source: "export class LocalAI { constructor(){this.busy=false;} async execute(){this.busy=true;await new Promise(r=>setTimeout(r,100));this.busy=false;return {ok:true,answer:'fixture',posts:[]};} }"};
       return next(url, context);
     }});
     globalThis.WebSocket = class extends EventTarget {
@@ -460,11 +461,12 @@ test(
       constructor() {
         super(); this.readyState = 1;
         process.on("message", (m) => {
+          if(m?.type === "fixture-ai") this.dispatchEvent(new MessageEvent("message", {data:JSON.stringify({type:"ai-command",id:m.id,input:{action:"generate"}})}));
           if(m?.type === "fixture-command") this.dispatchEvent(new MessageEvent("message", { data: JSON.stringify({ type:"command", id:m.id, account:{}, command:m.command }) }));
         });
         setImmediate(() => this.dispatchEvent(new Event("open")));
       }
-      send(data) { const m = JSON.parse(data); if(m.type === "result") process.send({type:"fixture-result", id:m.id}); }
+      send(data) { const m = JSON.parse(data); if(m.type === "result" || m.type === "ai-result") process.send({type:"fixture-result", id:m.id}); }
       close() { this.readyState = 3; this.dispatchEvent(new Event("close")); }
     };
   `,
@@ -511,6 +513,15 @@ test(
     });
     child.send({ type: "prepare-update" });
     await until(() => messages.some((m) => m.id === "close"));
+    child.send({ type: "fixture-ai", id: "ai" });
+    child.send({ type: "prepare-update" });
+    await pause(30);
+    assert.equal(child.exitCode, null);
+    assert.ok(
+      !messages.some((m) => m.type === "update-ready"),
+      "AI üretimi/kurulumu kesilmez",
+    );
+    await until(() => messages.some((m) => m.id === "ai"));
     const exited = new Promise((r) => child.once("exit", r));
     child.send({ type: "prepare-update" });
     assert.equal(await exited, 75);

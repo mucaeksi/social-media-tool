@@ -86,14 +86,14 @@ test("Şirket profilleri ayrı kimliklerle oluşturulur; hatalı web adresi redd
     400,
   );
 });
-test("Sekiz platform hazırlanır; kaynak metin kesilmez ve şirket etiketleri kullanılır", async () => {
+test("Dokuz platform hazırlanır; kaynak metin kesilmez ve şirket etiketleri kullanılır", async () => {
   const original = "Yeni koleksiyonumuz yayında. ".repeat(30);
   const { response, data } = await request("/api/prepare", {
     method: "POST",
     body: { companyId: first.id, text: original, selected: platformIds },
   });
   assert.equal(response.status, 200);
-  assert.equal(data.posts.length, 8);
+  assert.equal(data.posts.length, 9);
   assert.ok(data.posts.every((p) => p.caption === original.trim()));
   assert.deepEqual(
     data.posts.find((p) => p.platform === "instagram").hashtags,

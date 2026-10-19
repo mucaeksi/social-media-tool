@@ -5,8 +5,11 @@ import { createInterface } from "node:readline/promises";
 import { ProfileBrowsers } from "./browser.mjs";
 import { COMPUTER_LIMITS } from "../shared/computer-protocol.mjs";
 
+import { LocalAI } from "./local-ai.mjs";
+import { localErrors, LOCAL_AI_LIMITS } from "../shared/local-ai.mjs";
 import { production, directory } from "./locations.mjs";
 
+const localAI = new LocalAI();
 const configPath = join(directory, "device.json");
 let socket,
   pool,
@@ -113,6 +116,9 @@ function connect(config) {
     console.log(
       "Panel bağlantısı kuruldu. Hesapları web panelinden açabilirsiniz. Bu pencere açık kalmalı.",
     );
+    socket.send(
+      JSON.stringify({ type: "hello", capabilities: ["local-ai-v1"] }),
+    );
     heartbeat = setInterval(() => {
       if (Date.now() - lastPong > 75000) {
         socket.close();
@@ -124,7 +130,7 @@ function connect(config) {
   socket.addEventListener("message", async (event) => {
     if (
       typeof event.data !== "string" ||
-      event.data.length > COMPUTER_LIMITS.messageBytes
+      event.data.length > LOCAL_AI_LIMITS.wireChars
     ) {
       socket.close();
       return;
@@ -133,6 +139,33 @@ function connect(config) {
     try {
       message = JSON.parse(event.data);
     } catch {
+      return;
+    }
+    if (!message || typeof message !== "object" || Array.isArray(message))
+      return;
+    if (message.type === "ai-command") {
+      if (stopping || typeof message.id !== "string") return;
+      try {
+        const result = await localAI.execute(message.input);
+        if (socket.readyState === WebSocket.OPEN)
+          socket.send(
+            JSON.stringify({ type: "ai-result", id: message.id, result }),
+          );
+      } catch (error) {
+        if (socket.readyState === WebSocket.OPEN)
+          socket.send(
+            JSON.stringify({
+              type: "ai-result",
+              id: message.id,
+              result: {
+                ok: false,
+                code: Object.hasOwn(localErrors, error.code)
+                  ? error.code
+                  : "FAILED",
+              },
+            }),
+          );
+      }
       return;
     }
     if (message.type === "pong") {
@@ -207,7 +240,8 @@ process.on("message", (message) => {
     !stopping &&
     pool &&
     commandsInFlight === 0 &&
-    pool.opened.size === 0
+    pool.opened.size === 0 &&
+    !localAI.busy
   )
     void stop(75);
 });

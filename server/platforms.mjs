@@ -121,6 +121,22 @@ export const platforms = [
     requirement:
       "LinkedIn uygulaması, kuruluş yöneticisi yetkisi ve ilgili Community Management erişimi gerekir.",
   },
+  {
+    id: "tumblr",
+    name: "Tumblr",
+    kind: "Blog",
+    limit: 4000,
+    titleLimit: 100,
+    width: 1080,
+    height: 1350,
+    format: "4:5",
+    hashtags: 5,
+    hint: "Görsel hikâye, açıklayıcı başlık ve keşif etiketleri.",
+    needsVideo: false,
+    docs: "https://www.tumblr.com/docs/en/api/v2",
+    requirement:
+      "Tumblr için içerik hazırlanır; otomatik yayınlayıcı henüz uygulanmadı.",
+  },
 ];
 
 export const platformMap = Object.fromEntries(platforms.map((p) => [p.id, p]));
@@ -170,7 +186,7 @@ export function createPrompt({
   visualContext = false,
 }) {
   const editorialGuidance =
-    "Editör kontrolü: Her gönderi tek bir ana fikre odaklansın. İlk cümle somut faydayı veya haberi anlatsın. Şirketin hedef kitlesini ve anlatım dilini koru. Okuyucunun aradığı terimleri başlık ve açıklamada doğal kullan. Aynı metni sekiz kez tekrar etme; ana fikri platforma göre yeniden anlat. Anahtar kelime yığma, klişe açılış, yapay etkileşim tuzağı ve uydurma istatistik kullanma. Kaynakta olmayan başarı, müşteri görüşü veya teklif ekleme. Metni bitirmeden önce açıklık, tutarlı marka dili, kanıtlanabilir iddialar, doğru Türkçe ve somut çağrı açısından kontrol et.";
+    "Editör kontrolü: Her gönderi tek bir ana fikre odaklansın. İlk cümle somut faydayı veya haberi anlatsın. Şirketin hedef kitlesini ve anlatım dilini koru. Okuyucunun aradığı terimleri başlık ve açıklamada doğal kullan. Aynı metni platformlar arasında tekrar etme; ana fikri platforma göre yeniden anlat. Anahtar kelime yığma, klişe açılış, yapay etkileşim tuzağı ve uydurma istatistik kullanma. Kaynakta olmayan başarı, müşteri görüşü veya teklif ekleme. Metni bitirmeden önce açıklık, tutarlı marka dili, kanıtlanabilir iddialar, doğru Türkçe ve somut çağrı açısından kontrol et.";
   const brief = {
     company: {
       name: company.name,

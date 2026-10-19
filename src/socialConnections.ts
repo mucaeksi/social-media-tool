@@ -6,7 +6,7 @@ export const socialConnections: Record<SocialPlatformId, Connection> = {
   tumblr: {
     api: "Henüz uygulanmadı",
     detail:
-      "Tumblr bu sürümde hesap girişi için eklendi. Stüdyoda Tumblr içerik biçimi ve API yayınlayıcısı henüz yoktur.",
+      "Tumblr içerik biçimi ve kalıcı hesap profili hazırdır; otomatik yayınlayıcı henüz yoktur.",
     setup: "https://www.tumblr.com/oauth/apps",
   },
   facebook: {

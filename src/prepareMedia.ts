@@ -1,6 +1,6 @@
 import type { Platform } from "./types.ts";
 
-function encode(canvas: HTMLCanvasElement): Promise<Blob> {
+function encode(canvas: HTMLCanvasElement, quality = 0.88): Promise<Blob> {
   return new Promise((resolve, reject) =>
     canvas.toBlob(
       (blob) =>
@@ -8,7 +8,7 @@ function encode(canvas: HTMLCanvasElement): Promise<Blob> {
           ? resolve(blob)
           : reject(new Error("Görsel JPEG olarak hazırlanamadı.")),
       "image/jpeg",
-      0.88,
+      quality,
     ),
   );
 }
@@ -16,6 +16,7 @@ function encode(canvas: HTMLCanvasElement): Promise<Blob> {
 export async function prepareCloudMedia(
   file: File,
   platforms: Platform[],
+  options: { originalMaxSide?: number; originalQuality?: number } = {},
 ): Promise<FormData> {
   if (typeof createImageBitmap !== "function")
     throw new Error(
@@ -33,7 +34,10 @@ export async function prepareCloudMedia(
     if (image.width * image.height > 40_000_000)
       throw new Error("Görsel en fazla 40 megapiksel olabilir.");
     const form = new FormData();
-    const scale = Math.min(1, 2560 / Math.max(image.width, image.height));
+    const scale = Math.min(
+      1,
+      (options.originalMaxSide ?? 2560) / Math.max(image.width, image.height),
+    );
     const targets = [
       {
         key: "original",
@@ -72,7 +76,10 @@ export async function prepareCloudMedia(
         width,
         height,
       );
-      const blob = await encode(canvas);
+      const blob = await encode(
+        canvas,
+        target.key === "original" ? (options.originalQuality ?? 0.88) : 0.88,
+      );
       canvas.width = 0;
       canvas.height = 0;
       total += blob.size;

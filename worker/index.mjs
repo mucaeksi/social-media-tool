@@ -22,6 +22,8 @@ import { createD1Media } from "./d1-media.mjs";
 import { createR2Media, R2_LIMITS, r2Usage } from "./r2-media.mjs";
 import { parseMediaForm, objectKey, removeCompanyObjects } from "./media.mjs";
 import { browserCommand, registerSocialAccounts } from "./social-accounts.mjs";
+import { LOCAL_MODEL, LOCAL_EXPERT_VERSION } from "../shared/local-ai.mjs";
+import { registerLocalAI } from "./local-ai.mjs";
 import { registerSocialAI } from "./social-ai.mjs";
 import { SOCIAL_EXPERT_VERSION } from "../shared/social-expert.mjs";
 import {
@@ -148,6 +150,7 @@ app.use(
 registerCompanyComputer(app);
 registerSocialAccounts(app);
 registerSocialAI(app);
+registerLocalAI(app);
 
 app.get("/api/health", async (c) => {
   await c.env.DB.prepare("SELECT 1").first();
@@ -159,6 +162,9 @@ app.get("/api/health", async (c) => {
     publishing: false,
     socialBrowser: Boolean(c.env.SOCIAL_BROWSER && c.env.BROWSER_STATE_KEY),
     companyComputer: Boolean(c.env.COMPANY_COMPUTER),
+    localAI: c.env.COMPANY_COMPUTER
+      ? { model: LOCAL_MODEL, expertVersion: LOCAL_EXPERT_VERSION }
+      : null,
     ai:
       c.env.AI && c.env.AI_FREE_ONLY === "true"
         ? "cloudflare"
@@ -270,7 +276,7 @@ app.post("/api/import", async (c) => {
     );
   }
   const { posts } = z
-    .object({ posts: z.array(postSchema).min(1).max(8) })
+    .object({ posts: z.array(postSchema).min(1).max(9) })
     .parse(result);
   validatePosts(posts, input.selected, true);
   return c.json({ posts, source: "chatgpt-import" });

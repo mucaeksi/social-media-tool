@@ -6,6 +6,7 @@ export const releaseFiles = [
   "companion/start.mjs",
   "companion/browser.mjs",
   "companion/locations.mjs",
+  "companion/local-ai.mjs",
   "companion/launch.mjs",
   "companion/supervisor.mjs",
   "companion/updater.mjs",
@@ -13,6 +14,8 @@ export const releaseFiles = [
   "companion/Kur-ve-Baslat.cmd",
   "companion/Baslat.cmd",
   "shared/computer-protocol.mjs",
+  "shared/local-ai.mjs",
+  "shared/social-expert.mjs",
   "worker/browser-state.mjs",
   "docs/SIRKET_BILGISAYARI.md",
 ];

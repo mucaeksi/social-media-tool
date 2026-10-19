@@ -161,7 +161,7 @@ export function createApp({
       );
     }
     const { posts } = z
-      .object({ posts: z.array(postSchema).min(1).max(8) })
+      .object({ posts: z.array(postSchema).min(1).max(9) })
       .parse(parsed);
     validatePosts(posts, input.selected, true);
     res.json({ posts, source: "chatgpt-import" });

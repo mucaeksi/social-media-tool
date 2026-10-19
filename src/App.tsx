@@ -78,6 +78,7 @@ const platformColors: Record<PlatformId, string> = {
   youtube: "#e44545",
   tiktok: "#293b43",
   linkedin: "#216d9d",
+  tumblr: "#35465c",
 };
 const compactDate = (value: string) =>
   new Intl.DateTimeFormat("tr-TR", {
@@ -111,6 +112,7 @@ function PlatformIcon({ id, size = 18 }: { id: PlatformId; size?: number }) {
             threads: "@",
             pinterest: "P",
             tiktok: "♪",
+            tumblr: "t",
           } as Partial<Record<PlatformId, string>>
         )[id]
       }
@@ -197,7 +199,9 @@ export default function App({
       setCloud(health.database === "d1");
       setSocialBrowser(Boolean(health.socialBrowser));
       setCompanyComputer(Boolean(health.companyComputer));
-      setAIEnabled(health.ai === "cloudflare");
+      setAIEnabled(
+        health.ai === "cloudflare" || Boolean(health.companyComputer),
+      );
       setMediaStorage(health.storage ?? "local");
       setPlatforms(configs);
       setCompanyId(list[0]?.id ?? "");
@@ -410,7 +414,7 @@ export default function App({
           setSelected(turn.posts.map((post) => post.platform));
           setActivePlatform(turn.posts[0].platform);
           setPostRevision((v) => v + 1);
-          setSource("cloudflare-ai");
+          setSource(turn.engine === "local" ? "local-ai" : "cloudflare-ai");
           setDirty(true);
           setPage("studio");
           setNotice({
@@ -924,7 +928,7 @@ export default function App({
                         <p>Bu gönderi için platformları seçin.</p>
                       </div>
                       <span className="count-pill">
-                        {selected.length} / 8 seçili
+                        {selected.length} / {platforms.length} seçili
                       </span>
                     </div>
                     <div className="platform-grid">
@@ -1018,7 +1022,7 @@ export default function App({
                     <h2>
                       Bir fikrin
                       <br />
-                      <em>sekiz farklı hâli.</em>
+                      <em>her platforma uygun hâli.</em>
                     </h2>
                     <p>
                       ChatGPT ile metninizi her platformun diline, kitlesine ve
@@ -1115,11 +1119,13 @@ export default function App({
                     <span className="source-pill">
                       {source === "chatgpt-import"
                         ? "ChatGPT’den aktarıldı"
-                        : source === "cloudflare-ai"
-                          ? "Cloudflare AI ile hazırlandı"
-                          : source === "rules"
-                            ? "Temel şablon"
-                            : "Kaydedilmiş içerik"}
+                        : source === "local-ai"
+                          ? "Yerel AI ile hazırlandı"
+                          : source === "cloudflare-ai"
+                            ? "Cloudflare AI ile hazırlandı"
+                            : source === "rules"
+                              ? "Temel şablon"
+                              : "Kaydedilmiş içerik"}
                     </span>
                   )}
                 </div>
@@ -1630,6 +1636,7 @@ export default function App({
               user={user}
               platforms={platforms}
               cloud={cloud}
+              localAvailable={companyComputer}
               initialText={text}
               initialMedia={media}
               onApply={applyAI}

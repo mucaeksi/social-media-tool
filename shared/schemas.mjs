@@ -26,7 +26,7 @@ export const companySchema = z.object({
 export const selectedSchema = z
   .array(z.enum(platformIds))
   .min(1, "En az bir platform seçin.")
-  .max(8)
+  .max(9)
   .refine((v) => new Set(v).size === v.length, "Platformlar tekrarlanamaz.");
 export const postSchema = z.object({
   platform: z.enum(platformIds),
@@ -57,7 +57,7 @@ export const draftSchema = z.object({
   name: z.string().trim().min(1).max(120),
   text: text(),
   selected: selectedSchema,
-  posts: z.array(postSchema).max(8),
+  posts: z.array(postSchema).max(9),
   mediaId: z.uuid().nullable().default(null),
   mediaFit: z.enum(["contain", "cover"]).default("contain"),
 });

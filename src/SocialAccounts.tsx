@@ -117,10 +117,7 @@ function CloudAccounts({
   currentCompany.current = company?.id;
   const live = useRef<View | null>(null);
   const mounted = useRef(true);
-  const accountPlatforms: AccountPlatform[] = [
-    ...platforms,
-    { id: "tumblr", name: "Tumblr" },
-  ];
+  const accountPlatforms: AccountPlatform[] = platforms;
   const visibleAccounts = accounts.filter((a) => a.companyId === company?.id);
   const [now, setNow] = useState(Date.now());
   const admin = user.role === "admin";

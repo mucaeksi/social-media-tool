@@ -159,7 +159,7 @@ test("Cloudflare Access JWT imzası, hedefi ve süresi doğrulanır", async () =
     401,
   );
 });
-test("D1 şirket kayıtları ve sekiz platform için hazırlama çalışır", async () => {
+test("D1 şirket kayıtları ve dokuz platform için hazırlama çalışır", async () => {
   first = (
     await request("/api/companies", {
       method: "POST",
@@ -182,7 +182,7 @@ test("D1 şirket kayıtları ve sekiz platform için hazırlama çalışır", as
       selected: platforms.map((p) => p.id),
     },
   });
-  assert.equal(data.posts.length, 8);
+  assert.equal(data.posts.length, 9);
   assert.deepEqual(data.posts[0].hashtags, ["#tasarım", "#yenilik"]);
 });
 test("ChatGPT talimatı ve içe aktarım aynı doğrulama kurallarını uygular", async () => {
@@ -225,7 +225,7 @@ test("ChatGPT talimatı ve içe aktarım aynı doğrulama kurallarını uygular"
     200,
   );
 });
-test("17 JPEG R2 üzerinde saklanır; görsel boyutları ve kırpma seçenekleri korunur", async () => {
+test("19 JPEG R2 üzerinde saklanır; görsel boyutları ve kırpma seçenekleri korunur", async () => {
   const form = new FormData();
   const original = await sharp({
     create: { width: 400, height: 300, channels: 3, background: "#336655" },
@@ -267,10 +267,10 @@ test("17 JPEG R2 üzerinde saklanır; görsel boyutları ve kırpma seçenekleri
   });
   assert.equal(result.response.status, 201);
   image = result.data;
-  assert.equal((await bucket.list()).objects.length, 17);
+  assert.equal((await bucket.list()).objects.length, 19);
   const usage = (await request("/api/storage/usage")).data.r2;
   assert.equal(usage.limits.storageBytes, 10_000_000_000);
-  assert.equal(usage.usage.classA, 17);
+  assert.equal(usage.usage.classA, 19);
   assert.ok(usage.usage.storageBytes > 0);
   for (const p of platforms)
     for (const fit of ["contain", "cover"]) {
@@ -299,7 +299,7 @@ test("Eksik veya hatalı görsel paketleri R2 yazımı yapılmadan reddedilir", 
     ).response.status,
     400,
   );
-  assert.equal((await bucket.list()).objects.length, 17);
+  assert.equal((await bucket.list()).objects.length, 19);
 });
 test("D1 taslakları şirketlere göre ayrılır, güncellenir ve dışa aktarılır", async () => {
   const input = {
@@ -465,7 +465,7 @@ test("R2 bağlantısı olmadan D1 üzerinde görsel yükleme, indirme ve şirket
           .prepare("SELECT COUNT(*) AS total FROM media_objects")
           .first()
       ).total,
-      17,
+      19,
     );
     assert.equal(
       (

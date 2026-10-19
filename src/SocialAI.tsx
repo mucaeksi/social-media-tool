@@ -11,6 +11,7 @@ import {
   Trash2,
   ImagePlus,
 } from "lucide-react";
+import { LocalAIStatus } from "./LocalAIStatus.tsx";
 import { api } from "./api.ts";
 import type {
   AuthUser,
@@ -21,7 +22,6 @@ import type {
   Media,
 } from "./types.ts";
 import { prepareCloudMedia } from "./prepareMedia.ts";
-import { socialConnections } from "./socialConnections.ts";
 
 type Memory = {
   id: string;
@@ -41,6 +41,8 @@ export type AITurn = {
   mediaId?: string | null;
   imageObservation?: string | null;
   expertVersion?: string | null;
+  engine?: "local" | "cloudflare";
+  model?: string;
 };
 type Usage = {
   enabled: boolean;
@@ -70,6 +72,7 @@ export function SocialAI({
   user,
   platforms,
   cloud,
+  localAvailable = false,
   initialText,
   initialMedia,
   onApply,
@@ -78,10 +81,15 @@ export function SocialAI({
   user: AuthUser;
   platforms: Platform[];
   cloud: boolean;
+  localAvailable?: boolean;
   initialText: string;
   initialMedia?: Media | null;
   onApply: (turn: AITurn) => void;
 }) {
+  const [engine, setEngine] = useState<"local" | "cloudflare">(
+    localAvailable && user.role === "admin" ? "local" : "cloudflare",
+  );
+  const [localReady, setLocalReady] = useState(false);
   const [entries, setEntries] = useState<Memory[]>([]),
     [turns, setTurns] = useState<AITurn[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null),
@@ -164,16 +172,19 @@ export function SocialAI({
   async function ask() {
     await run(async () => {
       try {
-        const turn = await api<AITurn>("/api/ai/ask", {
-          method: "POST",
-          body: JSON.stringify({
-            companyId: company.id,
-            question,
-            mode,
-            mediaId: attachment?.id ?? null,
-            ...(mode === "posts" ? { selected } : {}),
-          }),
-        });
+        const turn = await api<AITurn>(
+          engine === "local" ? "/api/computer/ai/ask" : "/api/ai/ask",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              companyId: company.id,
+              question,
+              mode,
+              mediaId: attachment?.id ?? null,
+              ...(mode === "posts" ? { selected } : {}),
+            }),
+          },
+        );
         setTurns((items) => [...items, turn].slice(-20));
         setQuestion("");
         requestAnimationFrame(() =>
@@ -199,7 +210,13 @@ export function SocialAI({
         throw new Error(
           "JPEG, PNG veya WebP seçin. Görsel en fazla 15 MB olmalı.",
         );
-      const payload = await prepareCloudMedia(file, platforms);
+      const payload = await prepareCloudMedia(
+        file,
+        platforms,
+        engine === "local"
+          ? { originalMaxSide: 1024, originalQuality: 0.8 }
+          : undefined,
+      );
       const image = await api<Media>(`/api/media?companyId=${company.id}`, {
         method: "POST",
         body: payload,
@@ -259,7 +276,27 @@ export function SocialAI({
           geliştirmede gerçek model çağrılmaz.
         </p>
       )}
-      {usage && (
+      {localAvailable && admin && (
+        <label className="ai-engine-choice">
+          Asistanın çalışacağı yer
+          <select
+            value={engine}
+            disabled={busy}
+            onChange={(event) =>
+              setEngine(event.target.value as "local" | "cloudflare")
+            }
+          >
+            <option value="local">
+              Şirket bilgisayarı · küçük yerel model
+            </option>
+            <option value="cloudflare">
+              Cloudflare · günlük ücretsiz kota
+            </option>
+          </select>
+        </label>
+      )}
+      {engine === "local" && <LocalAIStatus onReady={setLocalReady} />}
+      {usage && engine === "cloudflare" && (
         <div className="ai-budget" aria-label="AI kullanım bütçesi">
           <div>
             <strong>Günlük güvenli bütçe</strong>
@@ -301,12 +338,16 @@ export function SocialAI({
           <section className="card ai-chat">
             <div className="ai-section-heading">
               <h2>Sosyal medya danışmanı</h2>
-              <span>Qwen3 · Cloudflare</span>
+              <span>
+                {engine === "local"
+                  ? "Qwen3.5-4B · Yerel"
+                  : "Gemma 4 · Cloudflare"}
+              </span>
             </div>
             <p className="ai-subtext">
-              Son 20 yanıt hesabınıza ve bu şirkete özel saklanır. Yeni bir
-              danışma yanıtında, girdi boyutuna sığan son en fazla 4 konuşma
-              bağlam olarak kullanılır.
+              {engine === "local"
+                ? "Son 20 yanıt hesabınıza ve bu şirkete özel saklanır. Küçük model her istekte şirket hafızasını ve verdiğiniz özeti kullanır; önceki sohbeti otomatik bağlamına almaz."
+                : "Son 20 yanıt hesabınıza ve bu şirkete özel saklanır. Yeni danışma yanıtında girdi boyutuna sığan son en fazla 4 konuşma bağlam olarak kullanılır."}
             </p>
             {turns.length > 0 && (
               <button
@@ -394,8 +435,8 @@ export function SocialAI({
                               </p>
                             )}
                             <p className="ai-publication-block">
-                              Yayın bağlantısı etkin değil:{" "}
-                              {socialConnections[post.platform].api}.
+                              Bu taslak henüz paylaşılmadı. Hedef hesabı Hesap
+                              bağlantıları bölümünden açabilirsiniz.
                             </p>
                           </details>
                         ))}
@@ -503,7 +544,11 @@ export function SocialAI({
                   accept="image/jpeg,image/png,image/webp"
                   className="visually-hidden"
                   aria-label="AI için görsel yükle"
-                  disabled={busy || !cloud || !usage?.enabled}
+                  disabled={
+                    busy ||
+                    !cloud ||
+                    !(engine === "local" ? localReady : usage?.enabled)
+                  }
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     e.target.value = "";
@@ -529,7 +574,11 @@ export function SocialAI({
                   <button
                     type="button"
                     className="secondary"
-                    disabled={busy || !cloud || !usage?.enabled}
+                    disabled={
+                      busy ||
+                      !cloud ||
+                      !(engine === "local" ? localReady : usage?.enabled)
+                    }
                     onClick={() => fileInput.current?.click()}
                   >
                     <ImagePlus size={16} />
@@ -555,7 +604,9 @@ export function SocialAI({
                 maxLength={6000}
                 rows={5}
                 required
-                disabled={busy || !usage?.enabled}
+                disabled={
+                  busy || !(engine === "local" ? localReady : usage?.enabled)
+                }
                 placeholder="Görselin konusunu ve ana mesajınızı kısaca yazın. Örn. Yeni seramik koleksiyonumuz geldi. El yapımı kupalarımızı tanıtalım. Fiyat veya kampanya varsa kesin bilgilerini ekleyin."
               />
               <div className="ai-quick-prompts">
@@ -567,7 +618,10 @@ export function SocialAI({
                   <button
                     type="button"
                     key={value}
-                    disabled={busy || !usage?.enabled}
+                    disabled={
+                      busy ||
+                      !(engine === "local" ? localReady : usage?.enabled)
+                    }
                     onClick={() => {
                       setQuestion(value);
                       setMode("chat");
@@ -586,7 +640,7 @@ export function SocialAI({
                   className="primary"
                   disabled={
                     busy ||
-                    !usage?.enabled ||
+                    !(engine === "local" ? localReady : usage?.enabled) ||
                     !question.trim() ||
                     (mode === "posts" && !selected.length)
                   }
@@ -605,9 +659,8 @@ export function SocialAI({
               </div>
               {mode === "posts" && (
                 <p className="ai-publication-note">
-                  Bu adım içerikleri hazırlar. Otomatik paylaşım için her
-                  platformun yayın bağlantısı ve izni gerekir; şu an API yayını
-                  etkin değil.{" "}
+                  Bu adım içerikleri hazırlar. Stüdyoda kontrol edip paylaşımı
+                  hesap ekranından tamamlayın. Otomatik yayın bu sürümde yoktur.{" "}
                   <a
                     href="https://github.com/mucaeksi/social-media-tool/blob/main/docs/META_KURULUM.md"
                     target="_blank"
@@ -617,7 +670,7 @@ export function SocialAI({
                   </a>
                 </p>
               )}
-              {cloud && usage && !usage.enabled && (
+              {cloud && engine === "cloudflare" && usage && !usage.enabled && (
                 <small className="browser-message">
                   Bu ortamda model etkin değil. Şirket hafızasını
                   hazırlayabilirsiniz.

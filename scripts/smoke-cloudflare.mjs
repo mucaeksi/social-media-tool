@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { LOCAL_MODEL, LOCAL_EXPERT_VERSION } from "../shared/local-ai.mjs";
 import {
   manifestPath,
   archivePath,
@@ -53,6 +54,8 @@ export async function smokeCloudflare(deployment, adminVerification) {
           result.database === "d1" &&
           result.socialBrowser === true &&
           result.companyComputer === true &&
+          result.localAI?.model === LOCAL_MODEL &&
+          result.localAI?.expertVersion === LOCAL_EXPERT_VERSION &&
           result.ai === "cloudflare" &&
           result.aiExpertVersion === "gorsel-ozet-v1" &&
           result.storage === deployment.mediaStorage
@@ -94,6 +97,16 @@ export async function smokeCloudflare(deployment, adminVerification) {
     )
       throw new Error("Otomatik güncelleme bildirimi paketle eşleşmiyor.");
     extractRelease(archive, update.version);
+    const columns = await databaseQuery(
+      deployment,
+      "PRAGMA table_info(ai_turns)",
+    );
+    if (
+      !["engine", "model"].every((name) =>
+        columns.some((column) => column.name === name),
+      )
+    )
+      throw new Error("Yerel AI geçmişi şeması doğrulanamadı.");
     const anonymous = await fetch(`${deployment.url}/api/companies`, {
       redirect: "manual",
     });
@@ -166,6 +179,12 @@ export async function smokeCloudflare(deployment, adminVerification) {
           .status !== 403
       )
         throw new Error("Editör yönetici bilgilerine erişebiliyor.");
+      const localSetup = await fetch(
+        `${deployment.url}/api/computer/ai/setup`,
+        { method: "POST", headers },
+      );
+      if (localSetup.status !== 403)
+        throw new Error("Editör yerel model kurulumunu başlatabiliyor.");
     } else {
       const [admin] = await databaseQuery(
         deployment,

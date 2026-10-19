@@ -6,7 +6,8 @@ export type PlatformId =
   | "pinterest"
   | "youtube"
   | "tiktok"
-  | "linkedin";
+  | "linkedin"
+  | "tumblr";
 export type SocialPlatformId = PlatformId | "tumblr";
 export type Platform = {
   id: PlatformId;

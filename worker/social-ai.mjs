@@ -69,6 +69,8 @@ const turnView = (r) => ({
   mediaId: r.media_id ?? null,
   imageObservation: r.image_observation ?? null,
   expertVersion: r.expert_version ?? null,
+  engine: r.engine ?? "cloudflare",
+  model: r.model ?? AI_MODEL,
 });
 async function company(c, id) {
   const result = await c.get("store").company(id);
@@ -220,7 +222,7 @@ export function aiMessages({
               hasMedia: Boolean(imageObservation),
               visualContext: Boolean(imageObservation),
             }) +
-            "\nÇıktı bütçesi sınırlı: her title en fazla 70, caption en fazla 400, alt en fazla 160 karakter olsun; önemli kaynak bilgisini koru. X için etiketlerle birlikte 280 karakteri aşma. Instagram görsel ayrıntısıyla, Facebook topluluk bağlamıyla, X somut bir duyuruyla, Threads doğal bir soruyla, Pinterest arama niyetiyle, LinkedIn iş/kullanım bağlamıyla başlasın. YouTube video açıklaması hazırlığı, TikTok kısa bir fotoğraf/video anlatımı olsun; elde olmayan video veya ek kare varmış gibi yazma. Sekiz caption alanını son kez karşılaştır: iki platformda aynı cümleyi veya açıklamayı ASLA kullanma; yalnızca etiketleri değiştirmek yeterli değil. Görsel gözlemi verilmişse alt alanına yalnızca bu gözlemden nesnel bir açıklama yaz. Geçerli JSON nesnesi döndür. /no_think"
+            "\nÇıktı bütçesi sınırlı: her title en fazla 70, caption en fazla 400, alt en fazla 160 karakter olsun; önemli kaynak bilgisini koru. X için etiketlerle birlikte 280 karakteri aşma. Instagram görsel ayrıntısıyla, Facebook topluluk bağlamıyla, X somut bir duyuruyla, Threads doğal bir soruyla, Pinterest arama niyetiyle, LinkedIn iş/kullanım bağlamıyla başlasın. YouTube video açıklaması hazırlığı, TikTok kısa bir fotoğraf/video anlatımı olsun; elde olmayan video veya ek kare varmış gibi yazma. Caption alanlarını son kez karşılaştır: iki platformda aynı cümleyi veya açıklamayı ASLA kullanma; yalnızca etiketleri değiştirmek yeterli değil. Görsel gözlemi verilmişse alt alanına yalnızca bu gözlemden nesnel bir açıklama yaz. Geçerli JSON nesnesi döndür. /no_think"
           : input.question + "\n/no_think",
     },
   ];
@@ -253,7 +255,7 @@ export function aiPosts(text, selected, { onlySelected = false } = {}) {
     );
   }
   const parsed = z
-    .object({ posts: z.array(postSchema).min(1).max(8) })
+    .object({ posts: z.array(postSchema).min(1).max(9) })
     .safeParse(value);
   if (!parsed.success)
     fail(

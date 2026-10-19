@@ -49,7 +49,7 @@ jobs:
         with:
           node-version: "24"
       - run: node scripts/build-companion.mjs
-      - run: node --test tests/companion/update.test.mjs
+      - run: node --test tests/companion/update.test.mjs tests/companion/local-ai.test.mjs
         env:
           NPM_CONFIG_CACHE: ${{ runner.temp }}/sosyal-studio-npm-cache
   deploy:

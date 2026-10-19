@@ -1,0 +1,2 @@
+ALTER TABLE ai_turns ADD COLUMN engine TEXT NOT NULL DEFAULT 'cloudflare';
+ALTER TABLE ai_turns ADD COLUMN model TEXT;
