@@ -4,6 +4,8 @@ Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Tür
 
 **İçerik hazırlama ve deneysel sosyal hesap tarayıcısı.** Canlı Cloudflare sürümünde yönetici, şirketlere ayrı hesaplar ekleyip platformun kendi ekranında giriş yapabilir; oturumlar şifreli saklanır. Hazırlanan metin açık gönderi alanına aktarılabilir. Toplu otomatik yayınlama, görseli uzak forma yükleme ve zamanlama henüz yoktur. [Hesap girişi ve doğrulanan kapsam](docs/HESAP_GIRISI.md).
 
+[Sekiz platformun resmi API ve web girişi koşulları](docs/PLATFORM_BAGLANTILARI.md) panelde hesap kartlarına da eklendi. Facebook, Instagram, Threads, Pinterest ve Google/YouTube giriş alanları açıldı; gerçek hesap girişi denenmedi. X erişimi reddedildi, TikTok ve LinkedIn giriş alanları doğrulanamadı. Resmi API bağlantısı henüz etkin değildir.
+
 ## Cloudflare üzerinde yayın
 
 Kaynaklar GitHub `main` dalındadır. Her kaynak güncellemesi `.github/workflows/cloudflare.yml` ile test edilip Cloudflare Workers'a dağıtılır. Üretim veritabanı Cloudflare D1, görsel deposu R2 (henüz etkin değilse D1), giriş doğrulaması D1 üzerinde kullanıcı adı/şifre ve güvenli oturum çerezleriyle yapılır. GitHub Actions mevcut `CLOUDFLARE_API` repository secret'ını kullanır; tarayıcıya veya koda secret yazılmaz.

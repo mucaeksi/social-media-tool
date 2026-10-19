@@ -1,6 +1,6 @@
 # Sosyal hesaplara normal giriş
 
-19 Ekim güncellemesi: kullanıcı ücretsiz resmi API kullanımını da kabul etti. Resmi bağlantılara öncelik verilecek; Meta geliştirici uygulaması henüz yok. [İlk kurulum adımları](META_KURULUM.md). Aşağıdaki deneysel tarayıcı seçeneği korunur; OAuth ve API yayınlama henüz uygulanmadı.
+19 Ekim güncellemesi: kullanıcı ücretsiz resmi API kullanımını da kabul etti. Resmi bağlantılara öncelik verilecek; Meta geliştirici uygulaması henüz yok. [İlk kurulum adımları](META_KURULUM.md) ve [sekiz platformun erişim koşulları](PLATFORM_BAGLANTILARI.md). Aşağıdaki deneysel tarayıcı seçeneği korunur; OAuth ve API yayınlama henüz uygulanmadı.
 
 Kullanıcı, sosyal ağlara kullanıcı adı/şifre ve istenen doğrulama koduyla giriş yapmayı; yardımcı eklenti olmadan yalnızca web panelinden çalışmayı seçti. Bu akış için geliştirici uygulaması yerine Cloudflare Browser Run kullanılır. Ücretli plan satın alınmaz. Normal web sayfasına giriş, resmi API yayın izni sağlamaz.
 
@@ -18,8 +18,8 @@ Ekrandan ayrılmadan veya panelden çıkmadan önce **Oturumu kaydet ve kapat** 
 
 ## Gerçek doğrulama ve sınırlar
 
-- Cloudflare tarayıcısında Instagram'ın giriş formu, etkileşimli Live View ve panel içinde gösterime izin veren yanıt başlıkları doğrulandı. Kullanıcının Instagram hesabına giriş yapılmadı.
-- X, Cloudflare'den ilk gerçek açılma denemelerini `net::ERR_HTTP_RESPONSE_CODE_FAILURE` ile reddetti. X girişi ve paylaşımı çalışıyor kabul edilmez. Diğer altı sağlayıcının gerçek hesap akışları henüz doğrulanmadı.
+- Cloudflare tarayıcısında Facebook, Instagram, Threads, Pinterest ve Google/YouTube giriş alanları, etkileşimli Live View ve panel içinde gösterime izin veren yanıt başlıkları doğrulandı. Kullanıcının hesaplarına giriş yapılmadı.
+- X, Cloudflare'den açılma denemelerini `net::ERR_HTTP_RESPONSE_CODE_FAILURE` ile reddetti. TikTok ve LinkedIn sayfaları ile canlı görünüm açıldı; giriş alanları doğrulanamadı. Bu üç platform için giriş ve paylaşım çalışıyor kabul edilmez. Diğerlerinde de gerçek hesap akışları henüz denenmedi.
 - CAPTCHA, ek doğrulama veya oturum sonlandırması platformun kontrolündedir. İki adımlı doğrulamanın yalnızca bir kez isteneceği garanti edilmez. Engelleri aşma, gizlenmiş tarayıcı veya CAPTCHA çözme uygulanmaz.
 - Toplu otomatik gönderim, platforma göre yayın işçisi/kuyruğu, uzak forma görsel aktarma, video yükleme ve zamanlama yoktur. Açık tarayıcıda paylaşımı kullanıcı tamamlar; panel yayın başarısı veya gönderi kimliği üretmez.
 - Cloudflare yalnızca çerezleri saklar; tam tarayıcı profili, IndexedDB, yerel depolama, cihaz anahtarları ve passkey'ler taşınmaz. Bazı girişler bu nedenle yeniden istenebilir veya çalışmayabilir.

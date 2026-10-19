@@ -66,10 +66,10 @@
     "semantic_hash": "0352474ba2918efe13895edbc3780d94"
   },
   "tsconfig.json": {
-    "mtime": 1792339019.6218085,
-    "seen": 1792339555.5229998,
-    "ast_hash": "84cde3ed94e2403280e418adba550786",
-    "semantic_hash": "84cde3ed94e2403280e418adba550786"
+    "mtime": 1792374591.823676,
+    "seen": 1792374687.2387018,
+    "ast_hash": "f14203a3ecdf5788dd115e25f41e9829",
+    "semantic_hash": ""
   },
   "vite.config.mjs": {
     "mtime": 1792339973.435776,
@@ -120,15 +120,15 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792373819.9975383,
-    "seen": 1792373838.7476742,
-    "ast_hash": "b20cf26b13dec8efaa92f64d3270639c",
+    "mtime": 1792374673.403494,
+    "seen": 1792374687.2391055,
+    "ast_hash": "32763c046841d19328362b2504ee0a61",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792373005.4075313,
-    "seen": 1792373141.0537286,
-    "ast_hash": "b00c7412f8706e9401ea75cd7598d9c0",
+    "mtime": 1792374673.2554944,
+    "seen": 1792374687.2391071,
+    "ast_hash": "158a4516cffd7c4c04646332fbd84b71",
     "semantic_hash": ""
   },
   "docs/MIMARI.md": {
@@ -402,9 +402,9 @@
     "semantic_hash": ""
   },
   "src/SocialAccounts.tsx": {
-    "mtime": 1792373830.1135192,
-    "seen": 1792373838.7468903,
-    "ast_hash": "ef676ce59727eb76addecbf0af9faa0a",
+    "mtime": 1792374592.0116756,
+    "seen": 1792374687.238255,
+    "ast_hash": "9414790a2a5c70959fffcf85dc40b348",
     "semantic_hash": ""
   },
   "src/api.ts": {
@@ -450,15 +450,15 @@
     "semantic_hash": ""
   },
   "docs/HESAP_GIRISI.md": {
-    "mtime": 1792373820.165538,
-    "seen": 1792373838.7477384,
-    "ast_hash": "1663f0c2fdef82ffade64eda586c4c16",
+    "mtime": 1792374672.951495,
+    "seen": 1792374687.239155,
+    "ast_hash": "d23753c3f005deaf243e1746048edacb",
     "semantic_hash": ""
   },
   "docs/META_KURULUM.md": {
-    "mtime": 1792373819.2815394,
-    "seen": 1792373838.7477405,
-    "ast_hash": "930c69685c93fb927c1dbfd6ca86defc",
+    "mtime": 1792374673.1034946,
+    "seen": 1792374687.2391567,
+    "ast_hash": "1784c351c20c860745ca32ae06b4029b",
     "semantic_hash": ""
   },
   "scripts/research-platforms.py": {
@@ -471,6 +471,18 @@
     "mtime": 1792374450.1720278,
     "seen": 1792374456.7820106,
     "ast_hash": "9beec13ea41b1a7bf0274a88843be8b7",
+    "semantic_hash": ""
+  },
+  "src/socialConnections.ts": {
+    "mtime": 1792374591.6676764,
+    "seen": 1792374687.2383437,
+    "ast_hash": "850da911dfaae119d3bab1d95eeeb396",
+    "semantic_hash": ""
+  },
+  "docs/PLATFORM_BAGLANTILARI.md": {
+    "mtime": 1792374672.7994952,
+    "seen": 1792374687.2391808,
+    "ast_hash": "7d5cd23675f1994e1f58972f31456e8b",
     "semantic_hash": ""
   }
 }

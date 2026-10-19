@@ -39,4 +39,4 @@ Kaynaklar:
 - [X resmi fiyatlandırma kaynağı](https://github.com/xdevplatform/docs/blob/cbb5ea4aa359e1ca24b7b3e9b666fad9d9c1d7c4/x-api/getting-started/pricing.mdx)
 - [X ücretsiz kredi şartları](https://github.com/xdevplatform/docs/blob/main/x-api/getting-started/free-credits.mdx)
 
-X fiyatlandırması resmi GitHub kaynağından doğrulandı. Bu çalışma ortamından Meta'nın doküman alan adına doğrudan erişim engellendiğinden hesabınıza özel güncel ürün/izin ekranları henüz doğrulanmadı; kurulumda görülen koşullar esas alınmalıdır.
+X fiyatlandırması resmi GitHub kaynağından doğrulandı. Meta'nın herkese açık Facebook, Instagram ve Threads belgeleri daha sonra GitHub Actions üzerinden incelendi; [platform koşulları](PLATFORM_BAGLANTILARI.md) ve `deployment/platform-research.json` kaydına bakın. Hesabınıza özel ürün/izin ekranları henüz doğrulanmadı; kurulumda görülen koşullar esas alınmalıdır.

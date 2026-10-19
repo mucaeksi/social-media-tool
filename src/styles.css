@@ -1795,6 +1795,15 @@ main {
 .browser-message { padding: 12px 0; font-size: 13px; line-height: 1.7; color: #326f61; }
 .browser-message.error { color: #9a382c; }
 .social-account-card > .secondary { margin-top: 12px; }
+.platform-connection-options { width: 100%; margin: 15px 0 4px; font-size: 12px; line-height: 1.7; color: #53654a; }
+.platform-connection-options summary { cursor: pointer; color: #40563a; font-weight: 550; }
+.platform-connection-options summary:focus-visible { outline: 2px solid var(--green); outline-offset: 4px; }
+.platform-connection-options details p, .platform-connection-options .browser-observation { margin: 10px 0; font-size: 12px; color: #53654a; }
+.platform-connection-options a { color: var(--green); text-underline-offset: 3px; }
+.platform-connection-options .browser-observation.blocked { color: #9a382c; }
+.platform-connection-options .browser-observation.unknown { color: #786222; }
+.social-account-list { width: 100%; }
+.browser-check-date { font-size: 11px; max-width: 100ch; color: #67745f; }
 .social-account-list article { border-top: 1px solid #e8eedf; padding: 14px 0; }
 .social-account-list strong, .social-account-list small { display: block; overflow-wrap: anywhere; }
 .social-account-list strong { font-size: 13px; color: #40563a; }

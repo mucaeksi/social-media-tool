@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { api } from "./api.ts";
 import { Modal } from "./Modal.tsx";
+import { socialConnections, browserObservation, browserCheckedAt } from "./socialConnections.ts";
 import type { AuthUser, Company, Platform, PlatformId, Post } from "./types.ts";
 
 type Account = {
@@ -48,6 +49,10 @@ const caption = (post?: Post) =>
     : "";
 const seconds = (ms: number) =>
   `${Math.floor(Math.max(0, ms) / 60000)}:${String(Math.floor(Math.max(0, ms) / 1000) % 60).padStart(2, "0")}`;
+const savedDate = (value: string) =>
+  new Intl.DateTimeFormat("tr-TR", {
+    dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Istanbul",
+  }).format(new Date(value));
 
 export function SocialAccounts({
   company,
@@ -183,10 +188,10 @@ export function SocialAccounts({
       <section className="card api-setup-note">
         <h2>Ücretsiz resmi API bağlantıları</h2>
         <p>
-          Facebook ve Instagram için önce Meta hesabınızda ücretsiz bir
-          geliştirici uygulaması oluşturun. Sonrasında sosyal hesaplar normal
-          giriş ekranından yetki verecek. Resmi API bağlantısı ve toplu
-          yayınlama henüz kurulmadı.
+          Uygun platformlarda resmi bağlantıya öncelik veriyoruz. İlk adım
+          Facebook ve Instagram için Meta uygulaması oluşturmak. Diğer
+          platformların koşullarını aşağıda görebilirsiniz. API ile hesap
+          bağlama ve toplu yayınlama henüz etkin değil.
         </p>
         <div>
           <a
@@ -203,12 +208,20 @@ export function SocialAccounts({
             target="_blank"
             rel="noreferrer"
           >
-            Kurulum adımları
+            Meta kurulum adımları
+          </a>
+          <a
+            className="secondary"
+            href="https://github.com/mucaeksi/social-media-tool/blob/main/docs/PLATFORM_BAGLANTILARI.md"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Tüm platformların koşulları
           </a>
         </div>
         <small>
-          X API ücretlidir ve ücretsiz plana alınmayacak. Aşağıdaki uzak
-          tarayıcı ayrı, deneysel bir seçenektir.
+          Ücretli API veya abonelik açılmayacak. API uygun değilse aşağıdaki
+          deneysel web girişi denenebilir; platformun erişime izin vermesi gerekir.
         </small>
       </section>
       <div className="connection-banner">
@@ -218,7 +231,8 @@ export function SocialAccounts({
           <p>
             Giriş ve doğrulama kodunu sosyal ağın kendi ekranında girin. Her
             şirket ve hesap için ayrı oturum saklanır. Şifreler uygulamaya
-            kaydedilmez.
+            kaydedilmez. Kaydettiğiniz oturum tarayıcı kapalıyken de korunur;
+            platform süreyi doldurursa veya yeniden doğrulama isterse tekrar giriş yaparsınız.
           </p>
         </div>
       </div>
@@ -241,9 +255,9 @@ export function SocialAccounts({
       <div className="inline-warning">
         <CircleAlert size={18} />
         <span>
-          Bu özellik deneyseldir. Instagram giriş formu Cloudflare üzerinden
-          doğrulandı. X ilk erişim denemelerini reddetti; diğer platformlar
-          henüz doğrulanmadı. Yeniden giriş veya doğrulama gerekebilir. Toplu
+          Bu özellik deneyseldir. Her platformun son giriş ekranı kontrolü
+          kendi kartında gösterilir. Giriş formunun açılması, hesabınıza giriş
+          yapılabildiğini doğrulamaz. Toplu
           otomatik paylaşım henüz yoktur; açık tarayıcıda paylaşımı siz
           tamamlarsınız.
         </span>
@@ -298,6 +312,8 @@ export function SocialAccounts({
       <div className="connections-grid">
         {platforms.map((p) => {
           const list = accounts.filter((a) => a.platform === p.id);
+          const connection = socialConnections[p.id];
+          const observation = browserObservation(p.id);
           return (
             <section
               key={p.id}
@@ -311,6 +327,18 @@ export function SocialAccounts({
                 </span>
               </div>
               <h2>{p.name}</h2>
+              <div className="platform-connection-options">
+                <details>
+                  <summary>API: {connection.api}</summary>
+                  <p>{connection.detail}</p>
+                  <a href={connection.setup} target="_blank" rel="noreferrer">
+                    {p.id === "x" || p.id === "tiktok" ? "Resmi koşulları incele" : "Geliştirici hesabını aç"}
+                  </a>
+                </details>
+                <p className={`browser-observation ${observation.tone}`}>
+                  <strong>Web girişi:</strong> {observation.text}
+                </p>
+              </div>
               <div className="social-account-list">
                 {list.map((account) => (
                   <article key={account.id}>
@@ -320,6 +348,11 @@ export function SocialAccounts({
                         ? "Oturum kaydedildi · Yeniden doğrulama gerekebilir"
                         : "Giriş bekliyor"}
                     </small>
+                    {account.savedAt && (
+                      <small>
+                        Son kayıt: <time dateTime={account.savedAt}>{savedDate(account.savedAt)}</time>
+                      </small>
+                    )}
                     <div>
                       <button
                         className="secondary"
@@ -368,6 +401,10 @@ export function SocialAccounts({
           );
         })}
       </div>
+      <p className="browser-message browser-check-date">
+        Giriş ekranı kontrolü: <time dateTime={browserCheckedAt}>{savedDate(browserCheckedAt)}</time> (Türkiye saati).
+        {" "}Gerçek hesap girişi ve paylaşım denenmedi. Kayıtlı oturum, platformun girişinizi hâlâ geçerli saydığını garanti etmez.
+      </p>
       {adding && (
         <Modal
           title={`${adding.name} hesabı ekle`}
