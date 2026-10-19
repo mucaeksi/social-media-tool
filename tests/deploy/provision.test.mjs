@@ -105,8 +105,16 @@ test("Mevcut Cloudflare kaynakları tekrar oluşturulmaz; üretim yerel giriş i
     assert.equal(config.d1_databases[0].database_id, "database-id");
     assert.equal(config.assets.run_worker_first, true);
     assert.equal(config.browser.binding, "BROWSER");
-    assert.equal(config.durable_objects.bindings[0].class_name, "SocialBrowser");
-    assert.deepEqual(config.migrations[0].new_sqlite_classes, ["SocialBrowser"]);
+    assert.equal(config.ai.binding, "AI");
+    assert.equal(config.vars.AI_FREE_ONLY, "true");
+    assert.equal(result.workersAI.price, 0);
+    assert.equal(
+      config.durable_objects.bindings[0].class_name,
+      "SocialBrowser",
+    );
+    assert.deepEqual(config.migrations[0].new_sqlite_classes, [
+      "SocialBrowser",
+    ]);
     assert.ok(config.compatibility_flags.includes("nodejs_compat"));
   });
 });
@@ -314,4 +322,58 @@ test("Access hesap kaynak sınırlarında yeni kaynak isteği yapılmaz", async 
     assert.equal(result.legacyAccessAppId, "app-id");
     assert.ok(calls.every((call) => call.method === "GET"));
   });
+});
+
+test("Ücretli veya Free adıyla ücret içeren Workers AI planında hiçbir kaynak değiştirilmez", async () => {
+  for (const worker of [
+    {
+      price: 5,
+      state: "Provisioned",
+      rate_plan: { id: "workers_paid", public_name: "Workers Paid" },
+    },
+    {
+      price: 0,
+      state: "Provisioned",
+      rate_plan: { id: "workers_free", public_name: "Workers Free" },
+      component_values: [{ price: 1 }],
+    },
+    {
+      price: 0,
+      state: "Provisioned",
+      rate_plan: {
+        id: "workers_free_trial",
+        public_name: "Workers Free Trial",
+      },
+    },
+  ])
+    await fixture(
+      (pathname, options) =>
+        pathname.endsWith("/subscriptions")
+          ? [...existing(pathname, options), worker]
+          : existing(pathname, options),
+      async ({ calls }) => {
+        await assert.rejects(provisionCloudflare, /yalnızca Workers Free/);
+        assert.ok(calls.every((call) => call.method === "GET"));
+      },
+    );
+});
+
+test("Açıkça ücretsiz Workers planı AI binding ile kullanılabilir", async () => {
+  await fixture(
+    (pathname, options) =>
+      pathname.endsWith("/subscriptions")
+        ? [
+            ...existing(pathname, options),
+            {
+              price: 0,
+              state: "Provisioned",
+              rate_plan: { id: "workers_free", public_name: "Workers Free" },
+            },
+          ]
+        : existing(pathname, options),
+    async () => {
+      const result = await provisionCloudflare();
+      assert.equal(result.workersAI.applicationBudget, 9000);
+    },
+  );
 });

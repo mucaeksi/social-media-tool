@@ -15,6 +15,50 @@ export function requireCapacity(count, limit, resource) {
     );
 }
 
+export async function verifyWorkersAIFree(base) {
+  const subscriptions = await listAll(`${base}/subscriptions`);
+  const active = subscriptions.filter(
+    (s) =>
+      !["cancelled", "expired", "failed"].includes(
+        String(s.state).toLowerCase(),
+      ),
+  );
+  const workers = active.filter((s) =>
+    /workers|workers.ai|ai.gateway/i.test(
+      [
+        s.rate_plan?.id,
+        s.rate_plan?.public_name,
+        s.rate_plan?.scope,
+        ...(s.rate_plan?.sets ?? []),
+      ].join(" "),
+    ),
+  );
+  if (
+    workers.some(
+      (s) =>
+        !/free/i.test([s.rate_plan?.id, s.rate_plan?.public_name].join(" ")) ||
+        s.price !== 0 ||
+        /trial/i.test([s.rate_plan?.id, s.rate_plan?.public_name].join(" ")) ||
+        (s.component_values ?? s.components ?? []).some(
+          (component) =>
+            typeof component.price === "number" && component.price > 0,
+        ) ||
+        /trial|awaitingpayment/i.test(s.state ?? ""),
+    )
+  )
+    throw new Error(
+      "Workers AI için yalnızca Workers Free kullanılabilir. Ücretli veya belirsiz Workers/AI aboneliğinde dağıtım durduruldu; abonelik değiştirilmedi.",
+    );
+  return {
+    plan: "Workers Free",
+    price: 0,
+    dailyNeurons: 10000,
+    applicationBudget: 9000,
+    checkedAt: new Date().toISOString(),
+    paidSubscriptionFound: false,
+  };
+}
+
 export async function verifyZeroTrustFree(base) {
   const subscriptions = await listAll(`${base}/subscriptions`);
   const candidates = subscriptions.filter((subscription) => {

@@ -15,6 +15,7 @@ if (
     "deployment/browser-check.json",
     "deployment/browser-panel.json",
     "deployment/platform-research.json",
+    "deployment/ai-check.json",
   ].includes(destination)
 )
   throw new Error("Dağıtım sonuç yolu geçersiz.");

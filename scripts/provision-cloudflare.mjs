@@ -1,6 +1,9 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { cfApi, listAll } from "./cloudflare-api.mjs";
-import { verifyZeroTrustFree } from "./cloudflare-free-tier.mjs";
+import {
+  verifyZeroTrustFree,
+  verifyWorkersAIFree,
+} from "./cloudflare-free-tier.mjs";
 
 export async function provisionCloudflare() {
   const name = "sosyal-studio",
@@ -35,6 +38,7 @@ export async function provisionCloudflare() {
     );
   }
   const zeroTrust = await verifyZeroTrustFree(base);
+  const workersAI = await verifyWorkersAIFree(base);
   const databases = await listAll(`${base}/d1/database`);
   let db = databases.find((item) => item.name === databaseName);
   if (!db) {
@@ -87,6 +91,7 @@ export async function provisionCloudflare() {
     compatibility_date: "2026-07-01",
     compatibility_flags: ["nodejs_compat"],
     browser: { binding: "BROWSER" },
+    ai: { binding: "AI" },
     durable_objects: {
       bindings: [{ name: "SOCIAL_BROWSER", class_name: "SocialBrowser" }],
     },
@@ -117,6 +122,7 @@ export async function provisionCloudflare() {
       APP_ENV: "production",
       MEDIA_STORAGE: mediaStorage,
       AUTH_MODE: "password",
+      AI_FREE_ONLY: "true",
     },
   };
   const deployment = {
@@ -128,6 +134,7 @@ export async function provisionCloudflare() {
     legacyAccessAppId: application?.id ?? null,
     worker: name,
     zeroTrust,
+    workersAI,
   };
   await mkdir(".cloudflare", { recursive: true });
   await writeFile(

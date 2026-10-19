@@ -4,6 +4,8 @@ import type { FormEvent } from "react";
 import { Modal } from "./Modal.tsx";
 import { api } from "./api.ts";
 import { SocialAccounts } from "./SocialAccounts.tsx";
+import { SocialAI } from "./SocialAI.tsx";
+import type { AITurn } from "./SocialAI.tsx";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -126,11 +128,12 @@ export default function App({
   const [companies, setCompanies] = useState<Company[]>([]);
   const [cloud, setCloud] = useState(false);
   const [socialBrowser, setSocialBrowser] = useState(false);
+  const [aiEnabled, setAIEnabled] = useState(false);
   const [mediaStorage, setMediaStorage] = useState("r2");
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [companyId, setCompanyId] = useState("");
   const [page, setPage] = useState<
-    "studio" | "drafts" | "companies" | "connections"
+    "studio" | "drafts" | "companies" | "connections" | "ai"
   >("studio");
   const [loading, setLoading] = useState(true);
   const [fatalError, setFatalError] = useState("");
@@ -168,6 +171,8 @@ export default function App({
   const [dropActive, setDropActive] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const company = companies.find((item) => item.id === companyId);
+  const currentCompanyId = useRef(companyId);
+  currentCompanyId.current = companyId;
   const activePost = posts.find((post) => post.platform === activePlatform);
   const activeConfig = platforms.find((p) => p.id === activePlatform);
   const isBusy = Boolean(busy);
@@ -179,13 +184,17 @@ export default function App({
       const [list, configs, health] = await Promise.all([
         api<Company[]>("/api/companies"),
         api<Platform[]>("/api/platforms"),
-        api<{ database: string; storage?: string; socialBrowser?: boolean }>(
-          "/api/health",
-        ),
+        api<{
+          database: string;
+          storage?: string;
+          socialBrowser?: boolean;
+          ai?: string;
+        }>("/api/health"),
       ]);
       setCompanies(list);
       setCloud(health.database === "d1");
       setSocialBrowser(Boolean(health.socialBrowser));
+      setAIEnabled(health.ai === "cloudflare");
       setMediaStorage(health.storage ?? "local");
       setPlatforms(configs);
       setCompanyId(list[0]?.id ?? "");
@@ -367,6 +376,29 @@ export default function App({
       });
     });
   }
+  function applyAI(turn: AITurn) {
+    guard(() => {
+      if (turn.companyId !== currentCompanyId.current || !turn.posts?.length) {
+        setNotice({
+          text: "AI yanıtı farklı bir şirkete ait. Aktarım yapılmadı.",
+          error: true,
+        });
+        return;
+      }
+      reset();
+      setText(turn.question);
+      setPosts(turn.posts);
+      setSelected(turn.posts.map((post) => post.platform));
+      setActivePlatform(turn.posts[0].platform);
+      setPostRevision((v) => v + 1);
+      setSource("cloudflare-ai");
+      setDirty(true);
+      setPage("studio");
+      setNotice({
+        text: "AI içerikleri stüdyoya aktarıldı. Metinleri kontrol edin, görsel ekleyin ve taslağı kaydedin.",
+      });
+    });
+  }
   function editPost(
     field: keyof Omit<Post, "platform" | "hashtags">,
     value: string,
@@ -449,6 +481,7 @@ export default function App({
   );
   const navItems = [
     { id: "studio", name: "İçerik stüdyosu", icon: PenLine },
+    { id: "ai", name: "AI asistanı", icon: Sparkles },
     { id: "drafts", name: "Taslaklar", icon: Layers3 },
     { id: "companies", name: "Şirketler", icon: Building2 },
     { id: "connections", name: "Hesap bağlantıları", icon: Link2 },
@@ -458,6 +491,7 @@ export default function App({
     drafts: "Taslaklar",
     companies: "Şirketler",
     connections: "Hesap bağlantıları",
+    ai: "AI asistanı",
   };
 
   if (loading || fatalError)
@@ -546,14 +580,19 @@ export default function App({
               <Sparkles size={19} />
             </span>
             <strong>Fikrinize yeni bir dil.</strong>
-            <p>ChatGPT ile her platforma özel içerikler hazırlayın.</p>
+            <p>
+              {aiEnabled
+                ? "Şirketinizi tanıyan asistanla her platforma özel içerikler hazırlayın."
+                : "ChatGPT ile her platforma özel içerikler hazırlayın."}
+            </p>
             <button
               onClick={() => {
-                setPage("studio");
-                setHelp(true);
+                setPage(aiEnabled ? "ai" : "studio");
+                if (!aiEnabled) setHelp(true);
               }}
             >
-              Nasıl çalışır? <ArrowUpRight size={16} />
+              {aiEnabled ? "Asistanı aç" : "Nasıl çalışır?"}{" "}
+              <ArrowUpRight size={16} />
             </button>
           </div>
           <button className="sidebar-help" onClick={() => setHelp(true)}>
@@ -633,7 +672,9 @@ export default function App({
                     ? "Fikirleriniz kaybolmasın. Hazırladığınız içeriklere kaldığınız yerden devam edin."
                     : page === "companies"
                       ? "Her şirketin kimliği, anlatımı ve içerikleri kendi alanında."
-                      : "Şirketinizi seçin, sosyal hesaplarınıza uzak tarayıcıdan giriş yapın."}
+                      : page === "ai"
+                        ? "Markanızın bilgileriyle düşünün, platformlara uygun içerik hazırlayın."
+                        : "Şirketinizi seçin, sosyal hesaplarınıza uzak tarayıcıdan giriş yapın."}
               </p>
             </div>
             <div className="company-picker">
@@ -925,6 +966,23 @@ export default function App({
                   </section>
                 </div>
                 <aside className="right-column">
+                  {aiEnabled && (
+                    <section className="card studio-ai-entry">
+                      <Sparkles size={22} />
+                      <h2>Panelin içinde hazırlayın.</h2>
+                      <p>
+                        Şirket hafızasını kullanan sosyal medya asistanıyla
+                        içerik üretin; sonucu kontrol için stüdyoya aktarın.
+                      </p>
+                      <button
+                        className="primary"
+                        disabled={isBusy}
+                        onClick={() => setPage("ai")}
+                      >
+                        AI asistanını aç <ArrowRight size={16} />
+                      </button>
+                    </section>
+                  )}
                   <section className="assistant-card">
                     <div className="assistant-top">
                       <span className="assistant-icon">
@@ -1035,9 +1093,11 @@ export default function App({
                     <span className="source-pill">
                       {source === "chatgpt-import"
                         ? "ChatGPT’den aktarıldı"
-                        : source === "rules"
-                          ? "Temel şablon"
-                          : "Kaydedilmiş içerik"}
+                        : source === "cloudflare-ai"
+                          ? "Cloudflare AI ile hazırlandı"
+                          : source === "rules"
+                            ? "Temel şablon"
+                            : "Kaydedilmiş içerik"}
                     </span>
                   )}
                 </div>
@@ -1541,6 +1601,16 @@ export default function App({
                 </div>
               )}
             </>
+          ) : page === "ai" && company ? (
+            <SocialAI
+              key={company.id}
+              company={company}
+              user={user}
+              platforms={platforms}
+              cloud={cloud}
+              initialText={text}
+              onApply={applyAI}
+            />
           ) : (
             <>
               <SocialAccounts

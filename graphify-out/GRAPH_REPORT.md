@@ -1,24 +1,24 @@
 # Graph Report - social-media-tool  (2026-10-19)
 
 ## Corpus Check
-- 80 files · ~39,754 words
+- 86 files · ~46,830 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 5 file(s) not represented in the graph (top: (none) 3, .css 1, .jsonc 1)
 
 ## Summary
-- 458 nodes · 904 edges · 16 communities (14 shown, 2 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 13 edges (avg confidence: 0.85)
+- 501 nodes · 1025 edges · 31 communities (27 shown, 4 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 15 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5dc4fc9d`
+- Built from commit: `c8810dfe`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - GitHub ve Cloudflare dağıtımı
 - package.json
-- ref_node_child_process
+- social-ai.mjs
 - App
 - worker/index.mjs
 - compilerOptions
@@ -28,58 +28,72 @@
 - Mimari ve kapsam
 - social-accounts.test.mjs
 - AGENTS.md
-- passwords.mjs
+- password-auth.mjs
 - research-platforms.py
 - r2-budget.test.mjs
+- App.tsx
+- SocialAccounts.tsx
+- SocialAI.tsx
+- @playwright/test
+- AuthRoot.tsx
+- dependencies
+- devDependencies
+- Sosyal Studio
+- Sosyal medya uzmanı AI
+- Sosyal hesaplara normal giriş
+- Ücretsiz resmi API bağlantısı için ilk kurulum
+- Sosyal platform bağlantıları
+- Projeye eklenen beceriler
+- Modal
 
 ## God Nodes (most connected - your core abstractions)
-1. `App()` - 33 edges
+1. `App()` - 35 edges
 2. `scripts` - 18 edges
-3. `cfApi()` - 14 edges
-4. `createApp()` - 13 edges
-5. `SocialAccounts()` - 13 edges
-6. `compilerOptions` - 12 edges
-7. `protectSecret()` - 11 edges
-8. `hashPassword()` - 11 edges
-9. `databaseQuery()` - 10 edges
-10. `verifyPassword()` - 10 edges
+3. `registerSocialAI()` - 16 edges
+4. `cfApi()` - 15 edges
+5. `createApp()` - 13 edges
+6. `SocialAccounts()` - 13 edges
+7. `protectSecret()` - 12 edges
+8. `hashPassword()` - 12 edges
+9. `compilerOptions` - 12 edges
+10. `databaseQuery()` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `put()` --indirect_call--> `key()`  [INFERRED]
   tests/cloud/r2-budget.test.mjs → worker/browser-state.mjs
 - `get()` --indirect_call--> `key()`  [INFERRED]
   tests/cloud/r2-budget.test.mjs → worker/browser-state.mjs
+- `smokeCloudflare()` --calls--> `tokenDigest()`  [EXTRACTED]
+  scripts/smoke-cloudflare.mjs → shared/passwords.mjs
 - `start()` --calls--> `createApp()`  [EXTRACTED]
   tests/api.test.mjs → server/app.mjs
-- `registerPasswordRoutes()` --calls--> `verifyPassword()`  [EXTRACTED]
-  worker/password-auth.mjs → shared/passwords.mjs
-- `brief()` --indirect_call--> `text()`  [INFERRED]
-  src/App.tsx → shared/schemas.mjs
+- `aiMessages()` --calls--> `createPrompt()`  [EXTRACTED]
+  worker/social-ai.mjs → server/platforms.mjs
 
 ## Import Cycles
 - None detected.
 
-## Communities (16 total, 2 thin omitted)
+## Communities (31 total, 4 thin omitted)
 
 ### Community 0 - "GitHub ve Cloudflare dağıtımı"
 Cohesion: 0.20
 Nodes (10): Asistan üzerinden hesap oluşturma, Bileşenler, Dağıtımın yaptığı işlemler, Giriş, yönetici hesabı ve kullanıcı oluşturma, GitHub ve Cloudflare dağıtımı, R2 kullanım sınırları, Secret kullanımı, Sosyal hesap tarayıcısı (+2 more)
 
 ### Community 1 - "package.json"
-Cohesion: 0.05
-Nodes (36): dependencies, @cloudflare/puppeteer, express, hono, jose, lucide-react, react, react-dom (+28 more)
+Cohesion: 0.13
+Nodes (14): engines, node, name, private, type, version, @cloudflare/puppeteer, express (+6 more)
 
-### Community 2 - "ref_node_child_process"
-Cohesion: 0.25
-Nodes (3): children, root, child
+### Community 2 - "social-ai.mjs"
+Cohesion: 0.16
+Nodes (22): hono, companies, AI_LIMITS, AI_MODEL, aiMessages(), aiPosts(), aiReservation(), aiText() (+14 more)
 
 ### Community 3 - "App"
-Cohesion: 0.05
-Nodes (63): lucide-react, react, react-dom, text(), api(), App(), brief(), changeCompany() (+55 more)
+Cohesion: 0.15
+Nodes (22): text(), App(), applyAI(), brief(), changeCompany(), changed(), draftInput(), exportDraft() (+14 more)
 
 ### Community 4 - "worker/index.mjs"
 Cohesion: 0.07
-Nodes (48): zod, createApp(), fail(), requireCompany(), requireMedia(), validatePosts(), { app, store }, port (+40 more)
+Nodes (46): zod, createApp(), fail(), requireCompany(), requireMedia(), validatePosts(), { app, store }, port (+38 more)
 
 ### Community 5 - "compilerOptions"
 Cohesion: 0.14
@@ -90,52 +104,104 @@ Cohesion: 0.11
 Nodes (18): scripts, build, cf:build, cf:dev, cf:migrate:local, dev, dev:client, dev:server (+10 more)
 
 ### Community 7 - "provision.test.mjs"
-Cohesion: 0.08
-Nodes (28): applyAdminRequest(), databaseQuery(), keyId(), prepareAdminKey(), ensureBrowserSecret(), report, cfApi(), listAll() (+20 more)
+Cohesion: 0.06
+Nodes (44): applyAdminRequest(), databaseQuery(), keyId(), prepareAdminKey(), ensureBrowserSecret(), report, report, startedAt (+36 more)
 
 ### Community 8 - "setup.sh"
 Cohesion: 0.29
 Nodes (6): npm_config_cache, PATH, setup.sh script, UV_CACHE_DIR, UV_TOOL_BIN_DIR, UV_TOOL_DIR
 
 ### Community 10 - "Mimari ve kapsam"
-Cohesion: 0.05
-Nodes (37): Mevcut durum, Sonra gerekirse eğitim, Sosyal medya uzmanı AI, Önce marka bilgisini kullanma, Gerçek doğrulama ve sınırlar, Kaynaklar, Kullanım, Oturum verisinin korunması (+29 more)
+Cohesion: 0.29
+Nodes (6): Bileşenler, Doğrulama, Gerçek yayınlama için sonraki geliştirme, Mevcut sınırlar, Mimari ve kapsam, Veri akışı
 
 ### Community 11 - "social-accounts.test.mjs"
-Cohesion: 0.13
-Nodes (24): @cloudflare/puppeteer, report, startedAt, targets, companyId, controller(), otherId, secret (+16 more)
+Cohesion: 0.17
+Nodes (20): companyId, controller(), otherId, secret, tokens, accountCookies(), BROWSER_LIMITS, browserPlatforms (+12 more)
 
 ### Community 12 - "AGENTS.md"
 Cohesion: 0.50
 Nodes (3): GitHub ve Cloudflare, graphify, Projeye özgü geliştirme notları
 
-### Community 13 - "passwords.mjs"
-Cohesion: 0.13
-Nodes (25): jose, miniflare, child, run, smokeCloudflare(), login(), decode(), derive() (+17 more)
+### Community 13 - "password-auth.mjs"
+Cohesion: 0.29
+Nodes (12): jose, tokenDigest(), authenticate(), keySets, authenticatePassword(), checkLoginRate(), cookieName(), cookieToken() (+4 more)
 
 ### Community 15 - "r2-budget.test.mjs"
+Cohesion: 0.10
+Nodes (15): miniflare, login(), request(), bytes, delete(), get(), put(), deployment (+7 more)
+
+### Community 16 - "App.tsx"
+Cohesion: 0.18
+Nodes (17): blankCompany, initialPlatforms, platformColors, PlatformIcon(), Instagram(), Linkedin(), Youtube(), encode() (+9 more)
+
+### Community 17 - "SocialAccounts.tsx"
+Cohesion: 0.16
+Nodes (17): Account, caption(), savedDate(), seconds(), SocialAccounts(), close(), open(), refresh() (+9 more)
+
+### Community 18 - "SocialAI.tsx"
+Cohesion: 0.20
+Nodes (11): api(), initialize(), AITurn, date(), kinds, Memory, SocialAI(), ask() (+3 more)
+
+### Community 19 - "@playwright/test"
 Cohesion: 0.22
-Nodes (10): bytes, delete(), get(), put(), createR2Media(), reserve(), periodAt(), quotaError() (+2 more)
+Nodes (3): @playwright/test, sharp, ids
+
+### Community 20 - "AuthRoot.tsx"
+Cohesion: 0.24
+Nodes (4): lucide-react, react, react-dom, AuthRoot()
+
+### Community 21 - "dependencies"
+Cohesion: 0.20
+Nodes (10): dependencies, @cloudflare/puppeteer, express, hono, jose, lucide-react, react, react-dom (+2 more)
+
+### Community 22 - "devDependencies"
+Cohesion: 0.22
+Nodes (9): devDependencies, miniflare, @playwright/test, @types/react, @types/react-dom, typescript, vite, @vitejs/plugin-react (+1 more)
+
+### Community 23 - "Sosyal Studio"
+Cohesion: 0.29
+Nodes (7): Beceriler ve mimari, Cloudflare üzerinde yayın, Kontroller, Kullanım, Kurulum, Neler çalışıyor?, Sosyal Studio
+
+### Community 25 - "Sosyal medya uzmanı AI"
+Cohesion: 0.33
+Nodes (6): Kullanım ve şirket hafızası, Resmi kaynaklar, Sosyal medya uzmanı AI, Sınırlar ve doğrulama, Veri ve yetkiler, Ücretsiz kullanım
+
+### Community 26 - "Sosyal hesaplara normal giriş"
+Cohesion: 0.33
+Nodes (6): Gerçek doğrulama ve sınırlar, Kaynaklar, Kullanım, Oturum verisinin korunması, Sosyal hesaplara normal giriş, Ücretsiz kullanım ve oturum ömrü
+
+### Community 27 - "Ücretsiz resmi API bağlantısı için ilk kurulum"
+Cohesion: 0.40
+Nodes (5): Hesap tarafındaki hazırlık, Meta hesabında yapılacak işlem, Uygulama kimliğinden sonraki akış, Ücret sınırı, Ücretsiz resmi API bağlantısı için ilk kurulum
+
+### Community 28 - "Sosyal platform bağlantıları"
+Cohesion: 0.40
+Nodes (5): Doğrulanan kaynaklar, Geliştirici hesabında gereken hazırlık, Hangi yöntem kullanılabilir?, Oturumun kayıtlı kalması, Sosyal platform bağlantıları
+
+### Community 29 - "Projeye eklenen beceriler"
+Cohesion: 0.40
+Nodes (4): Bu projede nasıl kullanıldı?, Graphify, Güncelleme, Projeye eklenen beceriler
 
 ## Knowledge Gaps
 - **9 isolated node(s):** `@types/react`, `@types/react-dom`, `typescript`, `wrangler`, `npm_config_cache` (+4 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 192 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 206 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **4 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `App` to `package.json`?**
-  _High betweenness centrality (0.088) - this node is a cross-community bridge._
+- **Why does `react` connect `AuthRoot.tsx` to `App.tsx`, `package.json`, `SocialAI.tsx`, `SocialAccounts.tsx`?**
+  _High betweenness centrality (0.094) - this node is a cross-community bridge._
+- **Are the 2 inferred relationships involving `registerSocialAI()` (e.g. with `memoryView()` and `turnView()`) actually correct?**
+  _`registerSocialAI()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `@types/react`, `@types/react-dom`, `typescript` to the rest of the system?**
   _9 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `package.json` be split into smaller, more focused modules?**
-  _Cohesion score 0.049682875264270614 - nodes in this community are weakly interconnected._
-- **Why does `lucide-react` connect `App` to `package.json`?**
-  _High betweenness centrality (0.082) - this node is a cross-community bridge._
-- **Should `App` be split into smaller, more focused modules?**
-  _Cohesion score 0.05209274314965372 - nodes in this community are weakly interconnected._
-- **Why does `sharp` connect `package.json` to `worker/index.mjs`, `passwords.mjs`?**
-  _High betweenness centrality (0.058) - this node is a cross-community bridge._
+  _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
+- **Why does `lucide-react` connect `AuthRoot.tsx` to `App.tsx`, `package.json`, `SocialAI.tsx`, `SocialAccounts.tsx`?**
+  _High betweenness centrality (0.089) - this node is a cross-community bridge._
 - **Should `worker/index.mjs` be split into smaller, more focused modules?**
-  _Cohesion score 0.06558118498417007 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0701484895033282 - nodes in this community are weakly interconnected._
+- **Why does `zod` connect `worker/index.mjs` to `package.json`, `social-ai.mjs`, `password-auth.mjs`?**
+  _High betweenness centrality (0.060) - this node is a cross-community bridge._

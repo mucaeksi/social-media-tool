@@ -6,7 +6,7 @@ Sosyal Studio, sekiz platform için içerik hazırlayan Türkçe bir web uygulam
 
 1. Kullanıcı şirketi seçer; marka adı, hedef kitle, anlatım dili ve anahtar kelimeler içerik hazırlığında kullanılır.
 2. Ana metin ve isteğe bağlı görsel girilir. JPEG, PNG ve WebP dosyaları en fazla 15 MB / 40 megapiksel olarak kabul edilir. Sunucu dosyanın gerçek içeriğini okur, yönünü düzeltir, üstverisini temizleyip JPEG olarak saklar.
-3. Temel hazırlama kaynak metni korur, şirketin anahtar kelimelerinden sınırlı sayıda etiket ekler. Bu işlem yapay zekâ değildir. ChatGPT seçeneği ise şirkete özel talimat oluşturur; kullanıcı kendi ChatGPT hesabında çalıştırıp JSON yanıtını panele yapıştırır.
+3. Temel şablon kaynak metni koruyup etiket ekler; yapay zekâ değildir. Cloudflare AI asistanı Qwen3 modeli ve şirket hafızasıyla danışma/ayrı platform içerikleri üretir; kullanıcı sonucu stüdyoya aktarır. Manuel ChatGPT seçeneğinde kullanıcı şirkete özel talimatı kendi hesabında çalıştırıp JSON yanıtını panele yapıştırır.
 4. İçe aktarılan JSON, seçili platformların her birini tam bir kez içermelidir. Hatalı yanıt mevcut taslağın üzerine yazılmaz. Kullanıcı başlıkları, metinleri, etiketleri ve görsel açıklamalarını düzenler.
 5. SQLite taslakları kalıcı olarak saklar. Görseller platforma uygun boyutta JPEG; metinler JSON olarak indirilir. JSON içindeki görsel yolları bu uygulamaya aittir; görseller ayrıca indirilmelidir.
 

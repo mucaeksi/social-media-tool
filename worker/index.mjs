@@ -22,6 +22,7 @@ import { createD1Media } from "./d1-media.mjs";
 import { createR2Media, R2_LIMITS, r2Usage } from "./r2-media.mjs";
 import { parseMediaForm, objectKey, removeCompanyObjects } from "./media.mjs";
 import { browserCommand, registerSocialAccounts } from "./social-accounts.mjs";
+import { registerSocialAI } from "./social-ai.mjs";
 export { SocialBrowser } from "./social-browser.mjs";
 
 const app = new Hono();
@@ -130,6 +131,7 @@ app.use(
 );
 registerPasswordRoutes(app);
 registerSocialAccounts(app);
+registerSocialAI(app);
 
 app.get("/api/health", async (c) => {
   await c.env.DB.prepare("SELECT 1").first();
@@ -140,7 +142,7 @@ app.get("/api/health", async (c) => {
     mediaProcessing: "browser",
     publishing: false,
     socialBrowser: Boolean(c.env.SOCIAL_BROWSER && c.env.BROWSER_STATE_KEY),
-    ai: "manual-chatgpt",
+    ai: c.env.AI && c.env.AI_FREE_ONLY === "true" ? "cloudflare" : "manual-chatgpt",
     auth: c.env.AUTH_MODE === "password" ? "password" : "development",
   });
 });
@@ -398,7 +400,7 @@ app.onError((error, c) => {
       },
       400,
     );
-  if (error.status && error.status < 500)
+  if (error.status && (error.status < 500 || error.public))
     return c.json({ error: error.message }, error.status);
   console.error("Cloudflare işlem hatası:", error.name);
   return c.json(

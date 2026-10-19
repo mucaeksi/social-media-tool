@@ -6,6 +6,8 @@ Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Tür
 
 [Sekiz platformun resmi API ve web girişi koşulları](docs/PLATFORM_BAGLANTILARI.md) panelde hesap kartlarına da eklendi. Facebook, Instagram, Threads, Pinterest ve Google/YouTube giriş alanları açıldı; gerçek hesap girişi denenmedi. X erişimi reddedildi, TikTok ve LinkedIn giriş alanları doğrulanamadı. Resmi API bağlantısı henüz etkin değildir.
 
+**Entegre AI asistanı:** Cloudflare Workers AI üzerindeki Qwen3 modeli şirket hafızasıyla Türkçe fikir/strateji yanıtları ve sekiz platforma ayrı içerik hazırlar. Yönetici marka bilgileri ve onaylı örnekler ekler; kullanıcı sonucu kontrol edip stüdyoya aktarır. Model ağırlıkları eğitilmez. Sağlayıcının günlük 10.000 Neuron ücretsiz kotası içinde uygulama 9.000 Neuron güvenli rezervasyon bütçesi kullanır; ücretli plan açılmaz. [Kullanım ve sınırlar](docs/AI_YOL_HARITASI.md).
+
 ## Cloudflare üzerinde yayın
 
 Kaynaklar GitHub `main` dalındadır. Her kaynak güncellemesi `.github/workflows/cloudflare.yml` ile test edilip Cloudflare Workers'a dağıtılır. Üretim veritabanı Cloudflare D1, görsel deposu R2 (henüz etkin değilse D1), giriş doğrulaması D1 üzerinde kullanıcı adı/şifre ve güvenli oturum çerezleriyle yapılır. GitHub Actions mevcut `CLOUDFLARE_API` repository secret'ını kullanır; tarayıcıya veya koda secret yazılmaz.
@@ -22,6 +24,7 @@ R2 için kodda 10 GB depolama, UTC ayında 1 milyon Class A ve 10 milyon Class B
 - Şirkete özel taslak listesi; Cloudflare D1 üzerinde, yerel geliştirmede SQLite ile kalıcı kayıt.
 - Platform seçimi; başlık, açıklama, etiket, karakter sayacı ve görsel açıklaması düzenleme.
 - API gerektirmeyen ChatGPT akışı: talimat oluştur → kendi hesabında çalıştır → JSON yanıtını aktar. ChatGPT oturumuna program içinden erişilmez.
+- Cloudflare AI ile şirkete özel danışma, içerik üretme ve kullanıcı onayıyla stüdyoya aktarma. Sohbet kullanıcı + şirket kapsamında; ortak hafızayı yönetici düzenler.
 - JPEG, PNG ve WebP yükleme; platforma göre boyutlandırma, beyaz dolgu veya merkezden kırpma; JPEG indirme.
 - Metinleri JSON olarak dışa aktarma. Görseller ayrı indirilir; dışa aktarımdaki yerel görsel yolları uygulama çalışırken kullanılabilir.
 - Mobil düzen, klavye ile kullanılabilen pencereler ve kaydedilmemiş değişiklik uyarısı.

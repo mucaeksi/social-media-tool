@@ -53,6 +53,8 @@ Kaynak: [Cloudflare R2 fiyatlandırması](https://developers.cloudflare.com/r2/p
 
 ## Sosyal hesap tarayıcısı
 
+Entegre metin asistanı ayrıca Workers AI `AI` binding'i ve `AI_FREE_ONLY=true` kullanır. Model Cloudflare'de, hafıza/sohbetler D1 `0006_social_ai.sql` tablolarındadır. Workers Free dağıtımda kontrol edilir. Sağlayıcının 10.000 Neuron/gün sınırı içinde 9.000 Neuron atomik uygulama bütçesi vardır. [Kullanım ve gerçek model kontrolü](AI_YOL_HARITASI.md). AI çağrıları aşağıdaki uzak tarayıcı süresini tüketmez.
+
 Üretimde `BROWSER` tarayıcı bağlantısı ve `SOCIAL_BROWSER` SQLite Durable Object eklenir. `social-browser-v1` migration mevcut D1/R2 verilerini değiştirmez; sosyal hesap tablosu eklemeli `0005_social_accounts.sql` ile kurulur. `BROWSER_STATE_KEY` yalnızca Worker secret olarak hazırlanır; her dağıtımda var olan anahtar korunur. Tarayıcıyı yöneten API, uygulamanın mevcut şifreli girişini ve admin rolünü zorunlu tutar. Yerel sürümde gerçek Cloudflare tarayıcısı etkin değildir.
 
 [Kullanım, doğrulanan platformlar ve 10 dakikalık günlük sınır](HESAP_GIRISI.md). Canlı panel kontrolü `Sosyal hesap tarayıcısı kontrolü` workflow'unda `panel=true` ile açıkça çalıştırılır. Geçici yönetici, şirket ve Instagram kayıtları oluşturur; gerçek giriş formunu ve oturumsuz sayfanın kaydedilmeden kapanmasını sınar, ardından test kayıtlarını temizler. Kullanıcının açık tarayıcısı varsa kontrol durur. Gerçek sosyal hesap şifresi veya gönderi kullanılmaz.

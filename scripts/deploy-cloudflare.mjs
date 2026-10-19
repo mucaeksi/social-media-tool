@@ -40,6 +40,7 @@ function wrangler(args) {
 try {
   const deployment = await provisionCloudflare();
   receipt.zero_trust = deployment.zeroTrust;
+  receipt.workers_ai = deployment.workersAI;
   receipt.url = deployment.url;
   wrangler(["d1", "migrations", "apply", "DB", "--remote"]);
   const adminVerification = await applyAdminRequest(deployment);
@@ -67,6 +68,7 @@ try {
     media: deployment.mediaStorage === "d1" ? "Cloudflare D1" : "Cloudflare R2",
     login: "Kullanıcı adı ve şifre — D1 oturumları",
     socialBrowser: "Cloudflare Browser Run — deneysel hesap girişi",
+    ai: "Cloudflare Workers AI — Qwen3, şirket hafızası ve ücretsiz bütçe",
   };
   if (process.env.GITHUB_STEP_SUMMARY)
     await appendFile(

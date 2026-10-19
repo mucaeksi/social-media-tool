@@ -46,6 +46,7 @@ export async function smokeCloudflare(deployment, adminVerification) {
           result.auth === "password" &&
           result.database === "d1" &&
           result.socialBrowser === true &&
+          result.ai === "cloudflare" &&
           result.storage === deployment.mediaStorage
         ) {
           ready = true;
@@ -153,6 +154,9 @@ export async function smokeCloudflare(deployment, adminVerification) {
       );
     }
     const configs = await (await http("/api/platforms")).json();
+    const aiStatus = await (await http("/api/ai/status")).json();
+    if (!aiStatus.enabled || aiStatus.limits?.dailyNeurons !== 9000)
+      throw new Error("Canlı AI binding veya ücretsiz bütçe doğrulanamadı.");
     if (configs.length !== 8) throw new Error("Canlı platform listesi eksik.");
     const company = await (
       await http("/api/companies", {
