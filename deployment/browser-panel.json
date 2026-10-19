@@ -1,14 +1,16 @@
 {
-  "checkedAt": "2026-10-19T01:37:40.333Z",
-  "sourceCommit": "b94017da80cf4b2ca4cc20fb5e9c480d68c35d37",
+  "checkedAt": "2026-10-19T01:43:05.635Z",
+  "sourceCommit": "045d3269aad069064e43fc1e9747f8868aa20222",
   "credentialsSubmitted": false,
   "postsSubmitted": false,
-  "stage": "save-and-close",
+  "stage": "completed",
   "loginFieldsVisible": true,
   "liveViewAvailable": true,
   "cookieReadAvailable": true,
-  "timeout": false,
-  "networkError": null,
-  "verified": false,
-  "error": "Panel içindeki giriş tarayıcısı canlıda doğrulanamadı. Kimlik bilgisi girilmedi ve paylaşım yapılmadı."
+  "sessionClosed": true,
+  "sessionSaved": false,
+  "cookieReadVerified": true,
+  "unauthenticatedSessionNotSaved": true,
+  "verified": true,
+  "httpStatus": 410
 }
