@@ -155,14 +155,14 @@ try {
   const status = (await http("/api/ai/status")).value;
   if (status.visionModel !== VISION_MODEL)
     throw new Error("Yayındaki görsel modeli güncel değil.");
+  report.reservedNeuronsBefore = status.reservedNeurons;
   if (
     !status.enabled ||
-    status.reservedNeurons > status.limits.dailyNeurons - 2200
+    status.reservedNeurons > status.limits.dailyNeurons - 900
   )
     throw new Error("Ücretsiz test bütçesi yok.");
   report.model = status.model;
   report.visionModel = status.visionModel;
-  report.reservedNeuronsBefore = status.reservedNeurons;
   report.stage = "company-memory";
   companyId = (
     await http("/api/companies", {
@@ -184,26 +184,6 @@ try {
       body: "Bu deneme işletmesi yalnızca Kayseri şehrinde hizmet veriyor.",
     },
   });
-  report.stage = "model-answer";
-  const chat = (
-    await http("/api/ai/ask", {
-      method: "POST",
-      body: {
-        companyId,
-        mode: "chat",
-        question:
-          "İşletmemiz hangi şehirde hizmet veriyor? Şirket hafızasına göre yalnızca şehir adını yaz.",
-      },
-    })
-  ).value;
-  if (
-    typeof chat.answer !== "string" ||
-    !chat.answer.toLocaleLowerCase("tr-TR").includes("kayseri") ||
-    chat.published !== false
-  )
-    throw new Error("Şirket hafızası uygulanmadı.");
-  report.knowledgeApplied = true;
-  report.realModelAnswer = true;
   report.stage = "image-upload";
   const drawing = Buffer.from(
     '<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg"><rect width="640" height="480" fill="white"/><ellipse cx="315" cy="410" rx="170" ry="20" fill="#ddd"/><path d="M415 170h35c105 0 105 155 0 155h-35" fill="none" stroke="#d21f24" stroke-width="38"/><path d="M175 140h255v210c0 70-255 70-255 0z" fill="#d21f24"/><ellipse cx="302" cy="140" rx="127" ry="35" fill="#ef5555"/><ellipse cx="302" cy="142" rx="108" ry="23" fill="#502818"/></svg>',
@@ -253,7 +233,7 @@ try {
           companyId,
           mode: "posts",
           question:
-            "Yeni ürünümüz için görseldeki nesneyi ve rengini esas alan kısa tanıtım metinleri hazırla. Özellik, fiyat, indirim, kalite veya malzeme iddiası uydurma. Her platforma farklı bir anlatım yaz.",
+            "Yeni ürünümüzü hizmet verdiğimiz şehirde tanıtıyoruz. Duyurunun odağı görseldeki ürün ve rengi. Doğrulanmış fiyat, indirim, kalite veya malzeme bilgimiz yok.",
           selected,
           mediaId: media.id,
         },
@@ -273,6 +253,14 @@ try {
     )
   )
     throw new Error("Platform içerikleri eksik.");
+  report.realModelAnswer = true;
+  report.knowledgeApplied = generated.posts.some((post) =>
+    (post.caption + " " + post.title)
+      .toLocaleLowerCase("tr-TR")
+      .includes("kayseri"),
+  );
+  if (!report.knowledgeApplied)
+    throw new Error("Şirket hafızası içerikte doğrulanamadı.");
   report.contentPlatforms = 8;
   report.contentValidated = true;
   report.imageObserved =
@@ -297,7 +285,7 @@ try {
   const workspace = (await http(`/api/ai/workspace?companyId=${companyId}`))
     .value;
   report.historyPersisted =
-    workspace.turns.length === 2 && workspace.memory.length === 1;
+    workspace.turns.length === 1 && workspace.memory.length === 1;
   if (!report.historyPersisted) throw new Error("Kayıt doğrulanamadı.");
   const finalBudget = (await http("/api/ai/status")).value;
   report.reservedNeuronsAfter = finalBudget.reservedNeurons;

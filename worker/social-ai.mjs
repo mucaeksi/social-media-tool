@@ -25,6 +25,7 @@ export const AI_LIMITS = Object.freeze({
   promptBytes: 26000,
   replyTokens: 2048,
   postTokens: 4096,
+  repairTokens: 2048,
 });
 const memorySchema = z.object({
   kind: z.enum(["fact", "rule", "example"]),
@@ -38,8 +39,8 @@ const requestSchema = z.object({
   selected: selectedSchema.optional(),
   mediaId: z.uuid().nullable().default(null),
 });
-function fail(status, message) {
-  throw Object.assign(new Error(message), { status, public: true });
+function fail(status, message, details = {}) {
+  throw Object.assign(new Error(message), { status, public: true }, details);
 }
 const dayAt = (now) => new Date(now).toISOString().slice(0, 10);
 async function json(c) {
@@ -275,11 +276,19 @@ export function aiPosts(text, selected) {
       .replace(/\s+/gu, " ")
       .toLocaleLowerCase("tr-TR"),
   );
-  if (new Set(captions).size !== posts.length)
+  if (new Set(captions).size !== posts.length) {
+    const seen = new Set(),
+      duplicateIds = [];
+    captions.forEach((caption, i) => {
+      if (seen.has(caption)) duplicateIds.push(posts[i].platform);
+      seen.add(caption);
+    });
     fail(
       502,
       "Model bazı platformlara aynı metni yazdı. Platformlara özel içerik doğrulanamadı; önceki gönderiler korundu. Tekrar deneyin.",
+      { duplicateIds, parsedPosts: posts },
     );
+  }
   return selected.map((id) => posts.find((p) => p.platform === id));
 }
 export function registerSocialAI(app) {
@@ -465,7 +474,7 @@ export function registerSocialAI(app) {
         // One bounded correction of invalid/duplicate post JSON can follow.
         // Reserve its full input/output ceiling before either model is called.
         (input.mode === "posts"
-          ? aiCost(AI_LIMITS.promptBytes, maxTokens)
+          ? aiCost(AI_LIMITS.promptBytes, AI_LIMITS.repairTokens)
           : 0) +
         (attachedMedia ? visionReservation() : 0),
     );
@@ -483,6 +492,8 @@ export function registerSocialAI(app) {
     }
     let text,
       posts = null;
+    let correctionTargets = input.selected,
+      originalPosts = null;
     for (
       let attempt = 0;
       attempt < (input.mode === "posts" ? 2 : 1);
@@ -492,7 +503,7 @@ export function registerSocialAI(app) {
       try {
         response = await c.env.AI.run(AI_MODEL, {
           messages,
-          max_tokens: maxTokens,
+          max_tokens: attempt ? AI_LIMITS.repairTokens : maxTokens,
           temperature: 0.6,
           ...(input.mode === "posts"
             ? { response_format: { type: "json_object" } }
@@ -507,24 +518,39 @@ export function registerSocialAI(app) {
       text = aiText(response);
       if (input.mode !== "posts") break;
       try {
-        posts = aiPosts(text, input.selected).map((post) => ({
+        const proposed = aiPosts(
+          text,
+          attempt ? correctionTargets : input.selected,
+        );
+        const combined = originalPosts
+          ? originalPosts.map(
+              (post) =>
+                proposed.find((p) => p.platform === post.platform) ?? post,
+            )
+          : proposed;
+        posts = aiPosts(
+          JSON.stringify({ posts: combined }),
+          input.selected,
+        ).map((post) => ({
           ...post,
           alt: imageObservation ? post.alt : "",
         }));
         break;
       } catch (error) {
         if (attempt || error.status !== 502) throw error;
+        correctionTargets = error.duplicateIds ?? input.selected;
+        originalPosts = error.parsedPosts ?? null;
         const correction = [
           ...messages,
           { role: "assistant", content: text },
           {
             role: "user",
-            content: `Önceki yanıt denetimden geçmedi: ${error.message}\nJSON'u düzelt. Aynı caption yazılmış platformları bul; her birine farklı açılış ve farklı cümleler yaz. Yalnızca etiket veya noktalama değiştirme. Bütün seçili platformları içeren {"posts":[...]} nesnesini yeniden döndür. Kaynak gerçekleri ve görsel gözlemini koru. /no_think`,
+            content: `Önceki yanıt denetimden geçmedi: ${error.message}\nYALNIZCA şu platform kimliklerini içeren {"posts":[...]} nesnesi döndür: ${JSON.stringify(correctionTargets)}. Diğer platformları yeniden döndürme; onların metinleri korunacak. Yeni caption, önceki JSON'daki HİÇBİR caption ile aynı olmasın. Farklı bir sözcükle başla, farklı bir cümle kur; yalnızca etiket veya noktalama değiştirme. Her caption en fazla 200, title 60, alt 120 karakter olsun. Kaynak gerçekleri ve görsel gözlemini koru. /no_think`,
           },
         ];
         // Never truncate the source or exceed the already reserved input cap.
         try {
-          aiReservation(correction, maxTokens);
+          aiReservation(correction, AI_LIMITS.repairTokens);
         } catch {
           throw error;
         }

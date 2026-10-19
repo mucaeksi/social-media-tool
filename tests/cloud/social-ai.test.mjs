@@ -479,24 +479,26 @@ test("Aynı platform metinleri en fazla bir kez düzeltilir; iki çağrının b�
     ).reserved_neurons;
     if (attempts === 1) {
       firstCost = aiReservation(options.messages, options.max_tokens);
-      assert.ok(budget >= 2 * firstCost);
+      assert.ok(budget > firstCost);
       return { response: JSON.stringify(initial) };
     }
     assert.equal(attempts, 2);
     assert.equal(options.messages.at(-2).role, "assistant");
     assert.equal(options.messages.at(-2).content, JSON.stringify(initial));
     assert.match(options.messages.at(-1).content, /denetimden geçmedi/);
+    assert.match(options.messages.at(-1).content, /\["facebook"\]/);
+    assert.equal(options.max_tokens, AI_LIMITS.repairTokens);
     assert.ok(
       budget >= firstCost + aiReservation(options.messages, options.max_tokens),
     );
     return {
       response: JSON.stringify({
-        posts: initial.posts.map((post, i) => ({
-          ...post,
-          caption: i
-            ? "Topluluğumuz için yeni bir buluşma."
-            : "Görseldeki yeniliği keşfedin.",
-        })),
+        posts: [
+          {
+            ...initial.posts[1],
+            caption: "Topluluğumuz için yeni bir buluşma.",
+          },
+        ],
       }),
     };
   };
@@ -518,7 +520,32 @@ test("Aynı platform metinleri en fazla bir kez düzeltilir; iki çağrının b�
     await call(`/api/ai/workspace?companyId=${companies[0]}`)
   ).json();
   assert.equal(workspace.turns.length, 1);
-  assert.ok(workspace.turns[0].posts.every((p) => p.caption !== "Aynı metin"));
+  assert.equal(workspace.turns[0].posts[0].caption, "Aynı metin");
+  assert.equal(
+    workspace.turns[0].posts[1].caption,
+    "Topluluğumuz için yeni bir buluşma.",
+  );
+  attempts = 0;
+  model.run = async () => ({
+    response: JSON.stringify({
+      posts: ++attempts === 1 ? initial.posts : [initial.posts[1]],
+    }),
+  });
+  assert.equal(
+    (
+      await call("/api/ai/ask", {
+        method: "POST",
+        body: { ...input(), mode: "posts", selected },
+      })
+    ).status,
+    502,
+  );
+  assert.equal(attempts, 2);
+  assert.equal(
+    (await (await call(`/api/ai/workspace?companyId=${companies[0]}`)).json())
+      .turns.length,
+    1,
+  );
 });
 
 test("Sağlayıcı hatası gizli ayrıntı sızdırmaz, ücretli yola geçmez ve ayrılan bütçe geri verilmez", async () => {
