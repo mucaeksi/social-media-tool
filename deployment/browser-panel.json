@@ -1,8 +1,11 @@
 {
-  "checkedAt": "2026-10-19T01:29:29.780Z",
-  "sourceCommit": "b8d8beec7af7d09c5ad272a93a37f01bcce0f5bb",
+  "checkedAt": "2026-10-19T01:31:05.626Z",
+  "sourceCommit": "9c7bc81fa85c3b7598b19c7870014d8f564668d0",
   "credentialsSubmitted": false,
   "postsSubmitted": false,
+  "stage": "login-page",
+  "timeout": true,
+  "networkError": null,
   "verified": false,
   "error": "Panel içindeki giriş tarayıcısı canlıda doğrulanamadı. Kimlik bilgisi girilmedi ve paylaşım yapılmadı."
 }
