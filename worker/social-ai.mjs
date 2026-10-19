@@ -15,6 +15,7 @@ import {
 } from "./ai-vision.mjs";
 
 export const AI_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
+const AI_RATES = Object.freeze({ input: 4625, output: 30475 });
 export const AI_LIMITS = Object.freeze({
   dailyNeurons: 9000,
   providerDailyNeurons: 10000,
@@ -102,7 +103,12 @@ export function aiReservation(messages, maxTokens) {
       413,
       "AI girdisi çok uzun. Mesajı veya şirket hafızasını kısaltın; yeni sohbet başlatmak da yardımcı olabilir.",
     );
-  return Math.ceil((2 * (bytes * 4625 + maxTokens * 30475)) / 1_000_000);
+  return aiCost(bytes, maxTokens);
+}
+function aiCost(bytes, maxTokens) {
+  return Math.ceil(
+    (2 * (bytes * AI_RATES.input + maxTokens * AI_RATES.output)) / 1_000_000,
+  );
 }
 export async function reserveAI(db, userId, neurons, now = Date.now()) {
   if (
@@ -456,6 +462,11 @@ export function registerSocialAI(app) {
       c.env.DB,
       userId,
       aiReservation(messages, maxTokens) +
+        // One bounded correction of invalid/duplicate post JSON can follow.
+        // Reserve its full input/output ceiling before either model is called.
+        (input.mode === "posts"
+          ? aiCost(AI_LIMITS.promptBytes, maxTokens)
+          : 0) +
         (attachedMedia ? visionReservation() : 0),
     );
     let imageObservation = null;
@@ -470,30 +481,56 @@ export function registerSocialAI(app) {
         imageObservation,
       });
     }
-    let response;
-    try {
-      response = await c.env.AI.run(AI_MODEL, {
-        messages,
-        max_tokens: maxTokens,
-        temperature: 0.6,
-        ...(input.mode === "posts"
-          ? { response_format: { type: "json_object" } }
-          : {}),
-      });
-    } catch {
-      fail(
-        503,
-        "Cloudflare AI yanıt veremedi. Sağlayıcı kotası veya model erişimi sınırına ulaşılmış olabilir. Mevcut içerik korundu; ücretli modele geçilmedi.",
-      );
+    let text,
+      posts = null;
+    for (
+      let attempt = 0;
+      attempt < (input.mode === "posts" ? 2 : 1);
+      attempt++
+    ) {
+      let response;
+      try {
+        response = await c.env.AI.run(AI_MODEL, {
+          messages,
+          max_tokens: maxTokens,
+          temperature: 0.6,
+          ...(input.mode === "posts"
+            ? { response_format: { type: "json_object" } }
+            : {}),
+        });
+      } catch {
+        fail(
+          503,
+          "Cloudflare AI yanıt veremedi. Sağlayıcı kotası veya model erişimi sınırına ulaşılmış olabilir. Mevcut içerik korundu; ücretli modele geçilmedi.",
+        );
+      }
+      text = aiText(response);
+      if (input.mode !== "posts") break;
+      try {
+        posts = aiPosts(text, input.selected).map((post) => ({
+          ...post,
+          alt: imageObservation ? post.alt : "",
+        }));
+        break;
+      } catch (error) {
+        if (attempt || error.status !== 502) throw error;
+        const correction = [
+          ...messages,
+          { role: "assistant", content: text },
+          {
+            role: "user",
+            content: `Önceki yanıt denetimden geçmedi: ${error.message}\nJSON'u düzelt. Aynı caption yazılmış platformları bul; her birine farklı açılış ve farklı cümleler yaz. Yalnızca etiket veya noktalama değiştirme. Bütün seçili platformları içeren {"posts":[...]} nesnesini yeniden döndür. Kaynak gerçekleri ve görsel gözlemini koru. /no_think`,
+          },
+        ];
+        // Never truncate the source or exceed the already reserved input cap.
+        try {
+          aiReservation(correction, maxTokens);
+        } catch {
+          throw error;
+        }
+        messages = correction;
+      }
     }
-    const text = aiText(response),
-      posts =
-        input.mode === "posts"
-          ? aiPosts(text, input.selected).map((post) => ({
-              ...post,
-              alt: imageObservation ? post.alt : "",
-            }))
-          : null;
     const answer = posts
       ? "Seçili platformlar için içerik hazır. Stüdyoya aktarıp bilgileri ve platform sınırlarını kontrol edin."
       : text;

@@ -443,17 +443,82 @@ test("Sekiz platform verisi doğrulanır; eksik/tekrarlanan/hatalı model yanıt
     }),
     "geçersiz json",
   ]) {
-    model.run = async () => ({ response });
+    let attempts = 0;
+    model.run = async () => {
+      attempts++;
+      return { response };
+    };
     assert.equal(
       (await call("/api/ai/ask", { method: "POST", body: data })).status,
       502,
     );
+    assert.equal(attempts, 2);
   }
   assert.equal(
     (await (await call(`/api/ai/workspace?companyId=${companies[0]}`)).json())
       .turns.length,
     1,
   );
+});
+
+test("Aynı platform metinleri en fazla bir kez düzeltilir; iki çağrının bütçesi baştan ayrılır ve yalnızca doğru sonuç saklanır", async () => {
+  const selected = ["instagram", "facebook"];
+  const initial = {
+    posts: selected.map((platform) => ({
+      platform,
+      caption: "Aynı metin",
+      hashtags: [],
+    })),
+  };
+  let attempts = 0,
+    firstCost;
+  model.run = async (_name, options) => {
+    attempts++;
+    const budget = (
+      await db.prepare("SELECT reserved_neurons FROM ai_budget").first()
+    ).reserved_neurons;
+    if (attempts === 1) {
+      firstCost = aiReservation(options.messages, options.max_tokens);
+      assert.ok(budget >= 2 * firstCost);
+      return { response: JSON.stringify(initial) };
+    }
+    assert.equal(attempts, 2);
+    assert.equal(options.messages.at(-2).role, "assistant");
+    assert.equal(options.messages.at(-2).content, JSON.stringify(initial));
+    assert.match(options.messages.at(-1).content, /denetimden geçmedi/);
+    assert.ok(
+      budget >= firstCost + aiReservation(options.messages, options.max_tokens),
+    );
+    return {
+      response: JSON.stringify({
+        posts: initial.posts.map((post, i) => ({
+          ...post,
+          caption: i
+            ? "Topluluğumuz için yeni bir buluşma."
+            : "Görseldeki yeniliği keşfedin.",
+        })),
+      }),
+    };
+  };
+  const response = await call("/api/ai/ask", {
+    method: "POST",
+    body: { ...input(), mode: "posts", selected },
+  });
+  assert.equal(response.status, 200);
+  assert.equal(attempts, 2);
+  assert.equal(
+    new Set((await response.json()).posts.map((p) => p.caption)).size,
+    2,
+  );
+  assert.equal(
+    (await db.prepare("SELECT COUNT(*) AS n FROM ai_requests").first()).n,
+    1,
+  );
+  const workspace = await (
+    await call(`/api/ai/workspace?companyId=${companies[0]}`)
+  ).json();
+  assert.equal(workspace.turns.length, 1);
+  assert.ok(workspace.turns[0].posts.every((p) => p.caption !== "Aynı metin"));
 });
 
 test("Sağlayıcı hatası gizli ayrıntı sızdırmaz, ücretli yola geçmez ve ayrılan bütçe geri verilmez", async () => {

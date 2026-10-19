@@ -1,17 +1,17 @@
 # Graph Report - social-media-tool  (2026-10-19)
 
 ## Corpus Check
-- 89 files · ~49,981 words
+- 89 files · ~50,405 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 5 file(s) not represented in the graph (top: (none) 3, .css 1, .jsonc 1)
 
 ## Summary
-- 515 nodes · 1095 edges · 32 communities (28 shown, 4 thin omitted)
+- 517 nodes · 1099 edges · 31 communities (27 shown, 4 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 15 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d86db86a`
+- Built from commit: `04daaf4c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -45,11 +45,10 @@
 - Sosyal platform bağlantıları
 - Projeye eklenen beceriler
 - Modal
-- ref_node_path
 
 ## God Nodes (most connected - your core abstractions)
 1. `App()` - 35 edges
-2. `registerSocialAI()` - 19 edges
+2. `registerSocialAI()` - 20 edges
 3. `scripts` - 18 edges
 4. `cfApi()` - 16 edges
 5. `createApp()` - 13 edges
@@ -74,27 +73,27 @@
 ## Import Cycles
 - None detected.
 
-## Communities (32 total, 4 thin omitted)
+## Communities (31 total, 4 thin omitted)
 
 ### Community 0 - "GitHub ve Cloudflare dağıtımı"
 Cohesion: 0.20
 Nodes (10): Asistan üzerinden hesap oluşturma, Bileşenler, Dağıtımın yaptığı işlemler, Giriş, yönetici hesabı ve kullanıcı oluşturma, GitHub ve Cloudflare dağıtımı, R2 kullanım sınırları, Secret kullanımı, Sosyal hesap tarayıcısı (+2 more)
 
 ### Community 1 - "package.json"
-Cohesion: 0.13
-Nodes (14): engines, node, name, private, type, version, @cloudflare/puppeteer, express (+6 more)
+Cohesion: 0.12
+Nodes (15): engines, node, name, private, type, version, @cloudflare/puppeteer, express (+7 more)
 
 ### Community 2 - "social-ai.mjs"
-Cohesion: 0.09
-Nodes (39): hono, SOCIAL_EXPERT_RULES, SOCIAL_EXPERT_VERSION, companies, image(), fail(), observeImage(), VISION_LIMITS (+31 more)
+Cohesion: 0.08
+Nodes (50): createPrompt(), SOCIAL_EXPERT_RULES, SOCIAL_EXPERT_VERSION, companies, image(), fail(), observeImage(), VISION_LIMITS (+42 more)
 
 ### Community 3 - "App"
 Cohesion: 0.16
 Nodes (22): text(), App(), applyAI(), brief(), changeCompany(), changed(), draftInput(), exportDraft() (+14 more)
 
 ### Community 4 - "worker/index.mjs"
-Cohesion: 0.08
-Nodes (38): zod, createApp(), fail(), requireCompany(), requireMedia(), validatePosts(), { app, store }, port (+30 more)
+Cohesion: 0.06
+Nodes (31): zod, children, child, run, { app, store }, server, root, child (+23 more)
 
 ### Community 5 - "compilerOptions"
 Cohesion: 0.14
@@ -106,7 +105,7 @@ Nodes (18): scripts, build, cf:build, cf:dev, cf:migrate:local, dev, dev:client,
 
 ### Community 7 - "provision.test.mjs"
 Cohesion: 0.07
-Nodes (42): applyAdminRequest(), databaseQuery(), keyId(), prepareAdminKey(), ensureBrowserSecret(), diagnoseObservation(), report, report (+34 more)
+Nodes (44): miniflare, applyAdminRequest(), databaseQuery(), keyId(), prepareAdminKey(), ensureBrowserSecret(), diagnoseObservation(), report (+36 more)
 
 ### Community 8 - "setup.sh"
 Cohesion: 0.29
@@ -117,8 +116,8 @@ Cohesion: 0.33
 Nodes (6): Bileşenler, Doğrulama, Gerçek yayınlama için sonraki geliştirme, Mevcut sınırlar, Mimari ve kapsam, Veri akışı
 
 ### Community 11 - "social-accounts.test.mjs"
-Cohesion: 0.17
-Nodes (20): companyId, controller(), otherId, secret, tokens, accountCookies(), BROWSER_LIMITS, browserPlatforms (+12 more)
+Cohesion: 0.14
+Nodes (24): companyId, controller(), otherId, secret, tokens, accountCookies(), BROWSER_LIMITS, browserPlatforms (+16 more)
 
 ### Community 12 - "AGENTS.md"
 Cohesion: 0.50
@@ -130,7 +129,7 @@ Nodes (12): jose, tokenDigest(), authenticate(), keySets, authenticatePassword()
 
 ### Community 15 - "r2-budget.test.mjs"
 Cohesion: 0.22
-Nodes (10): bytes, delete(), get(), put(), createR2Media(), reserve(), periodAt(), quotaError() (+2 more)
+Nodes (9): bytes, delete(), get(), put(), reserve(), periodAt(), quotaError(), R2_LIMITS (+1 more)
 
 ### Community 16 - "App.tsx"
 Cohesion: 0.19
@@ -145,8 +144,8 @@ Cohesion: 0.18
 Nodes (14): api(), initialize(), encode(), prepareCloudMedia(), AITurn, date(), kinds, Memory (+6 more)
 
 ### Community 19 - "@playwright/test"
-Cohesion: 0.16
-Nodes (4): miniflare, @playwright/test, sharp, ids
+Cohesion: 0.24
+Nodes (3): @playwright/test, sharp, ids
 
 ### Community 20 - "AuthRoot.tsx"
 Cohesion: 0.28
@@ -184,13 +183,9 @@ Nodes (5): Doğrulanan kaynaklar, Geliştirici hesabında gereken hazırlık, Ha
 Cohesion: 0.40
 Nodes (4): Bu projede nasıl kullanıldı?, Graphify, Güncelleme, Projeye eklenen beceriler
 
-### Community 31 - "ref_node_path"
-Cohesion: 0.12
-Nodes (7): children, child, run, { app, store }, server, root, child
-
 ## Knowledge Gaps
 - **9 isolated node(s):** `@types/react`, `@types/react-dom`, `typescript`, `wrangler`, `npm_config_cache` (+4 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 207 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 208 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **4 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
@@ -203,10 +198,10 @@ _Questions this graph is uniquely positioned to answer:_
 - **What connects `@types/react`, `@types/react-dom`, `typescript` to the rest of the system?**
   _9 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `package.json` be split into smaller, more focused modules?**
-  _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.125 - nodes in this community are weakly interconnected._
 - **Why does `lucide-react` connect `SocialAccounts.tsx` to `App.tsx`, `package.json`, `SocialAI.tsx`, `AuthRoot.tsx`?**
-  _High betweenness centrality (0.089) - this node is a cross-community bridge._
+  _High betweenness centrality (0.088) - this node is a cross-community bridge._
 - **Should `social-ai.mjs` be split into smaller, more focused modules?**
-  _Cohesion score 0.09183673469387756 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08038075092543628 - nodes in this community are weakly interconnected._
 - **Why does `sharp` connect `@playwright/test` to `package.json`, `social-ai.mjs`, `worker/index.mjs`, `provision.test.mjs`?**
   _High betweenness centrality (0.077) - this node is a cross-community bridge._
