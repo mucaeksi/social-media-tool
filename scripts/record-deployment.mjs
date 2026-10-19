@@ -14,6 +14,7 @@ if (
     "deployment/auth-bootstrap.json",
     "deployment/browser-check.json",
     "deployment/browser-panel.json",
+    "deployment/platform-research.json",
   ].includes(destination)
 )
   throw new Error("Dağıtım sonuç yolu geçersiz.");

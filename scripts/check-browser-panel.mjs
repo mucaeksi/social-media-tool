@@ -195,9 +195,11 @@ try {
 } finally {
   if (remote) await remote.close().catch(() => {});
   if (accountId && cookie) {
-    try {
-      await http(`/api/social/accounts/${accountId}/close`, { method: "POST" });
-    } catch {}
+    if (!report.sessionClosed) {
+      try {
+        await http(`/api/social/accounts/${accountId}/close`, { method: "POST" });
+      } catch {}
+    }
     try {
       await http(`/api/social/accounts/${accountId}`, { method: "DELETE" });
     } catch {

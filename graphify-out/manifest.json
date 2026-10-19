@@ -186,9 +186,9 @@
     "semantic_hash": ""
   },
   "scripts/record-deployment.mjs": {
-    "mtime": 1792373018.9514961,
-    "seen": 1792373141.0529907,
-    "ast_hash": "4f1b5e2d5837e2e8a8c28e6fede3b40d",
+    "mtime": 1792374450.3240275,
+    "seen": 1792374456.7808352,
+    "ast_hash": "bdc2e096f676a357bad493349eede509",
     "semantic_hash": ""
   },
   "scripts/smoke-cloudflare.mjs": {
@@ -372,9 +372,9 @@
     "semantic_hash": ""
   },
   "scripts/check-browser-login.mjs": {
-    "mtime": 1792373018.9114962,
-    "seen": 1792373141.0528157,
-    "ast_hash": "054d6b21e4f3e3354b264a8d5e3979fa",
+    "mtime": 1792374450.480027,
+    "seen": 1792374456.7805986,
+    "ast_hash": "8cae0ae14adf0fc3c26b2a320207bd48",
     "semantic_hash": ""
   },
   ".github/workflows/browser-check.yml": {
@@ -390,9 +390,9 @@
     "semantic_hash": ""
   },
   "scripts/check-browser-panel.mjs": {
-    "mtime": 1792373959.133222,
-    "seen": 1792373976.9645133,
-    "ast_hash": "12be40e7fa8ccd77cb73166cc8ad74b4",
+    "mtime": 1792374450.6320267,
+    "seen": 1792374456.7806003,
+    "ast_hash": "921d0474581010f0b3325494c5d8dc2f",
     "semantic_hash": ""
   },
   "src/Modal.tsx": {
@@ -459,6 +459,18 @@
     "mtime": 1792373819.2815394,
     "seen": 1792373838.7477405,
     "ast_hash": "930c69685c93fb927c1dbfd6ca86defc",
+    "semantic_hash": ""
+  },
+  "scripts/research-platforms.py": {
+    "mtime": 1792374450.0240283,
+    "seen": 1792374456.7808392,
+    "ast_hash": "20e84a9ffbb7f9f0b1f5c8bd37892745",
+    "semantic_hash": ""
+  },
+  ".github/workflows/platform-research.yml": {
+    "mtime": 1792374450.1720278,
+    "seen": 1792374456.7820106,
+    "ast_hash": "9beec13ea41b1a7bf0274a88843be8b7",
     "semantic_hash": ""
   }
 }

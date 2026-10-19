@@ -1,17 +1,17 @@
 # Graph Report - social-media-tool  (2026-10-19)
 
 ## Corpus Check
-- 77 files · ~37,851 words
+- 78 files · ~38,194 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 5 file(s) not represented in the graph (top: (none) 3, .css 1, .jsonc 1)
 
 ## Summary
-- 426 nodes · 860 edges · 14 communities (13 shown, 1 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 13 edges (avg confidence: 0.85)
+- 443 nodes · 880 edges · 16 communities (14 shown, 2 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 13 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b94017da`
+- Built from commit: `343a400a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -28,7 +28,9 @@
 - Mimari ve kapsam
 - social-accounts.test.mjs
 - AGENTS.md
-- password-auth.mjs
+- passwords.mjs
+- research-platforms.py
+- r2-budget.test.mjs
 
 ## God Nodes (most connected - your core abstractions)
 1. `App()` - 33 edges
@@ -47,37 +49,37 @@
   tests/cloud/r2-budget.test.mjs → worker/browser-state.mjs
 - `get()` --indirect_call--> `key()`  [INFERRED]
   tests/cloud/r2-budget.test.mjs → worker/browser-state.mjs
-- `smokeCloudflare()` --calls--> `tokenDigest()`  [EXTRACTED]
+- `applyAdminRequest()` --calls--> `validPasswordHash()`  [EXTRACTED]
+  scripts/admin-provision.mjs → shared/passwords.mjs
+- `applyAdminRequest()` --calls--> `verifyPassword()`  [EXTRACTED]
+  scripts/admin-provision.mjs → shared/passwords.mjs
+- `smokeCloudflare()` --calls--> `hashPassword()`  [EXTRACTED]
   scripts/smoke-cloudflare.mjs → shared/passwords.mjs
-- `start()` --calls--> `createApp()`  [EXTRACTED]
-  tests/api.test.mjs → server/app.mjs
-- `registerPasswordRoutes()` --calls--> `hashPassword()`  [EXTRACTED]
-  worker/password-auth.mjs → shared/passwords.mjs
 
 ## Import Cycles
 - None detected.
 
-## Communities (14 total, 1 thin omitted)
+## Communities (16 total, 2 thin omitted)
 
 ### Community 0 - "app.mjs"
-Cohesion: 0.08
-Nodes (28): zod, { app, store }, server, child, createApp(), fail(), requireCompany(), requireMedia() (+20 more)
+Cohesion: 0.09
+Nodes (23): { app, store }, server, manifest, createApp(), fail(), requireCompany(), requireMedia(), validatePosts() (+15 more)
 
 ### Community 1 - "package.json"
 Cohesion: 0.05
 Nodes (37): dependencies, @cloudflare/puppeteer, express, hono, jose, lucide-react, react, react-dom (+29 more)
 
 ### Community 2 - "ref_node_child_process"
-Cohesion: 0.20
-Nodes (4): children, child, run, root
+Cohesion: 0.25
+Nodes (3): children, root, child
 
 ### Community 3 - "App"
 Cohesion: 0.06
 Nodes (57): lucide-react, react, react-dom, text(), api(), App(), brief(), changeCompany() (+49 more)
 
 ### Community 4 - "worker/index.mjs"
-Cohesion: 0.08
-Nodes (34): miniflare, platforms, bytes, delete(), get(), put(), createD1Media(), app (+26 more)
+Cohesion: 0.10
+Nodes (29): zod, platforms, briefSchema, companySchema, draftSchema, postSchema, selectedSchema, createD1Media() (+21 more)
 
 ### Community 5 - "compilerOptions"
 Cohesion: 0.15
@@ -88,8 +90,8 @@ Cohesion: 0.11
 Nodes (18): scripts, build, cf:build, cf:dev, cf:migrate:local, dev, dev:client, dev:server (+10 more)
 
 ### Community 7 - "provision.test.mjs"
-Cohesion: 0.08
-Nodes (38): applyAdminRequest(), databaseQuery(), keyId(), prepareAdminKey(), ensureBrowserSecret(), report, targets, report (+30 more)
+Cohesion: 0.10
+Nodes (28): applyAdminRequest(), databaseQuery(), keyId(), prepareAdminKey(), ensureBrowserSecret(), report, startedAt, targets (+20 more)
 
 ### Community 8 - "setup.sh"
 Cohesion: 0.29
@@ -107,29 +109,33 @@ Nodes (20): companyId, controller(), otherId, secret, tokens, accountCookies(), 
 Cohesion: 0.50
 Nodes (3): GitHub ve Cloudflare, graphify, Projeye özgü geliştirme notları
 
-### Community 13 - "password-auth.mjs"
-Cohesion: 0.29
-Nodes (12): jose, tokenDigest(), authenticate(), keySets, authenticatePassword(), checkLoginRate(), cookieName(), cookieToken() (+4 more)
+### Community 13 - "passwords.mjs"
+Cohesion: 0.14
+Nodes (24): jose, miniflare, child, run, decode(), derive(), encode(), hashPassword() (+16 more)
+
+### Community 15 - "r2-budget.test.mjs"
+Cohesion: 0.22
+Nodes (10): bytes, delete(), get(), put(), createR2Media(), reserve(), periodAt(), quotaError() (+2 more)
 
 ## Knowledge Gaps
 - **9 isolated node(s):** `@types/react`, `@types/react-dom`, `typescript`, `wrangler`, `npm_config_cache` (+4 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 171 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **1 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 184 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `react` connect `App` to `package.json`?**
-  _High betweenness centrality (0.089) - this node is a cross-community bridge._
+  _High betweenness centrality (0.082) - this node is a cross-community bridge._
 - **What connects `@types/react`, `@types/react-dom`, `typescript` to the rest of the system?**
   _9 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `app.mjs` be split into smaller, more focused modules?**
-  _Cohesion score 0.08383838383838384 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08637873754152824 - nodes in this community are weakly interconnected._
 - **Why does `lucide-react` connect `App` to `package.json`?**
-  _High betweenness centrality (0.082) - this node is a cross-community bridge._
+  _High betweenness centrality (0.076) - this node is a cross-community bridge._
 - **Should `package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.048484848484848485 - nodes in this community are weakly interconnected._
 - **Why does `scripts` connect `scripts` to `package.json`?**
-  _High betweenness centrality (0.065) - this node is a cross-community bridge._
+  _High betweenness centrality (0.060) - this node is a cross-community bridge._
 - **Should `App` be split into smaller, more focused modules?**
   _Cohesion score 0.058496853017400964 - nodes in this community are weakly interconnected._

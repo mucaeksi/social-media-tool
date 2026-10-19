@@ -1,12 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { chromium } from "@playwright/test";
 import { cfApi, listAll } from "./cloudflare-api.mjs";
+import { browserPlatforms } from "../worker/browser-state.mjs";
 
 // An unauthenticated compatibility check. Never submits credentials or a post.
-const targets = [
-  { platform: "x", url: "https://x.com/i/flow/login" },
-  { platform: "instagram", url: "https://www.instagram.com/accounts/login/" },
-];
+const targets = Object.entries(browserPlatforms).map(([platform, config]) => ({
+  platform, url: config.login,
+}));
 const report = {
   checkedAt: new Date().toISOString(),
   sourceCommit: process.env.GITHUB_SHA || null,
@@ -18,6 +18,7 @@ const report = {
   results: [],
 };
 let session, browser, endpoint;
+const startedAt = Date.now();
 try {
   let accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   if (!accountId) {
@@ -45,20 +46,25 @@ try {
   );
   const context = browser.contexts()[0];
   for (const target of targets) {
+    if (Date.now() - startedAt > 150_000) {
+      report.results.push({platform: target.platform, skipped: true, reason: "Kontrol için ayrılan süre doldu."});
+      continue;
+    }
     const page = await context.newPage();
+    page.setDefaultTimeout(5000);
     let stage = "navigation";
     try {
       const response = await page.goto(target.url, {
         waitUntil: "domcontentloaded",
-        timeout: 20000,
+        timeout: 15000,
       });
       stage = "login-form";
       const input = page.locator(
-        'input[autocomplete="username"], input[name="text"], input[name="username"], input[type="password"]',
+        'input[autocomplete="username"], input[name="text"], input[name="username"], input[type="password"], input[type="email"]',
       );
       await input
         .first()
-        .waitFor({ state: "visible", timeout: 8000 })
+        .waitFor({ state: "visible", timeout: 4000 })
         .catch(() => {});
       const body = (
         await page.locator("body").innerText({ timeout: 3000 })
@@ -99,6 +105,7 @@ try {
           /captcha|verify you are human|unusual activity|access denied|something went wrong|bir sorun oluştu/i.test(
             body,
           ),
+        loginVerified: false,
         liveViewAvailable,
         iframeAllowed,
       });
@@ -128,6 +135,7 @@ try {
     }
   }
   if (browser) await browser.close().catch(() => {});
+  report.elapsedMs = Date.now() - startedAt;
   await mkdir(".cloudflare", { recursive: true });
   await writeFile(
     ".cloudflare/browser-check.json",
