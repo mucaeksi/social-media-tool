@@ -68,7 +68,7 @@ try {
     media: deployment.mediaStorage === "d1" ? "Cloudflare D1" : "Cloudflare R2",
     login: "Kullanıcı adı ve şifre — D1 oturumları",
     socialBrowser: "Cloudflare Browser Run — deneysel hesap girişi",
-    ai: "Cloudflare Workers AI — Qwen3, şirket hafızası ve ücretsiz bütçe",
+    ai: "Cloudflare Workers AI — görsel + özet, platform metinleri ve şirket hafızası",
   };
   if (process.env.GITHUB_STEP_SUMMARY)
     await appendFile(

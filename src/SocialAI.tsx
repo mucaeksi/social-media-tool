@@ -9,9 +9,19 @@ import {
   Send,
   Sparkles,
   Trash2,
+  ImagePlus,
 } from "lucide-react";
 import { api } from "./api.ts";
-import type { AuthUser, Company, Platform, PlatformId, Post } from "./types.ts";
+import type {
+  AuthUser,
+  Company,
+  Platform,
+  PlatformId,
+  Post,
+  Media,
+} from "./types.ts";
+import { prepareCloudMedia } from "./prepareMedia.ts";
+import { socialConnections } from "./socialConnections.ts";
 
 type Memory = {
   id: string;
@@ -28,6 +38,9 @@ export type AITurn = {
   answer: string;
   posts: Post[] | null;
   createdAt: string;
+  mediaId?: string | null;
+  imageObservation?: string | null;
+  expertVersion?: string | null;
 };
 type Usage = {
   enabled: boolean;
@@ -58,6 +71,7 @@ export function SocialAI({
   platforms,
   cloud,
   initialText,
+  initialMedia,
   onApply,
 }: {
   company: Company;
@@ -65,21 +79,21 @@ export function SocialAI({
   platforms: Platform[];
   cloud: boolean;
   initialText: string;
+  initialMedia?: Media | null;
   onApply: (turn: AITurn) => void;
 }) {
   const [entries, setEntries] = useState<Memory[]>([]),
     [turns, setTurns] = useState<AITurn[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null),
     [question, setQuestion] = useState(initialText);
-  const [mode, setMode] = useState<"chat" | "posts">(
-      initialText ? "posts" : "chat",
-    ),
-    [selected, setSelected] = useState<PlatformId[]>([
-      "instagram",
-      "facebook",
-      "linkedin",
-      "threads",
-    ]);
+  const [mode, setMode] = useState<"chat" | "posts">("posts"),
+    [selected, setSelected] = useState<PlatformId[]>(
+      platforms.map((p) => p.id),
+    );
+  const [attachment, setAttachment] = useState<Media | null>(
+    initialMedia?.companyId === company.id ? initialMedia : null,
+  );
+  const fileInput = useRef<HTMLInputElement>(null);
   const [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
@@ -156,6 +170,7 @@ export function SocialAI({
             companyId: company.id,
             question,
             mode,
+            mediaId: attachment?.id ?? null,
             ...(mode === "posts" ? { selected } : {}),
           }),
         });
@@ -172,6 +187,29 @@ export function SocialAI({
           .then(setUsage)
           .catch(() => {});
       }
+    });
+  }
+  async function upload(file?: File) {
+    if (!file) return;
+    await run(async () => {
+      if (
+        !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+        file.size > 15 * 1024 * 1024
+      )
+        throw new Error(
+          "JPEG, PNG veya WebP seçin. Görsel en fazla 15 MB olmalı.",
+        );
+      const payload = await prepareCloudMedia(file, platforms);
+      const image = await api<Media>(`/api/media?companyId=${company.id}`, {
+        method: "POST",
+        body: payload,
+      });
+      if (image.companyId !== company.id)
+        throw new Error("Yüklenen görselin şirketi doğrulanamadı.");
+      setAttachment(image);
+      setNotice(
+        "Görsel eklendi. Özetinizi yazıp içerikleri hazırlayın; AI görseli bu istekte inceleyecek.",
+      );
     });
   }
   const example = (turn: AITurn) => {
@@ -204,14 +242,15 @@ export function SocialAI({
           <h2>Markanızın sosyal medya asistanı</h2>
         </div>
         <p>
-          İçerik fikirleri, haftalık plan, platform metinleri ve etiket
-          önerileri hazırlayın. Asistan, <strong>{company.name}</strong>{" "}
-          profilini ve aşağıya eklediğiniz bilgileri kullanır.
+          Görselinizi ve kısa özeti verin; asistan her platform için ayrı metin,
+          başlık, etiket ve görsel açıklaması hazırlasın.{" "}
+          <strong>{company.name}</strong> profilini ve onaylı marka bilgilerini
+          kullanır.
         </p>
         <small>
           Şirket hafızası modelin ağırlıklarını değiştirmez. Yanıtları inceleyip
-          düzenleyin. Canlı internet, hesap analitiği ve görsel düzenleme bu
-          asistanda yoktur.
+          düzenleyin. Görsel tanıma içeriği anlamaya yardımcı olur. Canlı
+          internet, hesap analitiği ve görsel rötuş bu asistanda yoktur.
         </small>
       </section>
       {!cloud && (
@@ -317,6 +356,25 @@ export function SocialAI({
                       {date(turn.createdAt)}
                     </time>
                     <p>{turn.answer}</p>
+                    {turn.imageObservation && (
+                      <details className="ai-image-observation">
+                        <summary>Görsel inceleme notu</summary>
+                        {turn.mediaId && (
+                          <img
+                            src={`/api/media/${turn.mediaId}/original.jpg`}
+                            alt="Bu yanıtta incelenen görsel"
+                          />
+                        )}
+                        <p>
+                          {turn.posts?.find((post) => post.alt)?.alt ||
+                            "Görsel bu yanıtın hazırlanmasında incelendi."}
+                        </p>
+                        <small>
+                          Bu bir model gözlemidir. Görseldeki yazıları ve ürün
+                          ayrıntılarını kontrol edin.
+                        </small>
+                      </details>
+                    )}
                     {turn.posts && (
                       <div className="ai-posts">
                         {turn.posts.map((post) => (
@@ -330,6 +388,15 @@ export function SocialAI({
                             {post.title && <strong>{post.title}</strong>}
                             <p>{post.caption}</p>
                             <small>{post.hashtags.join(" ")}</small>
+                            {post.alt && (
+                              <p className="ai-alt-text">
+                                <strong>Görsel açıklaması:</strong> {post.alt}
+                              </p>
+                            )}
+                            <p className="ai-publication-block">
+                              Yayın bağlantısı etkin değil:{" "}
+                              {socialConnections[post.platform].api}.
+                            </p>
                           </details>
                         ))}
                       </div>
@@ -429,6 +496,57 @@ export function SocialAI({
                   ))}
                 </fieldset>
               )}
+              <div className="ai-image-input">
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="visually-hidden"
+                  aria-label="AI için görsel yükle"
+                  disabled={busy || !cloud || !usage?.enabled}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    void upload(file);
+                  }}
+                />
+                {attachment && (
+                  <img
+                    src={`/api/media/${attachment.id}/original.jpg`}
+                    alt="Asistana verilen görsel"
+                  />
+                )}
+                <div>
+                  <strong>
+                    {attachment
+                      ? "Görsel bu isteğe eklendi"
+                      : "Görsel + kısa özet"}
+                  </strong>
+                  <p>
+                    Görsel incelenir; kaynak dosya ve platform boyutları
+                    stüdyoya taşınır. Yalnızca metinle de devam edebilirsiniz.
+                  </p>
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={busy || !cloud || !usage?.enabled}
+                    onClick={() => fileInput.current?.click()}
+                  >
+                    <ImagePlus size={16} />
+                    {attachment ? "Görseli değiştir" : "Fotoğraf seç"}
+                  </button>
+                  {attachment && (
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={busy}
+                      onClick={() => setAttachment(null)}
+                    >
+                      Bu istekten kaldır
+                    </button>
+                  )}
+                </div>
+              </div>
               <label htmlFor="ai-question">Asistandan ne istersiniz?</label>
               <textarea
                 id="ai-question"
@@ -438,7 +556,7 @@ export function SocialAI({
                 rows={5}
                 required
                 disabled={busy || !usage?.enabled}
-                placeholder="Örn. Yeni ürünümüz için Instagram ve LinkedIn metni hazırla. Ürün bilgilerini ve vurgulanacak noktaları ekleyin."
+                placeholder="Görselin konusunu ve ana mesajınızı kısaca yazın. Örn. Yeni seramik koleksiyonumuz geldi. El yapımı kupalarımızı tanıtalım. Fiyat veya kampanya varsa kesin bilgilerini ekleyin."
               />
               <div className="ai-quick-prompts">
                 {[
@@ -485,6 +603,20 @@ export function SocialAI({
                       : "Asistana gönder"}
                 </button>
               </div>
+              {mode === "posts" && (
+                <p className="ai-publication-note">
+                  Bu adım içerikleri hazırlar. Otomatik paylaşım için her
+                  platformun yayın bağlantısı ve izni gerekir; şu an API yayını
+                  etkin değil.{" "}
+                  <a
+                    href="https://github.com/mucaeksi/social-media-tool/blob/main/docs/META_KURULUM.md"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Meta bağlantısı için kurulum
+                  </a>
+                </p>
+              )}
               {cloud && usage && !usage.enabled && (
                 <small className="browser-message">
                   Bu ortamda model etkin değil. Şirket hafızasını

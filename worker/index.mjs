@@ -23,6 +23,7 @@ import { createR2Media, R2_LIMITS, r2Usage } from "./r2-media.mjs";
 import { parseMediaForm, objectKey, removeCompanyObjects } from "./media.mjs";
 import { browserCommand, registerSocialAccounts } from "./social-accounts.mjs";
 import { registerSocialAI } from "./social-ai.mjs";
+import { SOCIAL_EXPERT_VERSION } from "../shared/social-expert.mjs";
 export { SocialBrowser } from "./social-browser.mjs";
 
 const app = new Hono();
@@ -143,6 +144,7 @@ app.get("/api/health", async (c) => {
     publishing: false,
     socialBrowser: Boolean(c.env.SOCIAL_BROWSER && c.env.BROWSER_STATE_KEY),
     ai: c.env.AI && c.env.AI_FREE_ONLY === "true" ? "cloudflare" : "manual-chatgpt",
+    aiExpertVersion: SOCIAL_EXPERT_VERSION,
     auth: c.env.AUTH_MODE === "password" ? "password" : "development",
   });
 });

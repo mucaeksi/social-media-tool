@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import sharp from "sharp";
 
 async function fixture(page, request) {
   const companies = [],
@@ -91,6 +92,36 @@ test("AI şirket hafızası ve yanıtları ayrılır; onaylanan platform metinle
 }) => {
   const f = await fixture(page, request);
   try {
+    const media = {
+      id: crypto.randomUUID(),
+      companyId: f.companies[0].id,
+      width: 128,
+      height: 96,
+    };
+    const image = await sharp({
+      create: { width: 128, height: 96, channels: 3, background: "#c32420" },
+    })
+      .jpeg()
+      .toBuffer();
+    await page.route(`**/api/media?companyId=${f.companies[0].id}`, (route) =>
+      route.fulfill({ status: 201, json: media }),
+    );
+    await page.route(`**/api/media/${media.id}`, (route) =>
+      route.fulfill({ json: media }),
+    );
+    await page.route(`**/api/media/${media.id}/*.jpg*`, (route) =>
+      route.fulfill({ contentType: "image/jpeg", body: image }),
+    );
+    await page
+      .getByLabel("AI için görsel yükle", { exact: true })
+      .setInputFiles({
+        name: "urun.jpg",
+        mimeType: "image/jpeg",
+        buffer: image,
+      });
+    await expect(
+      page.getByAltText("Asistana verilen görsel", { exact: true }),
+    ).toBeVisible();
     await page
       .getByLabel("Bilgi başlığı", { exact: true })
       .fill("Hizmet bölgemiz");
@@ -106,6 +137,7 @@ test("AI şirket hafızası ve yanıtları ayrılır; onaylanan platform metinle
     expect(f.memory[0].companyId).toBe(f.companies[0].id);
     await page.route("**/api/ai/ask", async (route) => {
       const input = route.request().postDataJSON();
+      expect(input.mediaId).toBe(media.id);
       const turn = {
         id: crypto.randomUUID(),
         companyId: input.companyId,
@@ -119,6 +151,8 @@ test("AI şirket hafızası ve yanıtları ayrılır; onaylanan platform metinle
           alt: "",
         })),
         createdAt: new Date().toISOString(),
+        mediaId: input.mediaId,
+        imageObservation: "Beyaz zeminde kırmızı kupa.",
       };
       f.turns.push(turn);
       await route.fulfill({ json: turn });
@@ -144,6 +178,9 @@ test("AI şirket hafızası ve yanıtları ayrılır; onaylanan platform metinle
     await expect(
       page.getByRole("button", { name: "Stüdyoya aktar", exact: true }),
     ).toHaveCount(0);
+    await expect(
+      page.getByAltText("Asistana verilen görsel", { exact: true }),
+    ).toHaveCount(0);
     await page
       .getByRole("combobox", { name: "Aktif şirket" })
       .selectOption(f.companies[0].id);
@@ -156,6 +193,7 @@ test("AI şirket hafızası ve yanıtları ayrılır; onaylanan platform metinle
     await expect(
       page.getByText("Cloudflare AI ile hazırlandı", { exact: true }),
     ).toBeVisible();
+    await expect(page.locator(`img[src*="${media.id}"]`).first()).toBeVisible();
     await expect(
       page.getByLabel("Neyi paylaşmak istersiniz?", { exact: true }),
     ).toHaveValue("İşletmeler için tanıtım gönderisi hazırla.");
@@ -195,6 +233,7 @@ test("Şirket değiştikten sonra gelen eski AI yanıtı yeni şirketin ekranın
     await page
       .getByLabel("Asistandan ne istersiniz?", { exact: true })
       .fill("Bu şirket için bir fikir ver.");
+    await page.getByLabel("Danış / fikir üret", { exact: true }).check();
     await page
       .getByRole("button", { name: "Asistana gönder", exact: true })
       .click();

@@ -1838,6 +1838,19 @@ main {
 .ai-posts details { border-top: 1px solid var(--line); margin-top: 15px; padding-top: 12px; }
 .ai-posts summary { cursor: pointer; color: var(--green); font-weight: 600; font-size: 13px; }
 .ai-posts small { display: block; margin-top: 10px; color: #67745f; }
+.ai-image-input { border: 1px dashed #c6d7c8; padding: 16px; border-radius: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 15px; margin: 15px 0 20px; }
+.ai-image-input > img, .ai-image-observation img { width: 112px; height: 112px; object-fit: contain; border-radius: 6px; background: #f7f8f5; }
+.ai-image-input > div { flex: 1 1 220px; min-width: 0; }
+.ai-image-input strong { font-size: 13px; color: var(--green); }
+.ai-image-input p, .ai-publication-note, .ai-posts .ai-publication-block { font-size: 12px; line-height: 1.8; color: #786222; margin: 9px 0; }
+.ai-image-input p { color: #67745f; }
+.ai-image-input button { margin: 4px 6px 0 0; }
+.ai-publication-note a { color: var(--green); text-underline-offset: 3px; }
+.ai-image-observation { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; }
+.ai-image-observation summary { cursor: pointer; font-size: 12px; color: var(--green); }
+.ai-image-observation img { margin-top: 12px; }
+.ai-image-observation p { white-space: pre-wrap; font-size: 13px; line-height: 1.8; margin: 10px 0; }
+.ai-image-observation small { color: #67745f; font-size: 11px; line-height: 1.7; }
 .ai-composer { border-top: 1px solid var(--line); padding-top: 20px; margin-top: 10px; }
 .ai-mode, .ai-platforms { border: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 18px; }
 .ai-mode legend, .ai-platforms legend { font-size: 12px; font-weight: 600; margin-bottom: 10px; color: var(--green); }

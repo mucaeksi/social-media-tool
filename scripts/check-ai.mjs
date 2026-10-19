@@ -3,6 +3,8 @@ import { cfApi, listAll, protectSecret } from "./cloudflare-api.mjs";
 import { databaseQuery } from "./admin-provision.mjs";
 import { hashPassword, randomToken } from "../shared/passwords.mjs";
 import { verifyWorkersAIFree } from "./cloudflare-free-tier.mjs";
+import sharp from "sharp";
+import { platforms } from "../server/platforms.mjs";
 
 // Explicit live inference check with disposable data, never social credentials.
 const report = {
@@ -20,9 +22,12 @@ async function http(path, { method = "GET", body } = {}) {
     headers: {
       Origin: deployment.url,
       ...(cookie ? { Cookie: cookie } : {}),
-      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(body && !(body instanceof FormData)
+        ? { "Content-Type": "application/json" }
+        : {}),
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body:
+      body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(90000),
   });
   if (!response.ok) {
@@ -86,7 +91,7 @@ try {
   const status = (await http("/api/ai/status")).value;
   if (
     !status.enabled ||
-    status.reservedNeurons > status.limits.dailyNeurons - 1000
+    status.reservedNeurons > status.limits.dailyNeurons - 1500
   )
     throw new Error("Ücretsiz test bütçesi yok.");
   report.model = status.model;
@@ -131,6 +136,35 @@ try {
     throw new Error("Şirket hafızası uygulanmadı.");
   report.knowledgeApplied = true;
   report.realModelAnswer = true;
+  report.stage = "image-upload";
+  const drawing = Buffer.from(
+    '<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg"><rect width="640" height="480" fill="white"/><ellipse cx="315" cy="410" rx="170" ry="20" fill="#ddd"/><path d="M415 170h35c105 0 105 155 0 155h-35" fill="none" stroke="#d21f24" stroke-width="38"/><path d="M175 140h255v210c0 70-255 70-255 0z" fill="#d21f24"/><ellipse cx="302" cy="140" rx="127" ry="35" fill="#ef5555"/><ellipse cx="302" cy="142" rx="108" ry="23" fill="#502818"/></svg>',
+  );
+  const original = await sharp(drawing).jpeg().toBuffer(),
+    form = new FormData();
+  form.append(
+    "original",
+    new Blob([original], { type: "image/jpeg" }),
+    "original.jpg",
+  );
+  for (const p of platforms)
+    for (const fit of ["contain", "cover"]) {
+      const bytes = await sharp(original)
+        .resize(p.width, p.height, { fit, background: "white" })
+        .jpeg()
+        .toBuffer();
+      form.append(
+        `${p.id}_${fit}`,
+        new Blob([bytes], { type: "image/jpeg" }),
+        `${p.id}_${fit}.jpg`,
+      );
+    }
+  const media = (
+    await http(`/api/media?companyId=${companyId}`, {
+      method: "POST",
+      body: form,
+    })
+  ).value;
   report.stage = "platform-content";
   const selected = [
     "instagram",
@@ -149,8 +183,9 @@ try {
         companyId,
         mode: "posts",
         question:
-          "Kayseri'deki yerel işletmelere hizmet verdiğimizi duyur. Fiyat, indirim veya ürün özelliği uydurma. Her platform için kısa tanıtım metni hazırla.",
+          "Yeni ürünümüz için görseldeki nesneyi ve rengini esas alan kısa tanıtım metinleri hazırla. Özellik, fiyat, indirim, kalite veya malzeme iddiası uydurma. Her platforma farklı bir anlatım yaz.",
         selected,
+        mediaId: media.id,
       },
     })
   ).value;
@@ -165,6 +200,25 @@ try {
     throw new Error("Platform içerikleri eksik.");
   report.contentPlatforms = 8;
   report.contentValidated = true;
+  report.imageObserved =
+    typeof generated.imageObservation === "string" &&
+    /cup|mug|fincan|kupa|bardak/i.test(generated.imageObservation);
+  report.imagePreserved = generated.mediaId === media.id;
+  report.expertVersion = generated.expertVersion;
+  report.distinctCaptions = new Set(
+    generated.posts.map((post) => post.caption),
+  ).size;
+  report.imageGroundedContent = generated.posts.some((post) =>
+    /cup|mug|fincan|kupa|bardak/i.test(post.caption + " " + post.alt),
+  );
+  if (
+    !report.imageObserved ||
+    !report.imagePreserved ||
+    !report.imageGroundedContent ||
+    report.distinctCaptions !== 8 ||
+    report.expertVersion !== "gorsel-ozet-v1"
+  )
+    throw new Error("Görsel ve ayrı platform anlatımları doğrulanamadı.");
   const workspace = (await http(`/api/ai/workspace?companyId=${companyId}`))
     .value;
   report.historyPersisted =

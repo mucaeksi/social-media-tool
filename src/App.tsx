@@ -377,27 +377,46 @@ export default function App({
     });
   }
   function applyAI(turn: AITurn) {
-    guard(() => {
-      if (turn.companyId !== currentCompanyId.current || !turn.posts?.length) {
-        setNotice({
-          text: "AI yanıtı farklı bir şirkete ait. Aktarım yapılmadı.",
-          error: true,
-        });
-        return;
-      }
-      reset();
-      setText(turn.question);
-      setPosts(turn.posts);
-      setSelected(turn.posts.map((post) => post.platform));
-      setActivePlatform(turn.posts[0].platform);
-      setPostRevision((v) => v + 1);
-      setSource("cloudflare-ai");
-      setDirty(true);
-      setPage("studio");
-      setNotice({
-        text: "AI içerikleri stüdyoya aktarıldı. Metinleri kontrol edin, görsel ekleyin ve taslağı kaydedin.",
-      });
-    });
+    guard(
+      () =>
+        void run("ai-apply", async () => {
+          if (
+            turn.companyId !== currentCompanyId.current ||
+            !turn.posts?.length
+          ) {
+            setNotice({
+              text: "AI yanıtı farklı bir şirkete ait. Aktarım yapılmadı.",
+              error: true,
+            });
+            return;
+          }
+          const image = turn.mediaId
+            ? await api<Media>(`/api/media/${turn.mediaId}`)
+            : null;
+          if (
+            turn.companyId !== currentCompanyId.current ||
+            (image && image.companyId !== turn.companyId)
+          )
+            throw new Error(
+              "AI görseli veya seçili şirket değişti. Aktarım yapılmadı.",
+            );
+          reset();
+          setMedia(image);
+          setText(turn.question);
+          setPosts(turn.posts);
+          setSelected(turn.posts.map((post) => post.platform));
+          setActivePlatform(turn.posts[0].platform);
+          setPostRevision((v) => v + 1);
+          setSource("cloudflare-ai");
+          setDirty(true);
+          setPage("studio");
+          setNotice({
+            text: image
+              ? "AI içerikleri ve görseli stüdyoya aktarıldı. Son kontrolü yapıp taslağı kaydedin."
+              : "AI içerikleri stüdyoya aktarıldı. Metinleri kontrol edin, görsel ekleyin ve taslağı kaydedin.",
+          });
+        }),
+    );
   }
   function editPost(
     field: keyof Omit<Post, "platform" | "hashtags">,
@@ -1609,6 +1628,7 @@ export default function App({
               platforms={platforms}
               cloud={cloud}
               initialText={text}
+              initialMedia={media}
               onApply={applyAI}
             />
           ) : (

@@ -8,6 +8,8 @@ Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Tür
 
 **Entegre AI asistanı:** Cloudflare Workers AI üzerindeki Qwen3 modeli şirket hafızasıyla Türkçe fikir/strateji yanıtları ve sekiz platforma ayrı içerik hazırlar. Yönetici marka bilgileri ve onaylı örnekler ekler; kullanıcı sonucu kontrol edip stüdyoya aktarır. Model ağırlıkları eğitilmez. Sağlayıcının günlük 10.000 Neuron ücretsiz kotası içinde uygulama 9.000 Neuron güvenli rezervasyon bütçesi kullanır; ücretli plan açılmaz. [Kullanım ve sınırlar](docs/AI_YOL_HARITASI.md).
 
+**Görsel + kısa özet:** Fotoğrafı asistan ekranında yükleyin. Cloudflare Llama 3.2 görseli inceler; Qwen3, sosyal medya uzmanı çalışma rehberi ve şirket hafızasıyla her platforma ayrı metin/etiket/görsel açıklaması üretir. Metin ve görsel birlikte stüdyoya aktarılır. Gerçek yayın bağlantıları henüz kurulmadığından otomatik paylaşım yapılmaz.
+
 ## Cloudflare üzerinde yayın
 
 Kaynaklar GitHub `main` dalındadır. Her kaynak güncellemesi `.github/workflows/cloudflare.yml` ile test edilip Cloudflare Workers'a dağıtılır. Üretim veritabanı Cloudflare D1, görsel deposu R2 (henüz etkin değilse D1), giriş doğrulaması D1 üzerinde kullanıcı adı/şifre ve güvenli oturum çerezleriyle yapılır. GitHub Actions mevcut `CLOUDFLARE_API` repository secret'ını kullanır; tarayıcıya veya koda secret yazılmaz.

@@ -3,7 +3,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { Miniflare } from "miniflare";
 import { Hono } from "hono";
+import sharp from "sharp";
 import { createCloudStore } from "../../worker/store.mjs";
+import { VISION_MODEL, visionReservation } from "../../worker/ai-vision.mjs";
+import { objectKey } from "../../worker/media.mjs";
+import { createD1Media } from "../../worker/d1-media.mjs";
 import {
   registerSocialAI,
   reserveAI,
@@ -13,7 +17,7 @@ import {
   AI_LIMITS,
 } from "../../worker/social-ai.mjs";
 
-let mf, db, app, model;
+let mf, db, app, model, bucket;
 const companies = [crypto.randomUUID(), crypto.randomUUID()];
 async function call(
   path,
@@ -36,7 +40,12 @@ async function call(
       },
       body: body ? JSON.stringify(body) : undefined,
     },
-    { DB: db, AI: model, AI_FREE_ONLY: enabled ? "true" : "false" },
+    {
+      DB: db,
+      MEDIA: bucket,
+      AI: model,
+      AI_FREE_ONLY: enabled ? "true" : "false",
+    },
   );
 }
 const input = (companyId = companies[0]) => ({
@@ -49,9 +58,17 @@ before(async () => {
     modules: true,
     script: 'export default {fetch(){return new Response("ok")}}',
     d1Databases: { DB: "social-ai-tests" },
+    r2Buckets: { MEDIA: "ai-test-images" },
   });
   db = await mf.getD1Database("DB");
-  for (const name of ["0001_studio.sql", "0006_social_ai.sql"])
+  bucket = await mf.getR2Bucket("MEDIA");
+  for (const name of [
+    "0001_studio.sql",
+    "0002_d1_media.sql",
+    "0003_r2_budget.sql",
+    "0006_social_ai.sql",
+    "0007_ai_images.sql",
+  ])
     for (const sql of (await readFile(`migrations/${name}`, "utf8"))
       .split(";")
       .map((v) => v.trim())
@@ -70,6 +87,150 @@ before(async () => {
   app.onError((e, c) =>
     c.json({ error: e.public ? e.message : "Geçersiz istek" }, e.status ?? 400),
   );
+});
+
+async function image(companyId = companies[0], storage = "r2") {
+  const bytes = await sharp({
+    create: { width: 128, height: 96, channels: 3, background: "#c32420" },
+  })
+    .jpeg()
+    .toBuffer();
+  const media = await createCloudStore(db).saveMedia({
+    companyId,
+    width: 128,
+    height: 96,
+    storage,
+  });
+  const key = objectKey(companyId, media.id, "original");
+  if (storage === "d1") await createD1Media(db).put(key, bytes);
+  else await bucket.put(key, bytes);
+  return { media, bytes };
+}
+
+test("Görsel özel depodan okunur; iki modelin bütçesi önceden ayrılır ve gözlem platform içeriğine taşınır", async () => {
+  const { media, bytes } = await image(),
+    calls = [];
+  const selected = [
+    "instagram",
+    "facebook",
+    "x",
+    "threads",
+    "pinterest",
+    "youtube",
+    "tiktok",
+    "linkedin",
+  ];
+  model.run = async (name, options) => {
+    calls.push(name);
+    assert.ok(
+      (await db.prepare("SELECT reserved_neurons FROM ai_budget").first())
+        .reserved_neurons > visionReservation(),
+    );
+    if (name === VISION_MODEL) {
+      const url = options.messages[0].content[1].image_url.url;
+      assert.ok(url.startsWith("data:image/jpeg;base64,"));
+      assert.deepEqual(Buffer.from(url.split(",")[1], "base64"), bytes);
+      return { response: "A red ceramic mug on a white background." };
+    }
+    const prompt = JSON.stringify(options.messages);
+    assert.match(prompt, /red ceramic mug/);
+    assert.doesNotMatch(prompt, /CLIENT-INJECTED-OBSERVATION/);
+    return {
+      response: JSON.stringify({
+        posts: selected.map((platform) => ({
+          platform,
+          title: "",
+          caption: `${platform} için kırmızı kupa duyurusu.`,
+          hashtags: [],
+          alt: "Beyaz zeminde kırmızı seramik kupa.",
+        })),
+      }),
+    };
+  };
+  const result = await call("/api/ai/ask", {
+    method: "POST",
+    body: {
+      ...input(),
+      mode: "posts",
+      selected,
+      mediaId: media.id,
+      imageObservation: "CLIENT-INJECTED-OBSERVATION",
+    },
+  });
+  assert.equal(result.status, 200);
+  const value = await result.json();
+  assert.deepEqual(calls, [VISION_MODEL, AI_MODEL]);
+  assert.equal(value.mediaId, media.id);
+  assert.match(value.imageObservation, /red ceramic mug/);
+  assert.equal(value.published, false);
+  const workspace = await (
+    await call(`/api/ai/workspace?companyId=${companies[0]}`)
+  ).json();
+  assert.equal(workspace.turns[0].mediaId, media.id);
+  assert.equal(workspace.turns[0].expertVersion, "gorsel-ozet-v1");
+  await db.prepare("DELETE FROM media WHERE id=?").bind(media.id).run();
+  assert.equal(
+    (await (await call(`/api/ai/workspace?companyId=${companies[0]}`)).json())
+      .turns[0].mediaId,
+    null,
+  );
+});
+
+test("Başka şirket görseli AI ve depoya erişilmeden reddedilir", async () => {
+  const { media } = await image(companies[1]);
+  let called = false;
+  model.run = async () => {
+    called = true;
+  };
+  const result = await call("/api/ai/ask", {
+    method: "POST",
+    body: { ...input(), mediaId: media.id },
+  });
+  assert.equal(result.status, 400);
+  assert.equal(called, false);
+  assert.equal(
+    (await (await call("/api/ai/status")).json()).reservedNeurons,
+    0,
+  );
+});
+
+test("Görsel modeli başarısızsa metin modeli çağrılmaz, sonuç kaydedilmez ve ayrılan bütçe korunur", async () => {
+  const { media } = await image();
+  let calls = 0;
+  model.run = async (name) => {
+    calls++;
+    assert.equal(name, VISION_MODEL);
+    throw new Error("fixture-private-image-url");
+  };
+  const result = await call("/api/ai/ask", {
+    method: "POST",
+    body: { ...input(), mediaId: media.id },
+  });
+  assert.equal(result.status, 503);
+  assert.doesNotMatch(await result.text(), /fixture-private/);
+  assert.equal(calls, 1);
+  assert.equal(
+    (await db.prepare("SELECT COUNT(*) AS n FROM ai_turns").first()).n,
+    0,
+  );
+  assert.ok(
+    (await (await call("/api/ai/status")).json()).reservedNeurons >=
+      visionReservation(),
+  );
+});
+
+test("Görsel okuma D1 yedek depoda da çalışır; genel URL veya R2 gerektirmez", async () => {
+  const { media } = await image(companies[0], "d1");
+  model.run = async (name) =>
+    name === VISION_MODEL
+      ? { response: "A red product on white." }
+      : { response: "Görselde kırmızı bir ürün var." };
+  const result = await call("/api/ai/ask", {
+    method: "POST",
+    body: { ...input(), mediaId: media.id },
+  });
+  assert.equal(result.status, 200);
+  assert.match((await result.json()).imageObservation, /red product/);
 });
 beforeEach(async () => {
   for (const table of [

@@ -47,6 +47,7 @@ export async function smokeCloudflare(deployment, adminVerification) {
           result.database === "d1" &&
           result.socialBrowser === true &&
           result.ai === "cloudflare" &&
+          result.aiExpertVersion === "gorsel-ozet-v1" &&
           result.storage === deployment.mediaStorage
         ) {
           ready = true;
