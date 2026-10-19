@@ -26,10 +26,17 @@ async function http(path, { method = "GET", body } = {}) {
     signal: AbortSignal.timeout(45000),
   });
   const value = response.status === 204 ? null : await response.json();
-  if (!response.ok) throw new Error(`Panel kontrolü HTTP ${response.status}`);
+  if (!response.ok) {
+    if (!report.error) {
+      report.httpStatus = response.status;
+      if (/^[A-Z_]{3,60}$/.test(value?.code || "")) report.apiCode = value.code;
+    }
+    throw new Error(`Panel kontrolü HTTP ${response.status}`);
+  }
   return { response, value };
 }
 try {
+  report.stage = "configuration";
   const receipt = JSON.parse(
     await readFile("deployment/cloudflare.json", "utf8"),
   );
@@ -60,6 +67,7 @@ try {
   const health = await http("/api/health");
   if (!health.value.socialBrowser)
     throw new Error("Yayında uzak tarayıcı etkin değil.");
+  report.stage = "create-test-user";
   userId = crypto.randomUUID();
   const password = randomToken(),
     username = `browser-${userId}@example.test`,
@@ -78,6 +86,7 @@ try {
       new Date().toISOString(),
     ],
   );
+  report.stage = "application-login";
   const login = await http("/api/auth/login", {
     method: "POST",
     body: { username, password },
@@ -85,9 +94,11 @@ try {
   cookie = login.response.headers.get("set-cookie")?.split(";")[0];
   if (!cookie) throw new Error("Giriş doğrulanamadı.");
   protectSecret(cookie, { emitMask: false });
+  report.stage = "browser-status";
   const status = (await http("/api/social/status")).value;
   if (status.active)
     throw new Error("Kullanıcının açık tarayıcısı var; kontrol başlatılmadı.");
+  report.stage = "create-test-company";
   companyId = (
     await http("/api/companies", {
       method: "POST",
@@ -102,6 +113,7 @@ try {
       },
     })
   ).value.id;
+  report.stage = "create-test-account";
   accountId = (
     await http("/api/social/accounts", {
       method: "POST",
@@ -112,16 +124,19 @@ try {
       },
     })
   ).value.id;
+  report.stage = "open-browser";
   const view = (
     await http(`/api/social/accounts/${accountId}/open`, { method: "POST" })
   ).value;
   protectSecret(view.viewUrl, { emitMask: false });
+  report.stage = "live-view-url";
   const url = new URL(view.viewUrl);
   if (url.hostname !== "live.browser.run" || url.protocol !== "https:")
     throw new Error("Canlı görünüm kaynağı geçersiz.");
   const socket = url.searchParams.get("wss");
   const session = socket?.match(/\/browser\/([a-zA-Z0-9-]+)\//)?.[1];
   if (!session) throw new Error("Canlı görünüm oturumu doğrulanamadı.");
+  report.stage = "connect-browser";
   remote = await chromium.connectOverCDP(
     `wss://api.cloudflare.com/client/v4/accounts/${target}/browser-rendering/devtools/browser/${session}`,
     {
@@ -129,6 +144,7 @@ try {
       timeout: 15000,
     },
   );
+  report.stage = "login-page";
   const page = remote
     .contexts()[0]
     .pages()
@@ -139,7 +155,18 @@ try {
     .waitFor({ state: "visible", timeout: 10000 });
   report.loginFieldsVisible = true;
   report.liveViewAvailable = true;
+  report.stage = "read-cookies";
+  const cdp = await remote.contexts()[0].newCDPSession(page);
+  try {
+    const { cookies } = await cdp.send("Storage.getCookies");
+    if (!Array.isArray(cookies))
+      throw new Error("Çerez okuması doğrulanamadı.");
+    report.cookieReadAvailable = true;
+  } finally {
+    await cdp.detach();
+  }
   // End through the actual application's cookie-read and browser-close path.
+  report.stage = "save-and-close";
   const ended = (
     await http(`/api/social/accounts/${accountId}/save`, { method: "POST" })
   ).value;
@@ -150,7 +177,11 @@ try {
   report.sessionClosed = true;
   report.unauthenticatedSessionNotSaved = true;
   report.verified = true;
-} catch {
+  report.stage = "completed";
+} catch (error) {
+  report.timeout = error.name === "TimeoutError";
+  report.networkError =
+    String(error.message).match(/net::[A-Z_]+/)?.[0] ?? null;
   report.verified = false;
   report.error =
     "Panel içindeki giriş tarayıcısı canlıda doğrulanamadı. Kimlik bilgisi girilmedi ve paylaşım yapılmadı.";

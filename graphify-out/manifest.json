@@ -390,9 +390,9 @@
     "semantic_hash": ""
   },
   "scripts/check-browser-panel.mjs": {
-    "mtime": 1792373018.8954961,
-    "seen": 1792373141.052817,
-    "ast_hash": "92b4e06c6db9303c74a97da14d5d8bbb",
+    "mtime": 1792373445.3724854,
+    "seen": 1792373446.4939964,
+    "ast_hash": "f273419f8878c9b03081ebb177dc8658",
     "semantic_hash": ""
   },
   "src/Modal.tsx": {
