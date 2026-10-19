@@ -5,6 +5,7 @@ import { hashPassword, randomToken } from "../shared/passwords.mjs";
 import { verifyWorkersAIFree } from "./cloudflare-free-tier.mjs";
 import sharp from "sharp";
 import { platforms } from "../server/platforms.mjs";
+import { VISION_MODEL } from "../worker/ai-vision.mjs";
 
 // Explicit live inference check with disposable data, never social credentials.
 const report = {
@@ -31,13 +32,73 @@ async function http(path, { method = "GET", body } = {}) {
     signal: AbortSignal.timeout(90000),
   });
   if (!response.ok) {
-    if (!report.verified) report.httpStatus = response.status;
+    if (!report.verified) {
+      report.httpStatus = response.status;
+      const problem = await response.json().catch(() => ({}));
+      if (problem.error?.startsWith("Görsel modeli yanıt veremedi."))
+        report.failureKind = "vision-model";
+      else if (problem.error?.startsWith("Cloudflare AI yanıt veremedi."))
+        report.failureKind = "text-model";
+    }
     throw new Error("Canlı AI isteği tamamlanamadı.");
   }
   return {
     response,
     value: response.status === 204 ? null : await response.json(),
   };
+}
+async function diagnoseVision(original) {
+  // Only the synthetic fixture is probed. Persist status/codes, never provider
+  // messages, prompts, image data, credentials or generated content.
+  const image = `data:image/jpeg;base64,${original.toString("base64")}`;
+  const prompt = "Describe the visible object and its color in one sentence.";
+  const formats = {
+    messages: {
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: image } },
+          ],
+        },
+      ],
+    },
+    legacy: { prompt, image: [...original] },
+  };
+  report.visionDiagnostic = {};
+  for (const [format, input] of Object.entries(formats)) {
+    try {
+      const result = await cfApi(
+        `/accounts/${deployment.accountId}/ai/run/${VISION_MODEL}`,
+        {
+          method: "POST",
+          body: { ...input, max_tokens: 128, temperature: 0.2 },
+        },
+      );
+      report.visionDiagnostic[format] = {
+        success:
+          typeof result?.response === "string" &&
+          /cup|mug|fincan|kupa|bardak/i.test(result.response),
+      };
+    } catch (error) {
+      const message = String(error.message).toLowerCase();
+      report.visionDiagnostic[format] = {
+        success: false,
+        status: error.status,
+        codes: error.codes,
+        reason: /neurons|quota|rate limit|capacity/.test(message)
+          ? "capacity"
+          : /validat|schema|input|image|argument/.test(message)
+            ? "input"
+            : /permission|authoriz|forbidden|access/.test(message)
+              ? "access"
+              : /model.*not found|model.*available/.test(message)
+                ? "model"
+                : "provider",
+      };
+    }
+  }
 }
 try {
   report.stage = "configuration";
@@ -176,19 +237,25 @@ try {
     "tiktok",
     "linkedin",
   ];
-  const generated = (
-    await http("/api/ai/ask", {
-      method: "POST",
-      body: {
-        companyId,
-        mode: "posts",
-        question:
-          "Yeni ürünümüz için görseldeki nesneyi ve rengini esas alan kısa tanıtım metinleri hazırla. Özellik, fiyat, indirim, kalite veya malzeme iddiası uydurma. Her platforma farklı bir anlatım yaz.",
-        selected,
-        mediaId: media.id,
-      },
-    })
-  ).value;
+  let generated;
+  try {
+    generated = (
+      await http("/api/ai/ask", {
+        method: "POST",
+        body: {
+          companyId,
+          mode: "posts",
+          question:
+            "Yeni ürünümüz için görseldeki nesneyi ve rengini esas alan kısa tanıtım metinleri hazırla. Özellik, fiyat, indirim, kalite veya malzeme iddiası uydurma. Her platforma farklı bir anlatım yaz.",
+          selected,
+          mediaId: media.id,
+        },
+      })
+    ).value;
+  } catch (error) {
+    if (report.failureKind === "vision-model") await diagnoseVision(original);
+    throw error;
+  }
   if (
     generated.published !== false ||
     generated.posts?.length !== 8 ||
