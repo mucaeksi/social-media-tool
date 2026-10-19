@@ -1,8 +1,8 @@
 {
-  "status": "failed",
-  "source_commit": "4222b8f3a624fbcfa1df3835243a4d7b7dc8d24a",
-  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39242665112",
-  "updated_at": "2026-10-19T11:13:08.845Z",
+  "status": "success",
+  "source_commit": "4280e858902c10eff77d8ce019f8b67ea95b9440",
+  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39243159055",
+  "updated_at": "2026-10-19T11:17:28.559Z",
   "url": "https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev",
   "zero_trust": {
     "plan": "Teams Free Base",
@@ -15,7 +15,7 @@
       "serviceTokens": 50,
       "policiesPerApp": 1000
     },
-    "checkedAt": "2026-10-19T11:13:10.162Z",
+    "checkedAt": "2026-10-19T11:17:29.726Z",
     "seatEnforcement": "Cloudflare Free planı girişte 50 aktif koltuğu uygular"
   },
   "workers_ai": {
@@ -23,9 +23,22 @@
     "price": 0,
     "dailyNeurons": 10000,
     "applicationBudget": 9000,
-    "checkedAt": "2026-10-19T11:13:10.429Z",
+    "checkedAt": "2026-10-19T11:17:30.004Z",
     "paidSubscriptionFound": false
   },
-  "verified": false,
-  "error": "Canlı platform listesi eksik."
+  "social_profiles": {
+    "woodMoodProfiles": 9,
+    "expectedWoodMoodProfiles": 9,
+    "socialLoginsVerified": false
+  },
+  "verified": true,
+  "components": {
+    "worker": "sosyal-studio",
+    "database": "Cloudflare D1",
+    "media": "Cloudflare R2",
+    "login": "Kullanıcı adı ve şifre — D1 oturumları",
+    "socialBrowser": "Cloudflare Browser Run — deneysel hesap girişi",
+    "companyComputer": "Windows Firefox — otomatik güncelleme, kalıcı profiller ve Qwen3.5-4B yerel AI bağlantısı; gerçek kullanıcı/model kontrolü bilgisayarda yapılmalı",
+    "ai": "Cloudflare Workers AI — görsel + özet, platform metinleri ve şirket hafızası"
+  }
 }
