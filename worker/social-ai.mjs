@@ -239,7 +239,7 @@ export function aiText(result) {
     fail(502, "Model yanıtı doğrulanamadı. Önceki içerik korundu.");
   return text;
 }
-export function aiPosts(text, selected) {
+export function aiPosts(text, selected, { onlySelected = false } = {}) {
   let value;
   try {
     value = JSON.parse(
@@ -259,7 +259,9 @@ export function aiPosts(text, selected) {
       502,
       "Modelin içerik biçimi doğrulanamadı. Önceki gönderiler korundu.",
     );
-  const posts = parsed.data.posts;
+  const posts = onlySelected
+    ? parsed.data.posts.filter((post) => selected.includes(post.platform))
+    : parsed.data.posts;
   if (
     posts.length !== selected.length ||
     new Set(posts.map((p) => p.platform)).size !== selected.length ||
@@ -521,6 +523,7 @@ export function registerSocialAI(app) {
         const proposed = aiPosts(
           text,
           attempt ? correctionTargets : input.selected,
+          { onlySelected: Boolean(attempt && originalPosts) },
         );
         const combined = originalPosts
           ? originalPosts.map(

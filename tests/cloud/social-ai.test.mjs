@@ -495,6 +495,10 @@ test("Aynı platform metinleri en fazla bir kez düzeltilir; iki çağrının b�
       response: JSON.stringify({
         posts: [
           {
+            ...initial.posts[0],
+            caption: "Bu istenmeyen değişiklik uygulanmamalı.",
+          },
+          {
             ...initial.posts[1],
             caption: "Topluluğumuz için yeni bir buluşma.",
           },
