@@ -322,6 +322,15 @@ function controller() {
     async createCDPSession() {
       return {
         async detach() {},
+        connection() {
+          return {
+            async send(method) {
+              assert.equal(method, "Browser.close");
+              if (state.failClose) throw new Error("fixture-private-url");
+              state.closed = true;
+            },
+          };
+        },
         async send(method, params) {
           if (method === "Cloudflare.getLiveView")
             return {
@@ -332,8 +341,7 @@ function controller() {
             return { cookies: state.cookies };
           if (method === "Storage.setCookies") state.restored = params.cookies;
           if (method === "Browser.close") {
-            if (state.failClose) throw new Error("fixture-private-url");
-            state.closed = true;
+            throw new Error("Browser.close sayfa oturumuna gönderilemez.");
           }
         },
       };
@@ -435,6 +443,7 @@ test("Kaydetme yalnızca şifreli kendi hesap çerezini yazar; otomatik kapanı�
   ];
   const ended = await (await f.command("save")).json();
   assert.equal(ended.saved, true);
+  assert.equal(ended.cookieReadVerified, true);
   assert.equal(f.state.closed, true);
   assert.ok(!f.saved[0][0].includes("test-session"));
   const cookies = await openCookies(f.saved[0][0], f.account, secret);

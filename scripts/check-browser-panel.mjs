@@ -173,7 +173,10 @@ try {
   const ended = (
     await http(`/api/social/accounts/${accountId}/save`, { method: "POST" })
   ).value;
-  if (!ended.closed || ended.saved)
+  report.sessionClosed = ended.closed;
+  report.sessionSaved = ended.saved;
+  report.cookieReadVerified = ended.cookieReadVerified;
+  if (!ended.closed || ended.saved || !ended.cookieReadVerified)
     throw new Error(
       "Giriş yapılmadan oturum kaydı veya tarayıcı kapanışı hatalı.",
     );

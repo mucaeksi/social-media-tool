@@ -263,7 +263,8 @@ export class SocialBrowser {
     let browser,
       closed = !active.sessionId,
       saved = false,
-      hasSession = false;
+      hasSession = false,
+      cookieReadVerified = false;
     try {
       if (active.sessionId) {
         browser = await this.driver.connect(this.env.BROWSER, active.sessionId);
@@ -273,6 +274,7 @@ export class SocialBrowser {
           let allCookies;
           try {
             allCookies = (await cdp.send("Storage.getCookies")).cookies;
+            cookieReadVerified = Array.isArray(allCookies);
           } finally {
             await cdp.detach();
           }
@@ -309,7 +311,13 @@ export class SocialBrowser {
           const page = (await browser.pages())[0] || (await browser.newPage());
           const cdp = await page.createCDPSession();
           try {
-            await cdp.send("Browser.close");
+            // Browser.close must reach the root connection so Cloudflare closes
+            // the whole session, including the operator's Live View connection.
+            // The pinned SDK's browser.close callback logs rejected commands;
+            // sending through its root connection keeps errors private here.
+            const connection = cdp.connection();
+            if (!connection) throw new Error("Tarayıcı bağlantısı kapalı.");
+            await connection.send("Browser.close");
           } finally {
             await cdp.detach().catch(() => {});
           }
@@ -320,12 +328,17 @@ export class SocialBrowser {
         }
       }
       if (!closed) {
-        try {
-          closed = !(await this.driver.sessions(this.env.BROWSER)).some(
-            (session) => session.sessionId === active.sessionId,
-          );
-        } catch {
-          /* Never free a lease when closure cannot be confirmed. */
+        for (let attempt = 0; attempt < 4 && !closed; attempt++) {
+          try {
+            closed = !(await this.driver.sessions(this.env.BROWSER)).some(
+              (session) => session.sessionId === active.sessionId,
+            );
+          } catch {
+            /* Never free a lease when closure cannot be confirmed. */
+            break;
+          }
+          if (!closed && attempt < 3)
+            await new Promise((resolve) => setTimeout(resolve, 150));
         }
       }
       const budget = await this.ctx.storage.get("budget");
@@ -342,7 +355,7 @@ export class SocialBrowser {
         await this.ctx.storage.setAlarm(Date.now() + 5000);
       }
     }
-    return { saved, hasSession, closed };
+    return { saved, hasSession, closed, cookieReadVerified };
   }
   async alarm() {
     await this.exclusive(async () => {
