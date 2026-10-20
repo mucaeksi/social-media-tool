@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { mkdir } from "node:fs/promises";
 import { LOCAL_MODEL } from "../shared/local-ai.mjs";
 
 // A detached local owner outlives a closed terminal just long enough to release
@@ -7,10 +8,18 @@ import { LOCAL_MODEL } from "../shared/local-ai.mjs";
 const [executable, models] = process.argv.slice(2);
 if (!process.send || !executable || !models) process.exit(1);
 let stopping = false;
+const aiRoot = dirname(models), runtimeHome = join(aiRoot, "home"), temporary = join(aiRoot, "tmp");
+for (const folder of [runtimeHome, temporary, join(runtimeHome, "AppData", "Local"), join(runtimeHome, "AppData", "Roaming"), join(aiRoot, "cache")])
+  await mkdir(folder, { recursive: true });
 const server = spawn(executable, ["serve"], {
   stdio: "ignore", windowsHide: true,
   env: { ...process.env, OLLAMA_HOST: "127.0.0.1:11435", OLLAMA_MODELS: models,
-    OLLAMA_NO_CLOUD: "1", OLLAMA_MAX_LOADED_MODELS: "1", OLLAMA_NUM_PARALLEL: "1" },
+    OLLAMA_NO_CLOUD: "1", OLLAMA_MAX_LOADED_MODELS: "1", OLLAMA_NUM_PARALLEL: "1",
+    TEMP: temporary, TMP: temporary, TMPDIR: temporary,
+    XDG_CACHE_HOME: join(aiRoot, "cache"), CUDA_CACHE_PATH: join(aiRoot, "cache", "cuda"),
+    ...(process.platform === "win32" ? { USERPROFILE: runtimeHome,
+      LOCALAPPDATA: join(runtimeHome, "AppData", "Local"), APPDATA: join(runtimeHome, "AppData", "Roaming") } : {}),
+  },
 });
 const exited = new Promise((resolve) => {
   server.once("exit", resolve);

@@ -2,6 +2,7 @@
 chcp 65001 >nul
 setlocal
 cd /d "%~dp0"
+set "STUDIO_DATA_DIR=%~dp0"
 where node >nul 2>nul
 if errorlevel 1 goto node_missing
 node launch.mjs %*

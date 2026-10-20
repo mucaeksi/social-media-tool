@@ -14,6 +14,7 @@ export const releaseFiles = [
   "companion/ollama-host.mjs",
   "companion/local-memory.mjs",
   "companion/install-bundle.mjs",
+  "companion/portable-data.mjs",
   "companion/research.mjs",
   "companion/launch.mjs",
   "companion/supervisor.mjs",

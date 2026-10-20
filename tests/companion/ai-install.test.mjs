@@ -133,7 +133,7 @@ for (const crash of [false, true]) {
     const root = await fixture(t);
     await writeFile(join(root, "serve"), `
       const http=require('node:http'),fs=require('node:fs');
-      fs.writeFileSync('runtime-env.json',JSON.stringify({host:process.env.OLLAMA_HOST,models:process.env.OLLAMA_MODELS,noCloud:process.env.OLLAMA_NO_CLOUD,pid:process.pid}));
+      fs.writeFileSync('runtime-env.json',JSON.stringify({host:process.env.OLLAMA_HOST,models:process.env.OLLAMA_MODELS,noCloud:process.env.OLLAMA_NO_CLOUD,pid:process.pid,profile:process.env.USERPROFILE,temp:process.env.TEMP,local:process.env.LOCALAPPDATA}));
       const model={name:'qwen3.5:4b',size:3000000000,digest:'a'.repeat(64),details:{parameter_size:'4.66B',quantization_level:'Q4_K_M'}};
       http.createServer((req,res)=>{let body='';req.on('data',x=>body+=x);req.on('end',()=>{
         if(req.url.endsWith('/generate'))fs.appendFileSync('loads.jsonl',body+'\\n');
@@ -163,6 +163,11 @@ for (const crash of [false, true]) {
     assert.equal(env.host, "127.0.0.1:11435");
     assert.equal(env.models, modelDirectory(root));
     assert.equal(env.noCloud, "1");
+    assert.equal(env.temp, join(root, "ai/tmp"));
+    if (process.platform === "win32") {
+      assert.equal(env.profile, join(root, "ai/home"));
+      assert.equal(env.local, join(root, "ai/home/AppData/Local"));
+    }
     const exited = new Promise((r) => child.once("exit", r));
     if (crash) child.kill(); else child.send({ type: "stop" });
     await exited;

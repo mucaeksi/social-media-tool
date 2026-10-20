@@ -96,7 +96,7 @@ export function LocalAIStatus({
       </p>
       <p>
         İlk açılışta AI otomatik kurulur. Çalıştırıcı, model ve knowledge.sqlite
-        veritabanı aynı SosyalStudio klasörünün ai bölümünde tutulur.
+        veritabanı çalıştırdığınız BAT dosyasının yanındaki ai klasöründe tutulur.
         Şirket hafızası Cloudflare’de de korunur; mevcut hesap girişleri silinmez.
       </p>
       {status?.progress != null && (

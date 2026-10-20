@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { extractRelease } from "../../companion/release.mjs";
 
@@ -37,9 +37,11 @@ for (const name of launchers) {
       // Execute the packaged batch in real cmd.exe, without pairing or opening accounts.
       await writeFile(join(directory, "launch.mjs"), `
         console.log("STUDIO_LAUNCH_OK " + process.argv.slice(2).join(" "));
+        console.log("STUDIO_ROOT=" + JSON.stringify(process.env.STUDIO_DATA_DIR));
         process.exitCode = 7;
       `);
       const env = { ...process.env };
+      env.STUDIO_DATA_DIR = join(root, "unrelated-directory");
       for (const key of Object.keys(env)) if (/^path$/i.test(key)) delete env[key];
       const system32 = join(process.env.SystemRoot, "System32");
       env.PATH = nodeInstalled ? `${dirname(process.execPath)};${system32}` : system32;
@@ -60,6 +62,8 @@ for (const name of launchers) {
       assert.equal(result.code, nodeInstalled ? 7 : 1, result.output);
       if (nodeInstalled) {
         assert.match(result.output, /STUDIO_LAUNCH_OK --launcher-fixture/);
+        const rootLine = result.output.match(/STUDIO_ROOT=(.+)/);
+        assert.equal(resolve(JSON.parse(rootLine[1])), resolve(directory));
       } else {
         assert.match(result.output, /Node\.js 24 veya üzeri LTS gerekli/);
         assert.doesNotMatch(result.output, /STUDIO_LAUNCH_OK/);

@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792486912.6944263,
-    "seen": 1792486976.6173432,
-    "ast_hash": "2630d98173285ecc262626d477726358",
+    "mtime": 1792491067.5509958,
+    "seen": 1792491080.8485272,
+    "ast_hash": "aea4cc0c466dc261e91b4baeefbd0a41",
     "semantic_hash": ""
   },
   "README.md": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/cloudflare.yml": {
-    "mtime": 1792486911.650434,
-    "seen": 1792486976.617307,
-    "ast_hash": "ee39df6b5d27bbf2570150f9cecc1f1d",
+    "mtime": 1792490944.41993,
+    "seen": 1792491080.8485034,
+    "ast_hash": "8b757119ee5f97eff0b85f826a218420",
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
@@ -552,15 +552,15 @@
     "semantic_hash": ""
   },
   "companion/package.json": {
-    "mtime": 1792486912.9184597,
-    "seen": 1792486976.6130915,
-    "ast_hash": "e8f543769d0cd951d2e4b13e7224966c",
+    "mtime": 1792490813.5977325,
+    "seen": 1792491080.845435,
+    "ast_hash": "33af5491a0dfae29d59f42840d6a3fb2",
     "semantic_hash": ""
   },
   "companion/start.mjs": {
-    "mtime": 1792486598.5329473,
-    "seen": 1792486976.6131315,
-    "ast_hash": "efefccf9a8dab6d412dff631b848a438",
+    "mtime": 1792490941.9319494,
+    "seen": 1792491080.8454592,
+    "ast_hash": "0bbb8460e5e76bf49ffce5c9d1e89106",
     "semantic_hash": ""
   },
   "scripts/build-companion.mjs": {
@@ -618,27 +618,27 @@
     "semantic_hash": ""
   },
   "docs/SIRKET_BILGISAYARI.md": {
-    "mtime": 1792486912.918865,
-    "seen": 1792486976.6242933,
-    "ast_hash": "25831ca88d3661af92193eafa081def7",
+    "mtime": 1792491067.8006182,
+    "seen": 1792491080.8486896,
+    "ast_hash": "48f4223e8742ab9bfa9572bb9ef09e4d",
     "semantic_hash": ""
   },
   "companion/launch.mjs": {
-    "mtime": 1792486597.504955,
-    "seen": 1792486976.6129394,
-    "ast_hash": "1831f7460a7ece2eba85094c1d133df8",
+    "mtime": 1792490812.3609526,
+    "seen": 1792491080.8453689,
+    "ast_hash": "40022dd53503e4b3ff9f2c2c36455b93",
     "semantic_hash": ""
   },
   "companion/locations.mjs": {
-    "mtime": 1792471950.3774414,
-    "seen": 1792473384.1757593,
-    "ast_hash": "258fd2ca08da4bc43302ef01fb60fdd2",
+    "mtime": 1792490811.3769605,
+    "seen": 1792491080.8454123,
+    "ast_hash": "c9e6e7cd6061746e8bf01d2f7f1ae605",
     "semantic_hash": ""
   },
   "companion/release.mjs": {
-    "mtime": 1792486599.0329437,
-    "seen": 1792486976.6130946,
-    "ast_hash": "b0986c6f31eb3172731bd07fe1041bf9",
+    "mtime": 1792490812.8649487,
+    "seen": 1792491080.845439,
+    "ast_hash": "8bc57ebe230fbf6bc7e4eec84d868aa5",
     "semantic_hash": ""
   },
   "companion/supervisor.mjs": {
@@ -654,9 +654,9 @@
     "semantic_hash": ""
   },
   "tests/companion/update.test.mjs": {
-    "mtime": 1792487101.4890103,
-    "seen": 1792487109.6366684,
-    "ast_hash": "33a3371fbc0a1b92fda821ac3dfe6045",
+    "mtime": 1792491066.5510037,
+    "seen": 1792491080.8477476,
+    "ast_hash": "c56892169598c2a587a7c7eb3102a983",
     "semantic_hash": ""
   },
   "companion/local-ai.mjs": {
@@ -672,9 +672,9 @@
     "semantic_hash": ""
   },
   "src/LocalAIStatus.tsx": {
-    "mtime": 1792486601.1209276,
-    "seen": 1792486976.6147814,
-    "ast_hash": "086550dff109f87df6d3c2324216a129",
+    "mtime": 1792490942.4199457,
+    "seen": 1792491080.846417,
+    "ast_hash": "1d538c0f55cb7410b8674c0d22e2b5d7",
     "semantic_hash": ""
   },
   "tests/browser/local-ai.spec.mjs": {
@@ -876,9 +876,9 @@
     "semantic_hash": ""
   },
   "tests/companion/launcher.test.mjs": {
-    "mtime": 1792483222.6343796,
-    "seen": 1792483227.1606877,
-    "ast_hash": "7c7a630cc75c13a4ca2cd9227d366a16",
+    "mtime": 1792490943.4399376,
+    "seen": 1792491080.8476803,
+    "ast_hash": "43f3022b8f240b94f0b57a77354dd388",
     "semantic_hash": ""
   },
   "companion/normal-firefox.mjs": {
@@ -912,15 +912,27 @@
     "semantic_hash": ""
   },
   "companion/ollama-host.mjs": {
-    "mtime": 1792487014.9416656,
-    "seen": 1792487109.6340466,
-    "ast_hash": "81ae52ed86de2ea1a03727b3812f1d73",
+    "mtime": 1792490941.3279543,
+    "seen": 1792491080.8454332,
+    "ast_hash": "0120ac3b0f451450067c8f1e1a43a1be",
     "semantic_hash": ""
   },
   "tests/companion/ai-install.test.mjs": {
-    "mtime": 1792487101.9970064,
-    "seen": 1792487109.6365116,
-    "ast_hash": "55e76c4c45697c77027d6f45ef19cea0",
+    "mtime": 1792491067.0509996,
+    "seen": 1792491080.8476076,
+    "ast_hash": "e76436c1d4a57d8f8cdd8b5325cdeaa3",
+    "semantic_hash": ""
+  },
+  "companion/portable-data.mjs": {
+    "mtime": 1792490940.839958,
+    "seen": 1792491080.8454378,
+    "ast_hash": "b3f6db27fea72f21525269b96ec83a53",
+    "semantic_hash": ""
+  },
+  "tests/companion/portable-data.test.mjs": {
+    "mtime": 1792490943.923934,
+    "seen": 1792491080.8477242,
+    "ast_hash": "75527c2746e607807c11c138672fa303",
     "semantic_hash": ""
   }
 }

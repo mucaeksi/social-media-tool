@@ -323,7 +323,8 @@ test("bootstrap aday denetleyicideki sözdizimi hatasından geri döner", async 
   const f = await fixture(t);
   const bundle = join(f.root, "bundle");
   const files = extractRelease(archive, manifest.version);
-  files.set("companion/supervisor.mjs", Buffer.from('console.log("FALLBACK_OK"); process.disconnect();'));
+  const fallback = 'console.log("FALLBACK_OK"); console.log("ROOT=" + process.env.STUDIO_DATA_DIR); console.log("CACHE=" + process.env.NPM_CONFIG_CACHE); process.disconnect();';
+  files.set("companion/supervisor.mjs", Buffer.from(fallback));
   files.set("companion/release.json", Buffer.from(JSON.stringify({ protocol: 1, version: sourceVersion(files) })));
   for (const [path, bytes] of files) {
     await mkdir(join(bundle, path, ".."), { recursive: true });
@@ -333,7 +334,7 @@ test("bootstrap aday denetleyicideki sözdizimi hatasından geri döner", async 
   // no model, real social login or production request is made.
   await writeFile(
     join(bundle, "companion/supervisor.mjs"),
-    'console.log("FALLBACK_OK"); process.disconnect();',
+    fallback,
   );
   const updates = join(f.root, "SosyalStudio/updates");
   await mkdir(join(updates, "releases", manifest.version, "companion"), {
@@ -356,7 +357,7 @@ test("bootstrap aday denetleyicideki sözdizimi hatasından geri döner", async 
     process.execPath,
     [resolve(bundle, "companion/launch.mjs")],
     {
-      env: { ...process.env, LOCALAPPDATA: f.root },
+      env: { ...process.env, LOCALAPPDATA: f.root, STUDIO_DATA_DIR: join(f.root, "SosyalStudio") },
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
@@ -370,6 +371,8 @@ test("bootstrap aday denetleyicideki sözdizimi hatasından geri döner", async 
   clearTimeout(timer);
   assert.equal(code, 0);
   assert.match(output, /FALLBACK_OK/);
+  assert.ok(output.includes(`ROOT=${join(f.root, "SosyalStudio")}`));
+  assert.ok(output.includes(`CACHE=${join(f.root, "SosyalStudio/cache/npm")}`));
   const state = JSON.parse(await readFile(join(updates, "current.json")));
   assert.equal(state.version, null);
   assert.equal(state.failedVersion, manifest.version);
@@ -484,6 +487,7 @@ test(
       env: {
         ...process.env,
         LOCALAPPDATA: f.root,
+        STUDIO_DATA_DIR: join(f.root, "SosyalStudio"),
         STUDIO_FIREFOX: process.execPath,
       },
       stdio: ["ignore", "ignore", "ignore", "ipc"],

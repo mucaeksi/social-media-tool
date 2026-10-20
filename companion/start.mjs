@@ -290,7 +290,7 @@ try {
   const executablePath = await firefoxPath();
   researcher = new WebsiteResearch({ executablePath });
   if (process.platform === "win32") {
-    console.log("Yerel AI otomatik hazırlanıyor. Dosyalar SosyalStudio klasöründe tutulur; eşleştirme ve hesap girişlerine devam edebilirsiniz.");
+    console.log("Yerel AI otomatik hazırlanıyor. Veriler BAT dosyasının bulunduğu klasörde tutulur; eşleştirme ve hesap girişlerine devam edebilirsiniz.");
     localAI.setup({ automatic: true });
   }
   const config = await configuration();

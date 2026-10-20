@@ -1,12 +1,13 @@
 // Stable bootstrap: updated supervisors and applications live in versioned folders.
 import { fork } from "node:child_process";
 import { createServer } from "node:net";
-import { readFile, writeFile, rename } from "node:fs/promises";
+import { readFile, writeFile, rename, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { updateDirectory, directory } from "./locations.mjs";
+import { updateDirectory, directory, legacyDirectory } from "./locations.mjs";
 import { validVersion } from "./release.mjs";
 import { installBundle } from "./install-bundle.mjs";
+import { migratePortableData } from "./portable-data.mjs";
 
 if (Number(process.versions.node.split(".")[0]) < 24) {
   console.error("Node.js 24 veya üzeri LTS kurun.");
@@ -32,6 +33,12 @@ try {
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
   process.on("SIGHUP", stop);
+  await migratePortableData(legacyDirectory, directory);
+  await mkdir(join(directory, "tmp"), { recursive: true });
+  // Children, npm and future patched supervisors inherit the BAT's stable root.
+  process.env.STUDIO_DATA_DIR = directory;
+  process.env.NPM_CONFIG_CACHE = join(directory, "cache", "npm");
+  process.env.TEMP = process.env.TMP = process.env.TMPDIR = join(directory, "tmp");
   const installedRoot = await installBundle(bundleRoot, directory);
   do {
     let root = installedRoot;
@@ -91,9 +98,9 @@ try {
       break;
     }
   } while (!stopped);
-} catch {
+} catch (error) {
   console.error(
-    "Yardımcı başlatılamadı. Başka yardımcı açıksa kapatın; ardından tekrar deneyin.",
+    error.public ? error.message : "Yardımcı başlatılamadı. Başka yardımcı açıksa kapatın ve bu klasörün yazılabilir olduğunu kontrol edin.",
   );
   process.exitCode = 1;
 } finally {
