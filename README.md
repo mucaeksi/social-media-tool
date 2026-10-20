@@ -1,6 +1,8 @@
 # Sosyal Studio
 
-Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Türkçe bir panel. Facebook, Instagram, X / Twitter, Threads, Pinterest, YouTube, TikTok ve LinkedIn için metin ve görsel hazırlama alanları içerir.
+Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Türkçe bir panel. Facebook, Instagram, X / Twitter, Threads, Pinterest, YouTube, TikTok, LinkedIn ve Tumblr için metin ve görsel hazırlama alanları içerir.
+
+[20 Ekim 2026 geliştirme incelemesi: KKTC uzmanlığı, kaynaklı web araştırması ve Firefox görevleri](docs/KKTC_GELISTIRME_INCELEMESI.md). Mevcut Firefox yardımcısı ve yerel AI ayrı çalışır; web sitelerini otomatik okuyup AI hafızasına aktarma ve AI ile tarayıcı görevleri henüz uygulanmadı. [Windows Firefox ve küçük yerel model kurulumu](docs/SIRKET_BILGISAYARI.md).
 
 **İçerik hazırlama ve deneysel sosyal hesap tarayıcısı.** Canlı Cloudflare sürümünde yönetici, şirketlere ayrı hesaplar ekleyip platformun kendi ekranında giriş yapabilir; oturumlar şifreli saklanır. Hazırlanan metin açık gönderi alanına aktarılabilir. Toplu otomatik yayınlama, görseli uzak forma yükleme ve zamanlama henüz yoktur. [Hesap girişi ve doğrulanan kapsam](docs/HESAP_GIRISI.md).
 
