@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/cloudflare.yml": {
-    "mtime": 1792501412.2785563,
-    "seen": 1792501810.4956722,
-    "ast_hash": "949c28c91b11d00dc055269e6f887af7",
+    "mtime": 1792503306.560885,
+    "seen": 1792503309.8547125,
+    "ast_hash": "520c26f9e8967111ce2e8dc543e80109",
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
@@ -996,9 +996,9 @@
     "semantic_hash": ""
   },
   "tests/companion/firefox-extension.test.mjs": {
-    "mtime": 1792503068.4266207,
-    "seen": 1792503072.4583693,
-    "ast_hash": "180c9fc75e18bbba88f1aee02dc8d706",
+    "mtime": 1792503306.0928884,
+    "seen": 1792503309.8510914,
+    "ast_hash": "29cde4330a1f8e4b5253e85b43bdb53c",
     "semantic_hash": ""
   },
   "tests/firefox-extension.test.mjs": {

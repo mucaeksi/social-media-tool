@@ -55,7 +55,9 @@ jobs:
           NPM_CONFIG_CACHE: ${{ runner.temp }}/sosyal-studio-npm-cache
       - run: node scripts/build-companion.mjs
       - run: node scripts/install-test-firefox.mjs
-      - run: node --test --test-reporter=spec --test-reporter=./scripts/action-test-reporter.mjs --test-reporter-destination=stdout --test-reporter-destination=stdout tests/companion/update.test.mjs tests/companion/local-ai.test.mjs tests/companion/launcher.test.mjs tests/companion/normal-login.test.mjs tests/companion/ai-install.test.mjs tests/companion/portable-data.test.mjs tests/companion/firefox-extension.test.mjs tests/companion/studio-firefox.test.mjs tests/companion/night-learning.test.mjs
+      # Native installation and profile lifecycle tests must not compete for
+      # running Firefox processes or Windows installer resources.
+      - run: node --test --test-concurrency=1 --test-reporter=spec --test-reporter=./scripts/action-test-reporter.mjs --test-reporter-destination=stdout --test-reporter-destination=stdout tests/companion/update.test.mjs tests/companion/local-ai.test.mjs tests/companion/launcher.test.mjs tests/companion/normal-login.test.mjs tests/companion/ai-install.test.mjs tests/companion/portable-data.test.mjs tests/companion/firefox-extension.test.mjs tests/companion/studio-firefox.test.mjs tests/companion/night-learning.test.mjs
         env:
           NPM_CONFIG_CACHE: ${{ runner.temp }}/sosyal-studio-npm-cache
   deploy:

@@ -43,12 +43,17 @@ test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve 
       await writeFile(setupPath, `import { ensureStudioFirefox } from ${JSON.stringify(new URL("../../companion/studio-firefox.mjs", import.meta.url).href)};
         process.on('message', m => { if (m.type === 'stop') process.exit(1); });
         process.send({type:'initializing',stage:'firefox'});
-        await new Promise(r => setTimeout(r,1500));
+        await new Promise(r => setTimeout(r,6000));
         await ensureStudioFirefox(${JSON.stringify(directory)});
         process.send({type:'ready'}, () => process.disconnect());`);
-      let confirmed = false;
-      const result = await supervise({ root: directory, updater: { state: async () => ({ pending: true }), confirm: async () => { confirmed = true; }, prepare: async () => null, rollback: async () => assert.fail("Geçerli ilk kurulum geri alınmamalı") }, ensureDependencies: async () => {}, readyTimeout: 1000, firefoxSetupTimeout: 240000,
-        spawnApp: () => (setupChild = fork(setupPath, [], { execArgv: [], stdio: ["ignore", "inherit", "inherit", "ipc"] })), log: () => {} });
+      let confirmed = false, diagnostics = "";
+      const result = await supervise({ root: directory, updater: { state: async () => ({ pending: true }), confirm: async () => { confirmed = true; }, prepare: async () => null, rollback: async () => assert.fail("İlk Firefox kurulumu başlayamadı: " + diagnostics) }, ensureDependencies: async () => {}, readyTimeout: 5000, firefoxSetupTimeout: 240000,
+        spawnApp: () => {
+          setupChild = fork(setupPath, [], { execArgv: [], stdio: ["ignore", "pipe", "pipe", "ipc"] });
+          const capture = (b) => { diagnostics = (diagnostics + b).slice(-5000); };
+          setupChild.stdout.on("data", capture); setupChild.stderr.on("data", capture);
+          return setupChild;
+        }, log: (value) => { diagnostics = (diagnostics + value + "\n").slice(-5000); } });
       assert.equal(result, 0); assert.equal(confirmed, true);
       managedExecutable = join(directory, "FirefoxDeveloper/firefox.exe");
     }
