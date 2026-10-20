@@ -1,33 +1,33 @@
 # Graph Report - social-media-tool  (2026-10-20)
 
 ## Corpus Check
-- 151 files · ~101,279 words
+- 151 files · ~101,322 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 7 file(s) not represented in the graph (top: (none) 3, .cmd 2, .css 1)
 
 ## Summary
-- 877 nodes · 2121 edges · 51 communities (45 shown, 6 thin omitted)
+- 877 nodes · 2121 edges · 49 communities (40 shown, 9 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 37 edges (avg confidence: 0.88)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a4baab57`
+- Built from commit: `d6462bd3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - GitHub ve Cloudflare dağıtımı
 - package.json
-- social-ai.mjs
-- App
 - worker/index.mjs
+- App
+- browser-tools.mjs
 - compilerOptions
 - scripts
 - companion/package.json
 - setup.sh
 - Mimari ve kapsam
 - social-accounts.test.mjs
-- ref_node_assert
+- worker.test.mjs
 - start.mjs
 - research-platforms.py
 - KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi
@@ -54,15 +54,13 @@
 - CompanyComputer
 - knowledge.mjs
 - @playwright/test
-- company-computer.test.mjs
+- r2-budget.test.mjs
 - social-profiles.test.mjs
 - KKTC uzman çalışma alanı — mevcut programa yama
 - app.mjs
-- knowledge.mjs
-- publications.mjs
-- company-computer.mjs
-- workspace-operations.mjs
-- server/index.mjs
+- e2e-cloud-server.mjs
+- e2e-server.mjs
+- password-deployment.test.mjs
 
 ## God Nodes (most connected - your core abstractions)
 1. `App()` - 38 edges
@@ -83,15 +81,15 @@
   AGENTS.md → src/CompanyAccounts.tsx
 - `GitHub ve Cloudflare` --references--> `LocalAIStatus()`  [INFERRED]
   AGENTS.md → src/LocalAIStatus.tsx
+- `Kodda doğrulanan mevcut durum` --references--> `registerLocalAI()`  [INFERRED]
+  docs/KKTC_GELISTIRME_INCELEMESI.md → worker/local-ai.mjs
 - `Kodda doğrulanan mevcut durum` --references--> `aiMessages()`  [INFERRED]
   docs/KKTC_GELISTIRME_INCELEMESI.md → worker/social-ai.mjs
-- `Kodda doğrulanan mevcut durum` --references--> `localInput()`  [INFERRED]
-  docs/KKTC_GELISTIRME_INCELEMESI.md → shared/local-ai.mjs
 
 ## Import Cycles
 - None detected.
 
-## Communities (51 total, 6 thin omitted)
+## Communities (49 total, 9 thin omitted)
 
 ### Community 0 - "GitHub ve Cloudflare dağıtımı"
 Cohesion: 0.20
@@ -99,19 +97,19 @@ Nodes (10): Asistan üzerinden hesap oluşturma, Bileşenler, Dağıtımın yapt
 
 ### Community 1 - "package.json"
 Cohesion: 0.12
-Nodes (15): engines, node, puppeteer-core, name, private, type, version, express (+7 more)
+Nodes (15): engines, node, puppeteer-core, name, private, type, version, @cloudflare/puppeteer (+7 more)
 
-### Community 2 - "social-ai.mjs"
-Cohesion: 0.08
-Nodes (43): bytes, delete(), get(), put(), companies, image(), VISION_LIMITS, VISION_MODEL (+35 more)
+### Community 2 - "worker/index.mjs"
+Cohesion: 0.05
+Nodes (87): hono, zod, computerCommand(), computerError(), LOCAL_EXPERT_VERSION, KKTC_EXPERT_VERSION, KKTC_RULES, regionalFields (+79 more)
 
 ### Community 3 - "App"
 Cohesion: 0.12
 Nodes (24): text(), App(), applyAI(), brief(), changeCompany(), changed(), draftInput(), exportDraft() (+16 more)
 
-### Community 4 - "worker/index.mjs"
-Cohesion: 0.20
-Nodes (17): hono, LOCAL_EXPERT_VERSION, briefSchema, companySchema, draftSchema, postSchema, regionalSchema, selectedSchema (+9 more)
+### Community 4 - "browser-tools.mjs"
+Cohesion: 0.29
+Nodes (10): browserTool(), readPage(), safeReadURL(), uploadJPEG(), exactButton(), facebookPublish(), normalize(), verifyFacebookIdentity() (+2 more)
 
 ### Community 5 - "compilerOptions"
 Cohesion: 0.14
@@ -134,16 +132,16 @@ Cohesion: 0.33
 Nodes (6): Bileşenler, Doğrulama, Gerçek yayınlama için sonraki geliştirme, Mevcut sınırlar, Mimari ve kapsam, Veri akışı
 
 ### Community 11 - "social-accounts.test.mjs"
-Cohesion: 0.08
-Nodes (36): ProfileBrowsers, @cloudflare/puppeteer, report, startedAt, targets, companyId, controller(), otherId (+28 more)
+Cohesion: 0.10
+Nodes (32): ProfileBrowsers, companyId, controller(), otherId, secret, tokens, captureBrowserState(), restoreBrowserState() (+24 more)
 
-### Community 12 - "ref_node_assert"
-Cohesion: 0.12
-Nodes (6): miniflare, login(), request(), deployment, deployment, account
+### Community 12 - "worker.test.mjs"
+Cohesion: 0.33
+Nodes (3): miniflare, login(), request()
 
 ### Community 13 - "start.mjs"
 Cohesion: 0.11
-Nodes (23): LocalAI, postFormat, configPath, configuration(), connect(), localAI, safeOrigin(), stop() (+15 more)
+Nodes (25): LocalAI, postFormat, configPath, configuration(), connect(), localAI, safeOrigin(), stop() (+17 more)
 
 ### Community 15 - "KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi"
 Cohesion: 0.20
@@ -162,8 +160,8 @@ Cohesion: 0.24
 Nodes (8): Job, LocalAIJobs(), date(), SocialAI(), ask(), refresh(), run(), upload()
 
 ### Community 19 - "check-ai.mjs"
-Cohesion: 0.08
-Nodes (50): jose, applyAdminRequest(), databaseQuery(), keyId(), prepareAdminKey(), ensureBrowserSecret(), diagnoseObservation(), http() (+42 more)
+Cohesion: 0.07
+Nodes (52): jose, applyAdminRequest(), databaseQuery(), keyId(), prepareAdminKey(), ensureBrowserSecret(), diagnoseObservation(), http() (+44 more)
 
 ### Community 20 - "CompanyAccounts.tsx"
 Cohesion: 0.18
@@ -206,8 +204,8 @@ Cohesion: 0.20
 Nodes (10): dependencies, @cloudflare/puppeteer, express, hono, jose, lucide-react, react, react-dom (+2 more)
 
 ### Community 32 - "devDependencies"
-Cohesion: 0.18
-Nodes (11): devDependencies, miniflare, @playwright/test, @puppeteer/browsers, puppeteer-core, @types/react, @types/react-dom, typescript (+3 more)
+Cohesion: 0.20
+Nodes (10): devDependencies, miniflare, @playwright/test, puppeteer-core, @types/react, @types/react-dom, typescript, vite (+2 more)
 
 ### Community 33 - "api"
 Cohesion: 0.15
@@ -222,66 +220,46 @@ Cohesion: 0.40
 Nodes (4): Bu projede nasıl kullanıldı?, Graphify, Güncelleme, Projeye eklenen beceriler
 
 ### Community 37 - "ref_node_fs"
-Cohesion: 0.20
-Nodes (5): child, run, { app, store }, server, manifest
+Cohesion: 0.17
+Nodes (4): pairedRequire, manifest, sample, account
 
 ### Community 38 - "CompanyComputer"
-Cohesion: 0.19
-Nodes (5): GitHub ve Cloudflare, graphify, Projeye özgü geliştirme notları, send(), CompanyComputer
+Cohesion: 0.12
+Nodes (12): GitHub ve Cloudflare, graphify, Projeye özgü geliştirme notları, accountId, command(), companyId, otherAccount, otherCompany (+4 more)
 
 ### Community 39 - "knowledge.mjs"
-Cohesion: 0.12
-Nodes (19): browserTool(), readPage(), safeReadURL(), uploadJPEG(), exactButton(), facebookPublish(), normalize(), verifyFacebookIdentity() (+11 more)
+Cohesion: 0.18
+Nodes (13): extractVisiblePage(), publicAddress(), publicHTML(), publicTarget(), researchProxy(), robotsDisallows(), WebsiteResearch, RESEARCH_LIMITS (+5 more)
 
 ### Community 40 - "@playwright/test"
 Cohesion: 0.19
 Nodes (3): @playwright/test, sharp, ids
 
-### Community 41 - "company-computer.test.mjs"
-Cohesion: 0.17
-Nodes (15): accountId, command(), companyId, otherAccount, otherCompany, request(), tokens, expectJSON() (+7 more)
+### Community 41 - "r2-budget.test.mjs"
+Cohesion: 0.29
+Nodes (4): bytes, delete(), get(), put()
 
 ### Community 42 - "social-profiles.test.mjs"
-Cohesion: 0.29
-Nodes (5): createStore(), fixture(), database(), migration(), seed
+Cohesion: 0.40
+Nodes (4): fixture(), database(), migration(), seed
 
 ### Community 43 - "KKTC uzman çalışma alanı — mevcut programa yama"
 Cohesion: 0.25
 Nodes (8): Firefox görevleri, İlk kullanım, KKTC uzman çalışma alanı — mevcut programa yama, Tek şirket penceresi, Veritabanı yerleşimi ve sınırlar, Yayın takvimi ve Facebook pilotu, Yerel AI ilerlemesi ve devam etme, Yetkiler, ölçümler ve yedekler
 
 ### Community 45 - "app.mjs"
-Cohesion: 0.21
-Nodes (16): createApp(), fail(), requireCompany(), requireMedia(), validatePosts(), adaptWithRules(), captionFor(), characterCount() (+8 more)
-
-### Community 46 - "knowledge.mjs"
-Cohesion: 0.22
-Nodes (12): KKTC_EXPERT_VERSION, KKTC_RULES, regionalFields, selectEvidence(), researchInput(), validResearchResult(), webUrl(), SOCIAL_EXPERT_RULES (+4 more)
-
-### Community 47 - "publications.mjs"
-Cohesion: 0.26
-Nodes (12): zod, computerAccount(), computerBroker(), call(), executePublication(), fail(), registerPublications(), view() (+4 more)
-
-### Community 48 - "company-computer.mjs"
-Cohesion: 0.38
-Nodes (7): COMPUTER_KEYS, COMPUTER_LIMITS, computerCommand(), computerError(), validComputerResult(), computerPublicPaths, registerCompanyComputer()
-
-### Community 49 - "workspace-operations.mjs"
-Cohesion: 0.53
-Nodes (4): qualityCases, databaseUsage(), fail(), registerWorkspaceOperations()
-
-### Community 50 - "server/index.mjs"
-Cohesion: 0.40
-Nodes (3): { app, store }, port, server
+Cohesion: 0.11
+Nodes (27): createApp(), fail(), requireCompany(), requireMedia(), validatePosts(), { app, store }, port, server (+19 more)
 
 ## Knowledge Gaps
 - **11 isolated node(s):** `puppeteer-core`, `@types/react`, `@types/react-dom`, `puppeteer-core`, `typescript` (+6 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 319 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 320 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Kodda doğrulanan mevcut durum` connect `start.mjs` to `company-computer.mjs`, `social-ai.mjs`, `social-accounts.test.mjs`, `KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi`?**
+- **Why does `Kodda doğrulanan mevcut durum` connect `start.mjs` to `worker/index.mjs`, `social-accounts.test.mjs`, `KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi`?**
   _High betweenness centrality (0.173) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `registerSocialAI()` (e.g. with `memoryView()` and `turnView()`) actually correct?**
   _`registerSocialAI()` has 2 INFERRED edges - model-reasoned connections that need verification._
@@ -291,7 +269,7 @@ _Questions this graph is uniquely positioned to answer:_
   _Cohesion score 0.125 - nodes in this community are weakly interconnected._
 - **Why does `KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi` connect `KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi` to `README.md`, `start.mjs`?**
   _High betweenness centrality (0.172) - this node is a cross-community bridge._
-- **Should `social-ai.mjs` be split into smaller, more focused modules?**
-  _Cohesion score 0.08116883116883117 - nodes in this community are weakly interconnected._
+- **Should `worker/index.mjs` be split into smaller, more focused modules?**
+  _Cohesion score 0.05181787291879035 - nodes in this community are weakly interconnected._
 - **Why does `react` connect `react` to `package.json`, `api`, `App.tsx`, `SocialAccounts.tsx`, `SocialAI`, `CompanyAccounts.tsx`?**
   _High betweenness centrality (0.109) - this node is a cross-community bridge._

@@ -1,8 +1,8 @@
 {
   "package.json": {
-    "mtime": 1792482211.488615,
-    "seen": 1792482240.7830555,
-    "ast_hash": "1f1252dda1734e9f12c85035c0a69ecd",
+    "mtime": 1792482523.1876671,
+    "seen": 1792482531.7834506,
+    "ast_hash": "2910f9d9341be0579fcbfcf55a6ae724",
     "semantic_hash": ""
   },
   "scripts/dev.mjs": {
@@ -870,9 +870,9 @@
     "semantic_hash": ""
   },
   "scripts/install-test-firefox.mjs": {
-    "mtime": 1792482210.7459767,
-    "seen": 1792482240.7834857,
-    "ast_hash": "bd85f0711b5ab66392513442a809f00f",
+    "mtime": 1792482523.0036685,
+    "seen": 1792482531.7838402,
+    "ast_hash": "6a6fc858b518978a0d2710266ba0cbb1",
     "semantic_hash": ""
   }
 }
