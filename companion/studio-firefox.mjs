@@ -50,14 +50,19 @@ export async function ensureStudioFirefox(directory, { download = downloadFirefo
   try {
     progress({ stage: "download" }); await download(installer, undefined, progress);
     progress({ stage: "verify-installer" }); await verify(installer);
-    const args = ["/S", `/InstallDirectoryPath=${folder}`, "/DesktopShortcut=false", "/TaskbarShortcut=false", "/StartMenuShortcuts=false", "/MaintenanceService=false", "/PreventRebootRequired=true"];
+    // NSIS GetOptions ignores switches inside quotes. Node's default Windows
+    // quoting wraps the whole switch when its value contains spaces, so quote
+    // only the value and preserve that exact command line (no shell involved).
+    const args = ["/S", `/InstallDirectoryPath="${folder}"`, "/DesktopShortcut=false", "/TaskbarShortcut=false", "/StartMenuShortcuts=false", "/MaintenanceService=false", "/PreventRebootRequired=true"];
     progress({ stage: "install" });
     if (runInstaller) await runInstaller(installer, args);
     else await new Promise((resolve, reject) => {
-      const child = spawn(installer, args, { windowsHide: true, stdio: "ignore" });
+      const child = spawn(installer, args, { windowsHide: true, stdio: "ignore", windowsVerbatimArguments: true, argv0: `"${installer}"` });
       child.once("error", reject); child.once("exit", (code) => code === 0 ? resolve() : reject(new Error("Firefox otomatik kurulumu tamamlanamadı.")));
     });
-    progress({ stage: "verify-installed" }); await access(executablePath); await verify(executablePath);
+    progress({ stage: "verify-installed" });
+    await access(executablePath).catch((cause) => { throw new Error("Firefox seçilen klasöre kurulamadı. Kurulum klasörünü ve Windows izinlerini kontrol edin.", { cause }); });
+    await verify(executablePath);
     await writeFile(marker, JSON.stringify({ managed: true, edition: "developer", source: downloadURL }));
     return executablePath;
   } finally { await rm(installer, { force: true }); }

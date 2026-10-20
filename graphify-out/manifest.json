@@ -618,9 +618,9 @@
     "semantic_hash": ""
   },
   "docs/SIRKET_BILGISAYARI.md": {
-    "mtime": 1792503014.3710144,
-    "seen": 1792503072.459475,
-    "ast_hash": "ff23724e589560ed718773e9b25e57c4",
+    "mtime": 1792503637.3504686,
+    "seen": 1792503645.1914275,
+    "ast_hash": "655783d1542a75a65d7f6116589bcf40",
     "semantic_hash": ""
   },
   "companion/launch.mjs": {
@@ -1020,8 +1020,8 @@
     "semantic_hash": ""
   },
   "companion/extension-sources.json": {
-    "mtime": 1792503016.0430021,
-    "seen": 1792503072.455425,
+    "mtime": 1792503638.5504599,
+    "seen": 1792503645.1867015,
     "ast_hash": "df2c720e47746f9802867eeebe61b69b",
     "semantic_hash": ""
   },
@@ -1032,9 +1032,9 @@
     "semantic_hash": ""
   },
   "companion/studio-firefox.mjs": {
-    "mtime": 1792502832.4003358,
-    "seen": 1792503072.455874,
-    "ast_hash": "6d89c57bf51e91e726521ffc230ddbc9",
+    "mtime": 1792503636.7304733,
+    "seen": 1792503645.1871483,
+    "ast_hash": "ac8525792795c64779b4f81b0277e0d4",
     "semantic_hash": ""
   },
   "firefox-extension/managed.js": {

@@ -1,6 +1,6 @@
 # 1.7.1: ilk Firefox kurulumunun yarıda kesilmesi düzeltildi
 
-Firefox ilk kurulumunun 30 saniyelik normal başlangıç denetimiyle kesilmesi giderildi. Yardımcı indirme başlamadan kurulum aşamasını denetleyiciye bildirir; bu aşamanın ayrı, en fazla 30 dakikalık süresi vardır. İndirilen MB, Mozilla imza kontrolü ve kurulum aşamaları pencerede görünür. Tekrarlanan ilerleme bildirimi üst süreyi uzatmaz. Zaman aşımı başarı olarak dönmez; henüz hazır olmayan yeni sürüm onaylanmaz. Sonraki açılışta güncelleme kontrolü Firefox kurulumu başlamadan yapılır; başarısız bir kurulum yeni düzeltmenin bulunmasını engellemez.
+Firefox ilk kurulumunun 30 saniyelik normal başlangıç denetimiyle kesilmesi giderildi. Yardımcı indirme başlamadan kurulum aşamasını denetleyiciye bildirir; bu aşamanın ayrı, en fazla 30 dakikalık süresi vardır. İndirilen MB, Mozilla imza kontrolü ve kurulum aşamaları pencerede görünür. Boşluklu klasörlerde Mozilla NSIS kurucusunun hedef dizin seçeneğini okuyamamasına yol açan Windows argüman tırnaklaması da düzeltildi; yalnız dizin değeri tırnaklanır, shell kullanılmaz. Tekrarlanan ilerleme bildirimi üst süreyi uzatmaz. Zaman aşımı başarı olarak dönmez; henüz hazır olmayan yeni sürüm onaylanmaz. Sonraki açılışta güncelleme kontrolü Firefox kurulumu başlamadan yapılır; başarısız bir kurulum yeni düzeltmenin bulunmasını engellemez.
 
 # 1.7 güncellemesi: gece araştırması ve yerel hafıza
 
