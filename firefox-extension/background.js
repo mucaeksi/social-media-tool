@@ -2,14 +2,36 @@
   const p = StudioPolicy, bindings = new Map(), windows = new Map(), requests = new Map();
   const ttl = 5 * 60 * 1000;
   let working = false;
+  // Files are updated by the existing helper. Reload only after every panel
+  // connection is closed, so an update never discards active account grants.
+  if (globalThis.StudioManagedInstallation === true) setInterval(async () => {
+    if (working || windows.size || requests.size) return;
+    try {
+      const response = await fetch(browser.runtime.getURL("manifest.json") + "?update=" + Date.now(), { cache: "no-store" });
+      const next = await response.json();
+      if (response.ok && /^\d+\.\d+\.\d+$/.test(next.version) && next.version !== browser.runtime.getManifest().version && !working && !windows.size && !requests.size) browser.runtime.reload();
+    } catch { /* The helper may be swapping the managed folder. Retry later. */ }
+  }, 30000);
   const popup = (s) => s.id === browser.runtime.id && s.url === browser.runtime.getURL("popup.html");
+  function grantWindow(r) {
+    const previous = windows.get(r.panelTab);
+    const same = previous && previous.userId === r.userId && previous.companyId === r.target.companyId && previous.windowId === r.windowId;
+    if (!same) bindings.delete(r.panelTab);
+    const window = { ...(same ? previous : {}), userId: r.userId, companyId: r.target.companyId, windowId: r.windowId };
+    windows.set(r.panelTab, window);
+    return window;
+  }
+  function cancelPreparation(panelTab) {
+    for (const [id, r] of requests) if (r.panelTab === panelTab && r.action === "prepare") requests.delete(id);
+    expire();
+  }
   function expire() {
     for (const [id, r] of requests) if (Date.now() - r.at > ttl) requests.delete(id);
     browser.browserAction.setBadgeText({ text: requests.size ? String(requests.size) : "" });
   }
   async function validBinding(sender, m) {
     const w = await validWindow(sender, m);
-    const b = bindings.get(sender.tab.id);
+    const b = bindings.get(sender.tab.id)?.get(m.accountId);
     if (!b || b.userId !== m.userId || b.target.companyId !== m.companyId || b.target.accountId !== m.accountId) throw new Error("Bu şirket/hesap için Firefox sekmesini yeniden bağlayın.");
     const tab = await browser.tabs.get(b.tabId);
     if (tab.incognito || tab.windowId !== w.windowId || !p.clean(tab.url, b.target.platform)) throw new Error("Seçili sekme bu hedefin sosyal ağına ait değil veya bağlı pencereden ayrıldı. İlgili şirket hesabını seçip sekmesini bağlayın.");
@@ -37,7 +59,10 @@
   browser.tabs.onRemoved.addListener((tabId) => {
     bindings.delete(tabId);
     windows.delete(tabId);
-    for (const [id, b] of bindings) if (b.tabId === tabId) bindings.delete(id);
+    for (const [id, accounts] of bindings) {
+      for (const [accountId, b] of accounts) if (b.tabId === tabId) accounts.delete(accountId);
+      if (!accounts.size) bindings.delete(id);
+    }
     for (const [id, r] of requests) if (r.panelTab === tabId || r.tabId === tabId) requests.delete(id);
     expire();
   });
@@ -54,8 +79,10 @@
     if (!m || typeof m.action !== "string") throw new Error("Geçersiz eklenti isteği.");
     if (popup(sender)) {
       if (m.action === "popup-state") {
-        const tabs = await browser.tabs.query({});
-        return { requests: [...requests.values()].map((r) => ({ ...r, choices: r.action === "connect" ? tabs.filter((t) => t.id !== r.panelTab && !t.incognito && t.windowId === r.windowId && p.clean(t.url, r.target.platform)).slice(0, 100).map((t) => ({ id: t.id, title: (t.title || "Sekme").slice(0, 150), url: p.clean(t.url, r.target.platform), pinned: t.pinned })) : [] })), count: windows.size };
+        return { requests: await Promise.all([...requests.values()].map(async (r) => {
+          const tabs = r.action === "connect" ? await browser.tabs.query({ windowId: r.windowId }) : [];
+          return { ...r, choices: tabs.filter((t) => t.id !== r.panelTab && !t.incognito && t.windowId === r.windowId && p.clean(t.url, r.target.platform)).slice(0, 100).map((t) => ({ id: t.id, title: (t.title || "Sekme").slice(0, 150), url: p.clean(t.url, r.target.platform), pinned: t.pinned })) };
+        })), count: windows.size };
       }
       if (m.action === "revoke") { bindings.clear(); windows.clear(); requests.clear(); expire(); return {}; }
       const r = requests.get(m.id);
@@ -70,16 +97,18 @@
         const auth = await browser.tabs.sendMessage(r.panelTab, { source: "studio-auth-check" }, { frameId: 0 });
         if (auth?.userId !== r.userId) throw new Error("Panel oturumu değişti; yeniden bağlayın.");
         if (r.action === "connect-window") {
-          windows.set(r.panelTab, { userId: r.userId, companyId: r.target.companyId, windowId: r.windowId });
-          bindings.delete(r.panelTab);
+          grantWindow(r);
         } else if (r.action === "connect") {
           const tab = await browser.tabs.get(m.tabId);
           if (tab.incognito || tab.windowId !== r.windowId || !p.clean(tab.url, r.target.platform) || tab.id === r.panelTab) throw new Error("Panelin bulunduğu pencereden uygun bir sosyal medya sekmesi seçin.");
           if (typeof m.identityLabel !== "string" || !m.identityLabel.trim() || m.identityLabel.length > 100) throw new Error("Hedef sayfanın ekranda görünen tam adını girin.");
-          windows.set(r.panelTab, { userId: r.userId, companyId: r.target.companyId, windowId: r.windowId });
-          bindings.set(r.panelTab, { userId: r.userId, target: p.target({ ...r.target, identityLabel: m.identityLabel }), tabId: tab.id, windowId: r.windowId, panelTab: r.panelTab });
+          const w = grantWindow(r);
+          const accounts = bindings.get(r.panelTab) || new Map();
+          accounts.set(r.target.accountId, { userId: r.userId, target: p.target({ ...r.target, identityLabel: m.identityLabel }), tabId: tab.id, windowId: r.windowId, panelTab: r.panelTab });
+          bindings.set(r.panelTab, accounts);
+          w.activeAccountId = r.target.accountId;
         } else {
-          const b = bindings.get(r.panelTab);
+          const b = bindings.get(r.panelTab)?.get(r.target.accountId);
           if (!b || b.userId !== r.userId || b.tabId !== r.tabId || JSON.stringify(b.target) !== JSON.stringify(r.target)) throw new Error("Hedef hesap değişti.");
           const result = await page(b, "fill", { snapshotId: r.snapshotId, text: r.text });
           if (!result.ok) throw new Error(result.error);
@@ -91,10 +120,11 @@
     if (m.action === "disconnect") { bindings.delete(sender.tab.id); windows.delete(sender.tab.id); for (const [id, r] of requests) if (r.panelTab === sender.tab.id) requests.delete(id); expire(); return {}; }
     if (typeof m.userId !== "string" || m.userId.length > 100) throw new Error("Panel oturumu doğrulanamadı.");
     if (m.action === "status") {
-      const b = bindings.get(sender.tab.id);
       const w = windows.get(sender.tab.id), current = await browser.tabs.get(sender.tab.id);
       if (w && (w.userId !== m.userId || w.windowId !== current.windowId)) { bindings.delete(sender.tab.id); windows.delete(sender.tab.id); throw new Error("Panel hesabı veya penceresi değişti; yeniden bağlayın."); }
-      return { version: browser.runtime.getManifest().version, window: w ? { companyId: w.companyId, windowId: w.windowId } : null, binding: b ? { ...b.target, tabId: b.tabId } : null, pending: [...requests.values()].some((r) => r.panelTab === sender.tab.id) };
+      const accounts = bindings.get(sender.tab.id);
+      const b = accounts?.get(w?.activeAccountId);
+      return { version: browser.runtime.getManifest().version, window: w ? { companyId: w.companyId, windowId: w.windowId } : null, bindings: [...(accounts?.values() || [])].map((b) => ({ ...b.target, tabId: b.tabId })), binding: b ? { ...b.target, tabId: b.tabId } : null, pending: [...requests.values()].some((r) => r.panelTab === sender.tab.id) };
     }
     if (m.action === "connect" || m.action === "connect-window") {
       let target;
@@ -113,13 +143,20 @@
         const tab = await browser.tabs.get(m.tabId);
         if (tab.incognito || tab.windowId !== w.windowId) throw new Error("Başka Firefox penceresine erişilemez.");
         await browser.tabs.update(tab.id, { active: true });
-        const b = bindings.get(sender.tab.id); if (b) b.tabId = tab.id;
-        for (const [id, r] of requests) if (r.panelTab === sender.tab.id && r.action === "prepare") requests.delete(id);
-        expire();
+        const matching = [...(bindings.get(sender.tab.id)?.values() || [])].filter((b) => b.tabId === tab.id);
+        w.activeAccountId = matching.length === 1 ? matching[0].target.accountId : null;
+        cancelPreparation(sender.tab.id);
       }
       const tabs = (await browser.tabs.query({ windowId: w.windowId })).filter((t) => !t.incognito && t.windowId === w.windowId).sort((a, b) => a.index - b.index);
       return { tabs: tabs.map((t) => { let url = ""; try { const u = new URL(t.url); url = u.protocol === "https:" || u.protocol === "http:" ? u.origin + u.pathname : u.protocol; } catch { /* internal */ }
         return { id: t.id, title: (t.title || "Sekme").slice(0, 150), url: url.slice(0, 400), active: t.active, pinned: t.pinned, panel: t.id === sender.tab.id }; }) };
+    }
+    if (m.action === "select-target") {
+      const b = await validBinding(sender, m);
+      const w = await validWindow(sender, m);
+      w.activeAccountId = b.target.accountId;
+      cancelPreparation(sender.tab.id);
+      return {};
     }
     const b = await validBinding(sender, m);
     if (m.action === "read") {

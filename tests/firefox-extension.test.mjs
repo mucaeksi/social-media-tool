@@ -12,6 +12,7 @@ const companyId = "11111111-1111-4111-8111-111111111111", accountId = "22222222-
 const target = { companyId, accountId, platform: "facebook", label: "Kurgu — Facebook", companyName: "Kurgu", profileUrl: "https://www.facebook.com/kurgu" };
 async function fixture() {
   let listener, removed, updated, now = 0, userId = "admin", fills = 0;
+  const reads = [];
   const tabs = new Map([
     [1, { id: 1, windowId: 10, index: 0, url: origin + "/", incognito: false }],
     [2, { id: 2, windowId: 10, index: 1, url: "https://www.facebook.com/kurgu", title: "Kurgu", pinned: true, incognito: false }],
@@ -19,7 +20,7 @@ async function fixture() {
     [4, { id: 4, windowId: 11, index: 0, url: "https://www.facebook.com/other-window", title: "Diğer pencere", incognito: false }],
     [5, { id: 5, windowId: 10, index: 3, url: "https://www.youtube.com/", title: "Video", incognito: false }],
   ]);
-  const runtime = { id: "firefox@sosyal-studio.local", getURL: (v) => "moz-extension://fixture/" + v, getManifest: () => ({ version: "1.0.0" }), onMessage: { addListener: (f) => { listener = f; } } };
+  const runtime = { id: "firefox@sosyal-studio.local", getURL: (v) => "moz-extension://fixture/" + v, getManifest: () => ({ version: "1.1.0" }), onMessage: { addListener: (f) => { listener = f; } } };
   const context = vm.createContext({ URL, crypto, console, Date: class extends Date { static now() { return now; } }, browser: {
     runtime, browserAction: { setBadgeText() {} },
     tabs: { onRemoved: { addListener: (f) => { removed = f; } }, onUpdated: { addListener: (f) => { updated = f; } },
@@ -28,6 +29,7 @@ async function fixture() {
       sendMessage: async (id, m) => {
         if (m.source === "studio-auth-check") return { userId };
         if (m.action === "fill") { fills++; return { ok: true, published: false }; }
+        reads.push({ tabId: id, accountId: m.target.accountId });
         return { ok: true, page: { id: "snapshot", text: "Kurgu sayfa" } };
       },
     },
@@ -38,12 +40,12 @@ async function fixture() {
   const popup = { id: runtime.id, url: runtime.getURL("popup.html") };
   const call = (m, from = sender) => listener({ userId: "admin", ...m }, from);
   const popupCall = (m) => call(m, popup);
-  async function connect(next = target) {
+  async function connect(next = target, tabId = 2) {
     assert.equal((await call({ action: "connect", target: next })).ok, true);
     const state = await popupCall({ action: "popup-state" });
-    return popupCall({ action: "approve", id: state.requests[0].id, tabId: 2, identityLabel: "Kurgu" });
+    return popupCall({ action: "approve", id: state.requests[0].id, tabId, identityLabel: "Kurgu" });
   }
-  return { call, popupCall, connect, context, sender, tabs, removed: (id) => removed(id), updated: (id, change) => updated(id, change), clock: (v) => { now = v; }, setUser: (id) => { userId = id; }, fills: () => fills };
+  return { call, popupCall, connect, context, sender, tabs, reads, removed: (id) => removed(id), updated: (id, change) => updated(id, change), clock: (v) => { now = v; }, setUser: (id) => { userId = id; }, fills: () => fills };
 }
 test("Eklenti yalnız ana panelin üst çerçevesini kabul eder; LinkedIn kişisel hedefi ve özel mesaj reddedilir", async () => {
   const f = await fixture();
@@ -105,10 +107,42 @@ test("Tek pencere onayı bütün sekmeleri listeler; diğer pencere, taşınan p
   await f.call({ action: "prepare", companyId, accountId, text: "Taslak", snapshotId: "fixture" });
   await f.call({ action: "select-tab", companyId, tabId: 5 });
   assert.equal((await f.popupCall({ action: "popup-state" })).requests.length, 0, "Sekme değiştirmek eski taslak onayını kaldırır");
-  assert.equal((await f.call({ action: "read", companyId, accountId })).ok, false, "YouTube sekmesi Facebook hedefi olarak okunmaz");
+  assert.equal((await f.call({ action: "status" })).binding, null, "Eşleşmeyen YouTube sekmesine Facebook hedefi atanmaz");
+  assert.equal((await f.call({ action: "read", companyId, accountId })).ok, true);
+  assert.equal(f.reads.at(-1).tabId, 2, "Önceki Facebook bağlantısı kendi sekmesini korur");
   f.tabs.get(1).windowId = 11;
   assert.equal((await f.call({ action: "tabs", companyId })).ok, false);
   assert.equal((await f.call({ action: "status" })).ok, false);
+});
+test("Birden fazla hesap sekmesi birlikte korunur; seçim, pencereyi tekrar onaylama ve tek sekme kapanması diğer hesabı silmez", async () => {
+  const f = await fixture();
+  const second = { ...target, accountId: crypto.randomUUID(), platform: "linkedin", profileUrl: "https://www.linkedin.com/company/kurgu/" };
+  f.tabs.set(6, { id: 6, windowId: 10, index: 4, url: second.profileUrl, incognito: false });
+  await f.connect();
+  assert.equal((await f.connect(second, 6)).ok, true);
+  let state = await f.call({ action: "status" });
+  assert.equal(state.bindings.length, 2);
+  assert.equal(state.binding.accountId, second.accountId);
+  await f.call({ action: "read", companyId, accountId });
+  await f.call({ action: "read", companyId, accountId: second.accountId });
+  assert.deepEqual(f.reads.map((r) => r.tabId), [2, 6]);
+  assert.equal((await f.call({ action: "select-target", companyId, accountId })).ok, true);
+  assert.equal((await f.call({ action: "status" })).binding.accountId, accountId);
+  await f.call({ action: "select-tab", companyId, tabId: 6 });
+  assert.equal((await f.call({ action: "status" })).binding.accountId, second.accountId);
+  await f.call({ action: "connect-window", companyId, companyName: "Kurgu" });
+  state = await f.popupCall({ action: "popup-state" });
+  await f.popupCall({ action: "approve", id: state.requests[0].id });
+  assert.equal((await f.call({ action: "status" })).bindings.length, 2);
+  assert.equal((await f.call({ action: "select-target", companyId: crypto.randomUUID(), accountId })).ok, false);
+  f.removed(6);
+  state = await f.call({ action: "status" });
+  assert.equal(state.bindings.length, 1);
+  assert.equal(state.bindings[0].accountId, accountId);
+  await f.call({ action: "connect-window", companyId: crypto.randomUUID(), companyName: "Başka şirket" });
+  state = await f.popupCall({ action: "popup-state" });
+  await f.popupCall({ action: "approve", id: state.requests[0].id });
+  assert.equal((await f.call({ action: "status" })).bindings.length, 0, "Başka şirkete önceki eşleştirmeler taşınmaz");
 });
 test("AI sekme alıntısını talimat olmayan, sınırlı anlık veri olarak alır", () => {
   const prompt = firefoxQuestion("Profili incele", { title: "Kurgu", url: "https://facebook.com/kurgu", text: "İçerik ".repeat(1000) });

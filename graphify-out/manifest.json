@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792496741.7010055,
-    "seen": 1792496756.4330535,
-    "ast_hash": "015622916dc8e4319d0e17dfa53acb8f",
+    "mtime": 1792499866.1165626,
+    "seen": 1792499958.6057324,
+    "ast_hash": "baa66de64cdaee009130a3f70ca11477",
     "semantic_hash": ""
   },
   "README.md": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/cloudflare.yml": {
-    "mtime": 1792494067.9849288,
-    "seen": 1792496756.4330251,
-    "ast_hash": "793dea96a8dd0962e812d1a99c9645d8",
+    "mtime": 1792499663.172852,
+    "seen": 1792499958.605709,
+    "ast_hash": "54bc2eb03e6d297b3eee9fa88077c8fe",
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
@@ -492,9 +492,9 @@
     "semantic_hash": ""
   },
   "src/SocialAI.tsx": {
-    "mtime": 1792496616.109932,
-    "seen": 1792496756.4313612,
-    "ast_hash": "a02bb738fb968005e4246ec6b41b4312",
+    "mtime": 1792499223.0247145,
+    "seen": 1792499958.6041849,
+    "ast_hash": "2c5a2c345cd94d150e46d75c5f862639",
     "semantic_hash": ""
   },
   "tests/browser/social-ai.spec.mjs": {
@@ -552,21 +552,21 @@
     "semantic_hash": ""
   },
   "companion/package.json": {
-    "mtime": 1792490813.5977325,
-    "seen": 1792491080.845435,
-    "ast_hash": "33af5491a0dfae29d59f42840d6a3fb2",
+    "mtime": 1792499223.0255136,
+    "seen": 1792499958.6026344,
+    "ast_hash": "f379a1cba6d8b3dda0709f5ba51d38ad",
     "semantic_hash": ""
   },
   "companion/start.mjs": {
-    "mtime": 1792490941.9319494,
-    "seen": 1792491080.8454592,
-    "ast_hash": "0bbb8460e5e76bf49ffce5c9d1e89106",
+    "mtime": 1792499350.0537286,
+    "seen": 1792499958.6026936,
+    "ast_hash": "81c70d6f81618a973f9506fb31c373bb",
     "semantic_hash": ""
   },
   "scripts/build-companion.mjs": {
-    "mtime": 1792483221.6383882,
-    "seen": 1792483227.1586552,
-    "ast_hash": "6f18bf3b31098d8da68c37aee76f9e92",
+    "mtime": 1792499075.9477444,
+    "seen": 1792499958.603012,
+    "ast_hash": "aa6c454573568767e9e214298f51ff55",
     "semantic_hash": ""
   },
   "scripts/setup-firefox.sh": {
@@ -618,9 +618,9 @@
     "semantic_hash": ""
   },
   "docs/SIRKET_BILGISAYARI.md": {
-    "mtime": 1792491067.8006182,
-    "seen": 1792491080.8486896,
-    "ast_hash": "48f4223e8742ab9bfa9572bb9ef09e4d",
+    "mtime": 1792499911.7660613,
+    "seen": 1792499958.6060622,
+    "ast_hash": "37d637054bb41c5a095b20e1f9c94b0d",
     "semantic_hash": ""
   },
   "companion/launch.mjs": {
@@ -636,9 +636,9 @@
     "semantic_hash": ""
   },
   "companion/release.mjs": {
-    "mtime": 1792490812.8649487,
-    "seen": 1792491080.845439,
-    "ast_hash": "8bc57ebe230fbf6bc7e4eec84d868aa5",
+    "mtime": 1792499303.3100696,
+    "seen": 1792499958.602664,
+    "ast_hash": "48f3adb197458d83c463e8840c427204",
     "semantic_hash": ""
   },
   "companion/supervisor.mjs": {
@@ -654,39 +654,39 @@
     "semantic_hash": ""
   },
   "tests/companion/update.test.mjs": {
-    "mtime": 1792491066.5510037,
-    "seen": 1792491080.8477476,
-    "ast_hash": "c56892169598c2a587a7c7eb3102a983",
+    "mtime": 1792499616.6917822,
+    "seen": 1792499958.6049147,
+    "ast_hash": "d6c2a39adf380af33d0a0aeae952ee6e",
     "semantic_hash": ""
   },
   "companion/local-ai.mjs": {
-    "mtime": 1792487045.4134276,
-    "seen": 1792487109.6339025,
-    "ast_hash": "46cd12853779dbbfe19bb0a86f463b7d",
+    "mtime": 1792499615.1717935,
+    "seen": 1792499958.6025324,
+    "ast_hash": "f285ab71f41a5171413ed26575099bd9",
     "semantic_hash": ""
   },
   "shared/local-ai.mjs": {
-    "mtime": 1792486600.032936,
-    "seen": 1792486976.6143677,
-    "ast_hash": "6fb1b7e37ec46f949dca0ddd99cc806b",
+    "mtime": 1792499221.198668,
+    "seen": 1792499958.6037467,
+    "ast_hash": "4408fabe0f5d6aceae59265eb70ec82d",
     "semantic_hash": ""
   },
   "src/LocalAIStatus.tsx": {
-    "mtime": 1792490942.4199457,
-    "seen": 1792491080.846417,
-    "ast_hash": "1d538c0f55cb7410b8674c0d22e2b5d7",
+    "mtime": 1792500067.4403334,
+    "seen": 1792500071.984842,
+    "ast_hash": "0cacf3291fffd9d347e51687b746b187",
     "semantic_hash": ""
   },
   "tests/browser/local-ai.spec.mjs": {
-    "mtime": 1792471950.3938122,
-    "seen": 1792473384.175815,
-    "ast_hash": "ac10fc77c5824bfa81cf5a5cfe3ec667",
+    "mtime": 1792499223.0249875,
+    "seen": 1792499958.6044824,
+    "ast_hash": "bcbc6751541655dd09607ee54ff32012",
     "semantic_hash": ""
   },
   "tests/companion/local-ai.test.mjs": {
-    "mtime": 1792486912.16243,
-    "seen": 1792486976.6157346,
-    "ast_hash": "aa27d8bbe68a8fb67822c437903b82b7",
+    "mtime": 1792499686.247274,
+    "seen": 1792499958.604852,
+    "ast_hash": "d7ae2290c7ee6cfe257936dd2b2e1bcf",
     "semantic_hash": ""
   },
   "tests/fixtures/release-v1.1.mjs": {
@@ -894,9 +894,9 @@
     "semantic_hash": ""
   },
   "companion/ai-install.mjs": {
-    "mtime": 1792487015.449662,
-    "seen": 1792487109.6337824,
-    "ast_hash": "3ccb94376a5d62773fcd44de6e071c5c",
+    "mtime": 1792499222.2466602,
+    "seen": 1792499958.602407,
+    "ast_hash": "dde65aed69674e31fefbff547bbd689c",
     "semantic_hash": ""
   },
   "companion/install-bundle.mjs": {
@@ -912,15 +912,15 @@
     "semantic_hash": ""
   },
   "companion/ollama-host.mjs": {
-    "mtime": 1792490941.3279543,
-    "seen": 1792491080.8454332,
-    "ast_hash": "0120ac3b0f451450067c8f1e1a43a1be",
+    "mtime": 1792499222.7626567,
+    "seen": 1792499958.6026328,
+    "ast_hash": "2afd998742eca15d7ab5bdfe2eaff1f7",
     "semantic_hash": ""
   },
   "tests/companion/ai-install.test.mjs": {
-    "mtime": 1792491067.0509996,
-    "seen": 1792491080.8476076,
-    "ast_hash": "e76436c1d4a57d8f8cdd8b5325cdeaa3",
+    "mtime": 1792499223.0251372,
+    "seen": 1792499958.6047678,
+    "ast_hash": "5c31f3bcf0f3d5a0dfda8807aad71a50",
     "semantic_hash": ""
   },
   "companion/portable-data.mjs": {
@@ -936,15 +936,15 @@
     "semantic_hash": ""
   },
   "firefox-extension/background.js": {
-    "mtime": 1792496553.3383949,
-    "seen": 1792496756.4303231,
-    "ast_hash": "76719a53abc3979eef762127a91b9732",
+    "mtime": 1792499074.3517559,
+    "seen": 1792499958.6027482,
+    "ast_hash": "849ebe92525db5ea04f534c0d5a7393b",
     "semantic_hash": ""
   },
   "firefox-extension/manifest.json": {
-    "mtime": 1792493531.7889287,
-    "seen": 1792496756.4303255,
-    "ast_hash": "40931e3eff1bbd01ee9e22385faafb10",
+    "mtime": 1792499073.143749,
+    "seen": 1792499958.6027513,
+    "ast_hash": "d08f819615503ab72aa0db9ff8c14123",
     "semantic_hash": ""
   },
   "firefox-extension/page-agent.js": {
@@ -954,9 +954,9 @@
     "semantic_hash": ""
   },
   "firefox-extension/panel-bridge.js": {
-    "mtime": 1792494333.7789707,
-    "seen": 1792496756.4303281,
-    "ast_hash": "bb13fe83bed029d947b23d72d5da78c6",
+    "mtime": 1792498513.4117165,
+    "seen": 1792499958.6027815,
+    "ast_hash": "63dce3faa096dd8cf972f9f8d51a7df7",
     "semantic_hash": ""
   },
   "firefox-extension/policy.js": {
@@ -972,15 +972,15 @@
     "semantic_hash": ""
   },
   "scripts/build-firefox-extension.mjs": {
-    "mtime": 1792493804.6988778,
-    "seen": 1792496756.4304636,
-    "ast_hash": "3ecf80b17292344339a29969c46d9b21",
+    "mtime": 1792499073.6557524,
+    "seen": 1792499958.603014,
+    "ast_hash": "8352c9da147b484c09e6e163ca6252ba",
     "semantic_hash": ""
   },
   "src/FirefoxConnection.tsx": {
-    "mtime": 1792496670.8015285,
-    "seen": 1792496756.4312758,
-    "ast_hash": "4613c7b5104d4b29a7b27746501f7493",
+    "mtime": 1792499911.025506,
+    "seen": 1792499958.6041446,
+    "ast_hash": "0b71371003ade1af0d789c02b5622445",
     "semantic_hash": ""
   },
   "src/firefoxBridge.ts": {
@@ -990,33 +990,69 @@
     "semantic_hash": ""
   },
   "tests/browser/firefox-extension.spec.mjs": {
-    "mtime": 1792496672.3175173,
-    "seen": 1792496756.4318185,
-    "ast_hash": "13a76f5f76b771fb5ada0be66022b057",
+    "mtime": 1792499223.0250573,
+    "seen": 1792499958.604481,
+    "ast_hash": "4e7a11ca438ca71b7482ef3403522290",
     "semantic_hash": ""
   },
   "tests/companion/firefox-extension.test.mjs": {
-    "mtime": 1792496671.805521,
-    "seen": 1792496756.4320939,
-    "ast_hash": "b5a541f0212c72d6da55496975c7faf1",
+    "mtime": 1792499779.782512,
+    "seen": 1792499958.6048117,
+    "ast_hash": "cc7dc2d62b1b7e394444cffdf8c4be3d",
     "semantic_hash": ""
   },
   "tests/firefox-extension.test.mjs": {
-    "mtime": 1792496671.3055248,
-    "seen": 1792496756.4323936,
-    "ast_hash": "2437854e6de0bb12fc44052273a19eb7",
+    "mtime": 1792499223.0252337,
+    "seen": 1792499958.605049,
+    "ast_hash": "2f068f4f18ff919fcf126727f7c6ea52",
     "semantic_hash": ""
   },
   "docs/FIREFOX_EKLENTISI.md": {
-    "mtime": 1792496741.06901,
-    "seen": 1792496756.4331055,
-    "ast_hash": "dc6dba04e5c5a0fa44d6d99d8f7ccf33",
+    "mtime": 1792499866.1161747,
+    "seen": 1792499958.605783,
+    "ast_hash": "583c1abd68f16cfe1ca70109f3c02d18",
     "semantic_hash": ""
   },
   "firefox-extension/popup.html": {
     "mtime": 1792493602.1044042,
     "seen": 1792496756.4332674,
     "ast_hash": "b5add90f594feb03706648210897bb26",
+    "semantic_hash": ""
+  },
+  "companion/extension-sources.json": {
+    "mtime": 1792500068.6403244,
+    "seen": 1792500071.9832764,
+    "ast_hash": "df2c720e47746f9802867eeebe61b69b",
+    "semantic_hash": ""
+  },
+  "companion/firefox-extension.mjs": {
+    "mtime": 1792499302.830073,
+    "seen": 1792499958.6024883,
+    "ast_hash": "fe3a65aa46c978fc65f19703ddd7ed25",
+    "semantic_hash": ""
+  },
+  "companion/studio-firefox.mjs": {
+    "mtime": 1792499456.055337,
+    "seen": 1792499958.602695,
+    "ast_hash": "cb09c17c644d6c05b79f8c1a755c8f08",
+    "semantic_hash": ""
+  },
+  "firefox-extension/managed.js": {
+    "mtime": 1792499072.6277454,
+    "seen": 1792499958.6027496,
+    "ast_hash": "f641feabb31f75972e11eb38eb8f7ff3",
+    "semantic_hash": ""
+  },
+  "tests/companion/studio-firefox.test.mjs": {
+    "mtime": 1792499662.2914493,
+    "seen": 1792499958.6049135,
+    "ast_hash": "7269a475c954ebad123ca41a7bdc100b",
+    "semantic_hash": ""
+  },
+  "docs/YEREL_MODEL_SECIMI.md": {
+    "mtime": 1792499911.5535018,
+    "seen": 1792499958.6060803,
+    "ast_hash": "8d992eec9fb35fb8e88ef80fc5db0b22",
     "semantic_hash": ""
   }
 }

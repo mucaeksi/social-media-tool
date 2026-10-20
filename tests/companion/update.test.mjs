@@ -464,6 +464,7 @@ test(
         }
       \` };
       if (url.endsWith("/companion/local-ai.mjs")) return {format:"module", shortCircuit:true, source: "export class LocalAI { constructor(){this.busy=false;} setup(options){if(options.automatic)process.send({type:'fixture-auto-setup'});} async close(){process.send({type:'fixture-ai-closed'});} async execute(){this.busy=true;await new Promise(r=>setTimeout(r,100));this.busy=false;return {ok:true,answer:'fixture',posts:[]};} }"};
+      if (url.endsWith("/companion/studio-firefox.mjs")) return {format:"module",shortCircuit:true,source:"export async function ensureStudioFirefox(){return process.execPath} export async function prepareStudioFirefoxProfile(){return null} export async function openStudioFirefox(){}"};
       if (url.endsWith("/companion/research.mjs")) return {format:"module", shortCircuit:true, source: "export class WebsiteResearch { async close() {} }"};
       return next(url, context);
     }});

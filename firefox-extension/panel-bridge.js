@@ -11,7 +11,7 @@
   window.addEventListener("message", async (event) => {
     const m = event.data;
     if (event.source !== window || event.origin !== location.origin || m?.source !== source || typeof m.id !== "string" || m.id.length > 64 ||
-        !["status", "connect", "connect-window", "tabs", "select-tab", "read", "focus", "prepare", "disconnect"].includes(m.action) || JSON.stringify(m).length > 16000 || pending >= 3) return;
+        !["status", "connect", "connect-window", "tabs", "select-tab", "select-target", "read", "focus", "prepare", "disconnect"].includes(m.action) || JSON.stringify(m).length > 16000 || pending >= 3) return;
     pending++;
     try {
       const response = await fetch(location.origin + "/api/auth/me", { credentials: "include", cache: "no-store", redirect: "error" });

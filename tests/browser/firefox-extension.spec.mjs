@@ -3,42 +3,53 @@ import { test, expect } from "@playwright/test";
 test("AI paneli ana Firefox sekmesini güncel okur, taslağı eklenti onayına yollar ve şirket değişince bağlantıyı kullanmaz", async ({ page, request }) => {
   const create = async (name) => (await request.post("/api/companies", { data: { name, handle: "", website: "", tone: "Sade", audience: "KKTC", keywords: "", color: "#326f61" } })).json();
   const company = await create("Eklenti kurgu şirketi"), other = await create("Diğer eklenti şirketi");
-  const accountId = crypto.randomUUID();
+  const accountId = crypto.randomUUID(), secondAccountId = crypto.randomUUID();
   let sent;
   await page.route("**/api/health", async (route) => { const r = await route.fetch(); await route.fulfill({ response: r, json: { ...(await r.json()), database: "d1", companyComputer: true, ai: "cloudflare" } }); });
   await page.route("**/api/auth/me", (route) => route.fulfill({ json: { user: { id: "fixture", username: "admin", name: "Kurgu", role: "admin" } } }));
   await page.route("**/api/social/accounts?*", (route) => route.fulfill({ json: [{ id: accountId, companyId: company.id, platform: "facebook", label: "Kurgu Facebook", profileUrl: "https://www.facebook.com/kurgu" }] }));
   await page.route("**/api/ai/status", (route) => route.fulfill({ json: { enabled: false, model: "fixture", reservedNeurons: 0, limits: { dailyNeurons: 9000, providerDailyNeurons: 10000, memoryItems: 30, memoryCharacters: 8000 } } }));
   await page.route("**/api/ai/workspace?*", (route) => route.fulfill({ json: { memory: [], turns: [] } }));
-  await page.route("**/api/computer/ai/status", (route) => route.fulfill({ json: { model: "qwen3.5:4b", phase: "ready", busy: false, progress: null, code: null } }));
+  await page.route("**/api/computer/ai/status", (route) => route.fulfill({ json: { model: "qwen3.5:9b", phase: "ready", busy: false, progress: null, code: null } }));
   await page.route("**/api/computer/ai/jobs?*", (route) => route.fulfill({ json: [] }));
   await page.route("**/api/computer/ai/ask", async (route) => {
     sent = route.request().postDataJSON();
     if (sent.mode === "chat") { await route.fulfill({ json: { answer: '{"tabId":14}' } }); return; }
     await route.fulfill({ json: { id: crypto.randomUUID(), companyId: sent.companyId, question: sent.question, answer: "Sekme referansından kurgu taslaklar hazırlandı.", posts: sent.selected.map((p) => ({ platform: p, title: "Kurgu", caption: `${p} için kurgu şirket taslağı`, hashtags: [], alt: "" })), createdAt: new Date().toISOString(), engine: "local" } });
   });
-  await page.addInitScript(({ companyId, accountId }) => {
+  await page.addInitScript(({ companyId, accountId, secondAccountId }) => {
     window.fixtureFirefox = { reads: 0, prepare: null, selectedTab: null };
     const binding = { companyId, accountId, platform: "facebook", label: "Kurgu Facebook", identityLabel: "Kurgu", profileUrl: "https://www.facebook.com/kurgu", tabId: 12 };
+    const second = { ...binding, accountId: secondAccountId, platform: "linkedin", identityLabel: "Kurgu LinkedIn", profileUrl: "https://www.linkedin.com/company/kurgu/", tabId: 15 };
+    const bindings = [binding, second];
+    let active = binding;
     window.addEventListener("message", (e) => {
       const m = e.data;
       if (e.source !== window || m?.source !== "sosyal-studio-panel-v1") return;
       let value = {};
-      if (m.action === "status") value = { version: "1.0.0", binding, window: { companyId, windowId: 7 }, pending: false };
+      if (m.action === "select-target") active = bindings.find((b) => b.accountId === m.accountId) || null;
+      if (m.action === "status") value = { version: "1.1.0", bindings, binding: active, window: { companyId, windowId: 7 }, pending: false };
       if (m.action === "tabs" || m.action === "select-tab") value = { tabs: [{ id: 12, title: "Kurgu sosyal sekme", url: binding.profileUrl, active: true, pinned: true, panel: false }, { id: 14, title: "Video", url: "https://youtube.com/", active: false, pinned: false, panel: false }] };
       if (m.action === "select-tab") window.fixtureFirefox.selectedTab = m.tabId;
       if (m.action === "read") { window.fixtureFirefox.reads++; value = { page: { id: "fixture-snapshot", title: "Kurgu şirket sayfası", url: binding.profileUrl, text: "KKTC için güncel kurgu sayfa bilgisi", canPrepare: true, reason: "Kurgu hedefi doğrulandı" } }; }
       if (m.action === "prepare") { window.fixtureFirefox.prepare = m; value = { pending: true }; }
       window.postMessage({ source: "sosyal-studio-firefox-v1", id: m.id, ok: true, ...value }, location.origin);
     });
-  }, { companyId: company.id, accountId });
+  }, { companyId: company.id, accountId, secondAccountId });
   try {
     await page.goto("/");
     await page.getByRole("combobox", { name: "Aktif şirket" }).selectOption(company.id);
     await page.getByRole("button", { name: "AI asistanı", exact: true }).click();
     await expect(page.getByText("Yerel model hazır", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Eklenti bağlantısını kontrol et" }).click();
-    await expect(page.getByText("Eklenti 1.0.0", { exact: false })).toBeVisible();
+    await expect(page.getByText("Eklenti 1.1.0 · 2 hesap sekmesi bağlı", { exact: true })).toBeVisible();
+    const targets = page.getByRole("combobox", { name: "Çalışılacak bağlı hesap sekmesi" });
+    await expect(targets.locator("option")).toHaveCount(3);
+    await targets.selectOption(secondAccountId);
+    await expect(page.getByRole("checkbox", { name: /Kurgu LinkedIn sekmesini/ })).toBeVisible();
+    await targets.selectOption(accountId);
+    await expect(page.getByRole("checkbox", { name: /^Kurgu sekmesini/ })).toBeVisible();
+    await expect(targets.locator("option")).toHaveCount(3);
     await expect(page.getByRole("combobox", { name: "Bu penceredeki tüm sekmeler" })).toHaveValue("12");
     await page.getByRole("checkbox", { name: /sekmesini bu istekte oku/ }).check();
     await page.getByLabel("Asistandan ne istersiniz?").fill("Bu sayfaya uygun içerikler hazırla.");

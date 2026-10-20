@@ -10,9 +10,9 @@ import { LOCAL_MODEL, localPost, validLocalResult } from "../../shared/local-ai.
 
 const model = {
   name: LOCAL_MODEL,
-  size: 3000000000,
+  size: 6600000000,
   digest: "a".repeat(64),
-  details: { parameter_size: "4.66B", quantization_level: "Q4_K_M" },
+  details: { parameter_size: "9.65B", quantization_level: "Q4_K_M" },
 };
 const input = {
   action: "generate",
@@ -315,6 +315,33 @@ test("Windows kurucusu sabit portable AI paketini aynı veri klasörüne hazırl
   await f.ai.installRuntime();
   assert.equal(calls[0].directory, f.directory);
   assert.equal(calls[0].platform, "win32");
+});
+
+test("4B'den 9B'ye geçişte yeni model hazır olmadan eski model silinmez; hazır olunca yalnız özel 4B silinir", async (t) => {
+  let ready = false, deleted = false;
+  const f = await fixture(t, (url, body, options) => {
+    if (url.endsWith("show")) return Response.json({ capabilities: ["vision", "completion"] });
+    if (url.endsWith("generate")) { ready = true; return Response.json({ done: true }); }
+    if (url.endsWith("delete")) { assert.equal(ready, true); assert.equal(options.method, "DELETE"); assert.equal(body.model, "qwen3.5:4b"); deleted = true; return Response.json({}); }
+    return Response.json({ models: [model, { name: "qwen3.5:4b" }] });
+  });
+  await writeFile(join(f.directory, "local-ai-model.json"), JSON.stringify({ model: "qwen3.5:4b", digest: "b".repeat(64) }));
+  f.ai.installRuntime = async () => {};
+  f.ai.setup({ automatic: true }); await f.ai.setupTask;
+  assert.equal(f.ai.phase, "ready"); assert.equal(deleted, true);
+});
+test("10 GiB üzeri GPU ölçümünde model boşaltılır; yeni model hazır sayılmaz ve eski 4B silinmez", async (t) => {
+  let unloaded = false;
+  const f = await fixture(t, (url, body) => {
+    if (url.endsWith("show")) return Response.json({ capabilities: ["vision"] });
+    if (url.endsWith("generate")) { if (body.keep_alive === 0) unloaded = true; return Response.json({ done: true }); }
+    if (url.endsWith("ps")) return Response.json({ models: [{ name: LOCAL_MODEL, size_vram: 11 * 1024 ** 3 }] });
+    return Response.json({ models: [model, { name: "qwen3.5:4b" }] });
+  }, { measure: true });
+  f.ai.installRuntime = async () => {};
+  f.ai.setup({ automatic: true }); await f.ai.setupTask;
+  assert.equal(f.ai.failure, "GPU_LIMIT"); assert.equal(unloaded, true);
+  assert.equal(f.calls.some((c) => c.url.endsWith("delete")), false);
 });
 
 test("v1.1 güncelleyicisi AI eklenen yeni kaynak paketini doğrulayarak açabilir", async (t) => {

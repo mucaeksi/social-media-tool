@@ -54,7 +54,7 @@ test("Windows gerçek ZIP açılışı boşluk, tırnak ve Türkçe klasör adla
 test("Eski model yalnız doğrulanmış bloblarla aynı klasöre alınır; kaynak ve diğer modeller korunur", async (t) => {
   const root = await fixture(t), legacy = join(root, "eski-model"), data = join(root, "SosyalStudio");
   const bytes = Buffer.from("fixture-model"), digest = sha(bytes);
-  const path = join("manifests/registry.ollama.ai/library/qwen3.5/4b");
+  const path = join("manifests/registry.ollama.ai/library/qwen3.5/9b");
   await mkdir(join(legacy, "blobs"), { recursive: true });
   await mkdir(join(legacy, path, ".."), { recursive: true });
   await writeFile(join(legacy, "blobs", `sha256-${digest}`), bytes);
@@ -134,7 +134,7 @@ for (const crash of [false, true]) {
     await writeFile(join(root, "serve"), `
       const http=require('node:http'),fs=require('node:fs');
       fs.writeFileSync('runtime-env.json',JSON.stringify({host:process.env.OLLAMA_HOST,models:process.env.OLLAMA_MODELS,noCloud:process.env.OLLAMA_NO_CLOUD,pid:process.pid,profile:process.env.USERPROFILE,temp:process.env.TEMP,local:process.env.LOCALAPPDATA}));
-      const model={name:'qwen3.5:4b',size:3000000000,digest:'a'.repeat(64),details:{parameter_size:'4.66B',quantization_level:'Q4_K_M'}};
+      const model={name:'qwen3.5:9b',size:3000000000,digest:'a'.repeat(64),details:{parameter_size:'4.66B',quantization_level:'Q4_K_M'}};
       http.createServer((req,res)=>{let body='';req.on('data',x=>body+=x);req.on('end',()=>{
         if(req.url.endsWith('/generate'))fs.appendFileSync('loads.jsonl',body+'\\n');
         res.setHeader('Content-Type','application/json');

@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Sosyal Studio · Firefox bağlantısı",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Seçtiğiniz sosyal medya sekmesini Sosyal Studio paneline bağlar. AI için sayfa okur ve onayladığınız taslağı forma yerleştirir.",
   "browser_specific_settings": {
     "gecko": { "id": "firefox@sosyal-studio.local", "strict_min_version": "140.0", "data_collection_permissions": { "required": ["websiteContent"], "optional": [] } }
@@ -15,7 +15,7 @@
     "https://*.pinterest.com/*", "https://*.youtube.com/*",
     "https://*.tiktok.com/*", "https://*.tumblr.com/*"
   ],
-  "background": { "scripts": ["policy.js", "background.js"], "persistent": true },
+  "background": { "scripts": ["managed.js", "policy.js", "background.js"], "persistent": true },
   "content_scripts": [{
     "matches": ["https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev/*"],
     "js": ["panel-bridge.js"], "run_at": "document_idle", "all_frames": false

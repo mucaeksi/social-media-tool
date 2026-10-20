@@ -4,7 +4,7 @@ import { firefoxRequest, firefoxTarget, firefoxTabChoice } from "./firefoxBridge
 import type { FirefoxBinding, FirefoxPage } from "./firefoxBridge.ts";
 
 type Account = { id: string; companyId: string; label: string; platform: string; profileUrl: string };
-type Status = { version: string; window: { companyId: string; windowId: number } | null; binding: FirefoxBinding | null; pending: boolean };
+type Status = { version: string; window: { companyId: string; windowId: number } | null; bindings?: FirefoxBinding[]; binding: FirefoxBinding | null; pending: boolean };
 type Tab = { id: number; title: string; url: string; active: boolean; pinned: boolean; panel: boolean };
 export function FirefoxConnection({ companyId, companyName, disabled, modelReady, onBinding }: {
   companyId: string; companyName: string; disabled: boolean; modelReady: boolean; onBinding: (binding: FirefoxBinding | null) => void;
@@ -36,12 +36,14 @@ export function FirefoxConnection({ companyId, companyName, disabled, modelReady
     try { await action(); } catch (e) { setError((e as Error).message); onBinding(null); } finally { setBusy(false); }
   }
   const binding = status?.binding?.companyId === companyId ? status.binding : null;
+  const connected = (status?.bindings || (status?.binding ? [status.binding] : [])).filter((b) => b.companyId === companyId);
   return <section className="card firefox-connection">
     <h2>Ana Firefox · Eklenti bağlantısı</h2>
-    <p>Panelin açık olduğu tek Firefox penceresindeki bütün sekmeleri listele ve aralarında geçiş yap. Diğer Firefox pencerelerine erişilmez. Yerel AI yardımcıda çalışır; sayfa okumak ve taslak hazırlamak için ilgili şirket hedefini ayrıca seç.</p>
-    <details><summary>Eklentiyi kur</summary>
+    <p><strong>Windows'ta otomatik kurulum:</strong> Güncel Baslat.cmd, aynı klasöre Firefox Developer Edition kurar ve eklentiyi ona ait profilde etkinleştirir. Açılan Firefox'ta bu paneli kullan. Sosyal hesaplara bir kez giriş yapman yeterlidir; kişisel Firefox'un değiştirilmez.</p>
+    <p>Tek Firefox penceresindeki bütün sekmeleri kullan. Her sosyal hesabı kendi sekmesiyle bir kez eşleştir; hepsi aşağıdaki bağlı hesaplar listesinde birlikte kalır. Sonra yeniden bağlamadan aralarında geçiş yap.</p>
+    <details><summary>Eklentiyi kur · kişisel Firefox için elle kurulum</summary>
       <ol>
-        <li><a href="/indir/sosyal-studio-firefox.zip" download>Eklenti paketini indir</a> ve ZIP'i bir klasöre çıkar.</li>
+        <li><a href="/indir/sosyal-studio-firefox.zip?v=1.1.0" download>Eklenti paketini indir</a> ve ZIP'i bir klasöre çıkar.</li>
         <li>Firefox adres çubuğuna <code>about:debugging#/runtime/this-firefox</code> yaz.</li>
         <li>“Geçici eklenti yükle” düğmesinden klasördeki <code>manifest.json</code> dosyasını seç; paneli yenile.</li>
       </ol>
@@ -50,7 +52,16 @@ export function FirefoxConnection({ companyId, companyName, disabled, modelReady
     <div className="expert-actions"><button className="secondary" disabled={disabled || busy} onClick={() => void run(async () => { await refresh(); })}>Eklenti bağlantısını kontrol et</button>
       {status?.window && <button className="secondary" disabled={disabled || busy} onClick={() => void run(async () => { await firefoxRequest("disconnect"); await refresh(); })}>Bağlantıyı kes</button>}
     </div>
-    {status && <p>Eklenti {status.version} · {binding ? `${binding.identityLabel || binding.label} bağlı` : "Bu şirkete bağlı sekme yok"}{status.pending ? " · Firefox araç çubuğundaki Sosyal Studio simgesinden isteği onayla; sonra bağlantıyı kontrol et." : ""}</p>}
+    {status && <p>Eklenti {status.version} · {connected.length} hesap sekmesi bağlı{status.pending ? " · Firefox araç çubuğundaki Sosyal Studio simgesinden isteği onayla; sonra bağlantıyı kontrol et." : ""}</p>}
+    {status?.version === "1.0.0" && <p role="status">Çoklu hesap bağlantısı için Eklentiyi kur bölümünden 1.1.0 paketini indirip yeniden yükle. İlk sürüm yalnız son bağlanan hesabı tutar.</p>}
+    {connected.length > 0 && <label className="field">Çalışılacak bağlı hesap sekmesi
+      <select value={binding?.accountId || ""} disabled={disabled || busy || status?.version === "1.0.0"} onChange={(e) => void run(async () => {
+        await firefoxRequest("select-target", { companyId, accountId: e.target.value }); setPage(null); await refresh();
+      })}>
+        <option value="" disabled>Bağlı hesaplardan birini seç</option>
+        {connected.map((b) => <option key={b.accountId} value={b.accountId}>{b.identityLabel || b.label} · {b.platform}</option>)}
+      </select>
+    </label>}
     <button className="secondary" disabled={disabled || busy} onClick={() => void run(async () => {
       await firefoxRequest("connect-window", { companyId, companyName });
       setNotice("Sosyal Studio eklenti simgesinden panelin bulunduğu Firefox penceresini onayla; sonra bağlantıyı kontrol et.");
@@ -80,9 +91,10 @@ export function FirefoxConnection({ companyId, companyName, disabled, modelReady
         setPage(null); await refresh(); setNotice(`Seçilen sekmeye geçildi: ${current.find((t) => t.id === tabId)?.title || "Sekme"}. Sayfayı incelemek için ilgili şirket hedefini bağlayın.`);
       })}>AI ile sekmeye geç</button>
       <small>AI ile seçimde bu pencerenin sekme başlıkları ve site adları modele gönderilir; sayfaların içeriği bu seçim sırasında okunmaz. Yerel AI üretim kotasından bir istek kullanır.</small>
-      <p>Yeni açılan ve sabitlenmiş sekmeler bu listeye alınır. Başka sosyal ağa geçtiğinde o ağın kayıtlı şirket hedefini aşağıdan bağla. Giriş ve özel mesaj sayfalarının içeriği AI'a okunmaz.</p>
+      <p>Yeni açılan ve sabitlenmiş sekmeler bu listeye alınır. Eşleştirilmiş sekmeye geçince ilgili hesap seçilir; diğer bağlı hesaplar korunur. Giriş ve özel mesaj sayfalarının içeriği AI'a okunmaz.</p>
     </>}
-    <label className="field">Kayıtlı hedef hesap / şirket sayfası
+    <h3>Yeni hesap sekmesi ekle</h3>
+    <label className="field">Eklenecek kayıtlı hedef hesap / şirket sayfası
       <select value={accountId} disabled={disabled || busy} onChange={(e) => setAccountId(e.target.value)}>
         <option value="">Bir hedef seç</option>
         {accounts.map((a) => <option key={a.id} value={a.id} disabled={!a.profileUrl}>{a.label} · {a.platform}{!a.profileUrl ? " · Sayfa adresi eksik" : ""}</option>)}
@@ -91,10 +103,10 @@ export function FirefoxConnection({ companyId, companyName, disabled, modelReady
     <p>Hedef adres Hesap bağlantıları bölümünden kaydedilir. LinkedIn için <code>/company/…</code> şirket sayfası gerekir. Şahsi profilini hedef olarak kaydetme.</p>
     <button className="secondary" disabled={disabled || busy || !accountId} onClick={() => void run(async () => {
       await firefoxRequest("connect", { target: { companyId, companyName, accountId } });
-      onBinding(null); setPage(null);
-      setNotice("Firefox araç çubuğundaki Sosyal Studio eklentisini aç. Şirketi ve kullanılacak sekmeyi onayla; sonra burada bağlantıyı kontrol et.");
-      setStatus((s) => s ? { ...s, binding: null, pending: true } : null);
-    })}>Firefox'ta sekme seçimini iste</button>
+      setPage(null);
+      setNotice("Firefox araç çubuğundaki Sosyal Studio eklentisinden yeni hesap sekmesini onayla; sonra bağlantıyı kontrol et. Önceden bağlanan hesaplar korunur.");
+      setStatus((s) => s ? { ...s, pending: true } : null);
+    })}>Hesabın Firefox sekmesini ekle</button>
     {binding && <>
       <p><strong>Hedef:</strong> <a href={binding.profileUrl} target="_blank" rel="noreferrer">{binding.profileUrl}</a></p>
       <div className="expert-actions">

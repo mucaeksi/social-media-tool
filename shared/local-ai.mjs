@@ -1,11 +1,13 @@
 import { SOCIAL_EXPERT_RULES } from "./social-expert.mjs";
 
-export const LOCAL_MODEL = "qwen3.5:4b";
-export const LOCAL_EXPERT_VERSION = "yerel-kktc-4b-v2";
+export const LOCAL_MODEL = "qwen3.5:9b";
+export const LOCAL_EXPERT_VERSION = "yerel-kktc-9b-v3";
 export const LOCAL_AI_LIMITS = Object.freeze({
   imageBytes: 600000,
   wireChars: 900000,
   context: 16384,
+  modelBytes: 8_000_000_000,
+  gpuBudgetBytes: 10 * 1024 ** 3,
   dailyRequests: 50,
   hourlyRequests: 10,
 });
@@ -55,6 +57,7 @@ export const localErrors = {
     "Otomatik AI kurulumu tamamlanamadı. İnterneti ve kurulum klasöründeki boş alanı kontrol edip tekrar deneyin.",
   PORT_IN_USE: "AI için ayrılmış yerel bağlantı başka bir süreçte kullanımda. Yardımcıyı kapatıp yeniden açın.",
   MODEL_MISSING: "Küçük model henüz indirilmedi. Yerel AI kurulumunu başlatın.",
+  GPU_LIMIT: "Modelin bildirilen GPU belleği 10 GiB hedefini aştı; model boşaltıldı. Bağlam/bellek ayarları kontrol edilmeli.",
   MODEL_CHANGED:
     "Modelin boyutu, özeti veya 4-bit biçimi doğrulanamadı. Kurulum düğmesiyle yeniden doğrulayın.",
   OFFLINE:

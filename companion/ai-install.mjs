@@ -100,7 +100,7 @@ export async function installPortable({ directory, platform = process.platform, 
 // original store or import unrelated personal models.
 export async function importLegacyModel(directory, legacy = process.env.OLLAMA_MODELS || join(homedir(), ".ollama", "models")) {
   const target = modelDirectory(directory);
-  const manifestPath = join("manifests", "registry.ollama.ai", "library", "qwen3.5", "4b");
+  const manifestPath = join("manifests", "registry.ollama.ai", "library", "qwen3.5", "9b");
   try {
     await access(join(target, manifestPath));
     return;
@@ -111,7 +111,7 @@ export async function importLegacyModel(directory, legacy = process.env.OLLAMA_M
     const manifest = JSON.parse(bytes);
     const parts = [manifest.config, ...(manifest.layers || [])];
     if (parts.length > 64 || parts.some((p) => !/^sha256:[a-f0-9]{64}$/.test(p?.digest) ||
-        !Number.isSafeInteger(p.size) || p.size < 0) || parts.reduce((n, p) => n + p.size, 0) > 5_000_000_000) return;
+        !Number.isSafeInteger(p.size) || p.size < 0) || parts.reduce((n, p) => n + p.size, 0) > 8_000_000_000) return;
     for (const part of parts) {
       const name = part.digest.replace(":", "-");
       const source = join(legacy, "blobs", name), destination = join(target, "blobs", name);

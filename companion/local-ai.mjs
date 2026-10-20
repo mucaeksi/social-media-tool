@@ -53,10 +53,10 @@ export class LocalAI {
     this.memory = new LocalMemory(directory);
     this.closing = false;
   }
-  async http(path, body, timeout = 5000) {
+  async http(path, body, timeout = 5000, method = body ? "POST" : "GET") {
     // Fixed loopback endpoint; no URL/model/command can be supplied by the panel.
     const response = await this.fetcher(`http://127.0.0.1:11435/api/${path}`, {
-      method: body ? "POST" : "GET",
+      method,
       headers: { "Content-Type": "application/json" },
       body: body ? JSON.stringify(body) : undefined,
       redirect: "error",
@@ -135,10 +135,10 @@ export class LocalAI {
     if (
       !Number.isSafeInteger(model.size) ||
       model.size < 1 ||
-      model.size > 5_000_000_000 ||
+      model.size > LOCAL_AI_LIMITS.modelBytes ||
       !/^Q4/i.test(model.details?.quantization_level || "") ||
       !/^\d+(?:\.\d+)?B$/i.test(model.details?.parameter_size || "") ||
-      parseFloat(model.details.parameter_size) > 5
+      parseFloat(model.details.parameter_size) > 10
     )
       localFail("MODEL_CHANGED");
     return model;
@@ -257,7 +257,7 @@ export class LocalAI {
       }
       const model = await this.installedModel();
       const saved = JSON.parse(await readFile(join(this.directory, "local-ai-model.json"), "utf8").catch(() => "null"));
-      if (automatic && saved?.digest && saved.digest !== model.digest) localFail("MODEL_CHANGED");
+      if (automatic && saved?.digest && saved.model !== "qwen3.5:4b" && (saved.model !== LOCAL_MODEL || saved.digest !== model.digest)) localFail("MODEL_CHANGED");
       const info = await this.json("show", { model: LOCAL_MODEL });
       if (
         !Array.isArray(info.capabilities) ||
@@ -272,6 +272,12 @@ export class LocalAI {
       );
       this.stage = "Model GPU/CPU belleğine yükleniyor";
       await this.warmModel();
+      const models = await this.json("tags");
+      if (models.models?.some((m) => m.name === "qwen3.5:4b" || m.model === "qwen3.5:4b")) {
+        this.stage = "Yeni model doğrulandı; eski 4B ağırlıkları temizleniyor";
+        const deleted = await this.http("delete", { model: "qwen3.5:4b" }, 60000, "DELETE");
+        await deleted.body?.cancel();
+      }
       this.phase = "ready";
       this.progress = null;
     })()
@@ -282,6 +288,7 @@ export class LocalAI {
           "INSTALL_FAILED",
           "MODEL_CHANGED",
           "PORT_IN_USE",
+          "GPU_LIMIT",
         ].includes(e.code)
           ? e.code
           : "FAILED";
@@ -303,6 +310,15 @@ export class LocalAI {
     const response = await this.json("generate", { model: LOCAL_MODEL, prompt: "", stream: false,
       keep_alive: -1, options: { num_ctx: LOCAL_AI_LIMITS.context, num_thread: 4, num_batch: 128 } }, 180000);
     if (response.done !== true) localFail("OFFLINE");
+    await this.checkGPU();
+  }
+  async checkGPU() {
+    const data = await this.json("ps");
+    const loaded = data.models?.find((m) => m.name === LOCAL_MODEL || m.model === LOCAL_MODEL);
+    if (Number.isFinite(loaded?.size_vram) && loaded.size_vram > LOCAL_AI_LIMITS.gpuBudgetBytes) {
+      await this.json("generate", { model: LOCAL_MODEL, keep_alive: 0 }, 15000);
+      localFail("GPU_LIMIT");
+    }
   }
   async close() {
     if (this.closing) return;
@@ -347,6 +363,7 @@ export class LocalAI {
       90000,
     );
     const text = response.message?.content;
+    await this.checkGPU();
     if (
       response.done !== true ||
       response.done_reason === "length" ||
@@ -478,6 +495,7 @@ export class LocalAI {
       this.memory.generated(input.companyId, input, result);
       return result;
     } catch (e) {
+      if (e.code === "GPU_LIMIT") this.failure = "GPU_LIMIT";
       if (this.generationController?.signal.aborted) localFail("CANCELLED");
       throw e;
     } finally {

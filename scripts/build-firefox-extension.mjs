@@ -3,7 +3,7 @@ import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { crc32, sha256 } from "../companion/release.mjs";
 
-export const extensionFiles = ["manifest.json", "policy.js", "background.js", "panel-bridge.js", "page-agent.js", "popup.html", "popup.css", "popup.js"];
+export const extensionFiles = ["manifest.json", "managed.js", "policy.js", "background.js", "panel-bridge.js", "page-agent.js", "popup.html", "popup.css", "popup.js"];
 export async function buildFirefoxExtension(destination = "dist/indir") {
   const parts = [], central = []; let offset = 0;
   for (const file of extensionFiles) {
@@ -19,7 +19,8 @@ export async function buildFirefoxExtension(destination = "dist/indir") {
   const zip = Buffer.concat([...parts, directory, end]);
   await mkdir(destination, { recursive: true });
   await writeFile(join(destination, "sosyal-studio-firefox.zip"), zip);
-  await writeFile(join(destination, "sosyal-studio-firefox.json"), JSON.stringify({ version: "1.0.0", signed: false, archive: "/indir/sosyal-studio-firefox.zip", sha256: sha256(zip), bytes: zip.length }));
+  const manifest = JSON.parse(await readFile(new URL("../firefox-extension/manifest.json", import.meta.url)));
+  await writeFile(join(destination, "sosyal-studio-firefox.json"), JSON.stringify({ version: manifest.version, signed: false, archive: "/indir/sosyal-studio-firefox.zip", sha256: sha256(zip), bytes: zip.length }));
   await writeFile(join(destination, "FIREFOX_EKLENTISI.md"), await readFile(new URL("../docs/FIREFOX_EKLENTISI.md", import.meta.url)));
   return { bytes: zip.length, sha256: sha256(zip) };
 }

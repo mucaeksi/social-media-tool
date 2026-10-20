@@ -15,6 +15,8 @@ const server = spawn(executable, ["serve"], {
   stdio: "ignore", windowsHide: true,
   env: { ...process.env, OLLAMA_HOST: "127.0.0.1:11435", OLLAMA_MODELS: models,
     OLLAMA_NO_CLOUD: "1", OLLAMA_MAX_LOADED_MODELS: "1", OLLAMA_NUM_PARALLEL: "1",
+    // Reserve 6 GiB on the user's 16 GiB GPU; keep KV cache compact.
+    OLLAMA_GPU_OVERHEAD: String(6 * 1024 ** 3), OLLAMA_FLASH_ATTENTION: "1", OLLAMA_KV_CACHE_TYPE: "q8_0",
     TEMP: temporary, TMP: temporary, TMPDIR: temporary,
     XDG_CACHE_HOME: join(aiRoot, "cache"), CUDA_CACHE_PATH: join(aiRoot, "cache", "cuda"),
     ...(process.platform === "win32" ? { USERPROFILE: runtimeHome,

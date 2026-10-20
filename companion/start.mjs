@@ -6,6 +6,8 @@ import { ProfileBrowsers } from "./browser.mjs";
 import { COMPUTER_LIMITS } from "../shared/computer-protocol.mjs";
 
 import { LocalAI } from "./local-ai.mjs";
+import { prepareFirefoxExtension } from "./firefox-extension.mjs";
+import { ensureStudioFirefox, prepareStudioFirefoxProfile, openStudioFirefox } from "./studio-firefox.mjs";
 import { WebsiteResearch } from "./research.mjs";
 import { localErrors, LOCAL_AI_LIMITS } from "../shared/local-ai.mjs";
 import { production, directory } from "./locations.mjs";
@@ -287,7 +289,20 @@ process.on("message", (message) => {
 try {
   if (Number(process.versions.node.split(".")[0]) < 24)
     throw new Error("Node.js 24 veya üzerini kurun.");
-  const executablePath = await firefoxPath();
+  let executablePath, studioProfile;
+  if (process.platform === "win32") {
+    console.log("Firefox Developer Edition aynı BAT klasörüne otomatik hazırlanıyor; Mozilla'nın Windows imzası doğrulanır.");
+    executablePath = await ensureStudioFirefox(directory);
+    studioProfile = await prepareStudioFirefoxProfile(directory);
+  } else executablePath = await firefoxPath();
+  try {
+    const extension = await prepareFirefoxExtension(directory, { profile: Boolean(studioProfile) });
+    console.log(`Firefox eklentisi ${extension.version} hazır: ${extension.manifestPath}`);
+    console.log(studioProfile ? "Eklenti özel Firefox profiline otomatik kuruldu. Mevcut kişisel Firefox profiliniz değiştirilmedi. Sosyal hesaplara bu Firefox'ta bir kez giriş yapın." : "Normal Firefox ilk yüklemeyi onaylamanızı ister. Geçici eklenti yükle adımında yukarıdaki manifest.json dosyasını seçin.");
+    if (studioProfile) await openStudioFirefox(directory, executablePath, studioProfile);
+  } catch {
+    console.log("Firefox eklentisi hazırlanamadı. Klasör izinlerini kontrol edin; paneldeki eklenti paketini elle yükleyebilirsiniz.");
+  }
   researcher = new WebsiteResearch({ executablePath });
   if (process.platform === "win32") {
     console.log("Yerel AI otomatik hazırlanıyor. Veriler BAT dosyasının bulunduğu klasörde tutulur; eşleştirme ve hesap girişlerine devam edebilirsiniz.");

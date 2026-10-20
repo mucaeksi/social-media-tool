@@ -378,7 +378,7 @@ export function SocialAI({
               <h2>Sosyal medya danışmanı</h2>
               <span>
                 {engine === "local"
-                  ? "Qwen3.5-4B · Yerel"
+                  ? "Qwen3.5-9B · Yerel"
                   : "Gemma 4 · Cloudflare"}
               </span>
             </div>

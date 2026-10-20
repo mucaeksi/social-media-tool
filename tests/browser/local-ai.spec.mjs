@@ -21,7 +21,7 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
     sent,
     modelCalls = 0;
   const status = () => ({
-    model: "qwen3.5:4b",
+    model: "qwen3.5:9b",
     phase,
     progress: phase === "downloading" ? 0.5 : null,
     busy: phase === "downloading",
@@ -109,7 +109,7 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
         mediaId: null,
         createdAt: new Date().toISOString(),
         engine: "local",
-        model: "qwen3.5:4b",
+        model: "qwen3.5:9b",
         published: false,
       },
     });

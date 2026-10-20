@@ -1,3 +1,9 @@
+# 1.6 güncellemesi: otomatik Firefox ve daha güçlü AI
+
+Baslat.cmd artık Windows’ta Mozilla imzası doğrulanan Firefox Developer Edition’ı, kendi FirefoxProfil profilini ve eklentiyi BAT klasörüne otomatik hazırlar. Kişisel Firefox değiştirilmez. Yeni Firefox’ta hesaplara bir kez giriş yapın. Eklenti güncellemeleri yardımcı patch’leriyle gelir; bağlantılar kapatılınca kendini yeniler. Detay: [Firefox kurulumu](https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev/indir/FIREFOX_EKLENTISI.md).
+
+Yerel model Qwen3.5 9B / Q4’tür; 16 GB kart için 7–10 GiB model VRAM hedefi vardır. İlk yükseltme birkaç GB yeni model indirir. Yeni model başarıyla yüklenip ölçüldükten sonra yalnız yardımcının eski 4B ağırlıkları silinir. Şirket SQLite hafızası ve girişler korunur. Gerçek model GPU ölçümü panelde gösterilir; toplam sistem GPU tepe tüketimi garantisi verilmez.
+
 # Windows ve Firefox ile kalıcı sosyal hesap girişleri
 
 **Yardımcı 1.5.1 — masaüstünde taşınabilir kurulum:** ZIP’in tamamını masaüstündeki seçtiğiniz klasöre çıkarın. `companion\Kur-ve-Baslat.cmd` dosyasını çalıştırın. Aktif model, SQLite veritabanı, Firefox profilleri, kod yamaları, önbellek ve geçici dosyalar bu BAT’ın bulunduğu klasörün altında tutulur. Kısayolun çalışma dizini bu konumu değiştirmez.

@@ -82,7 +82,7 @@ export function LocalAIStatus({
   return (
     <section className="card local-ai-status" aria-label="Yerel AI durumu">
       <div className="ai-section-heading">
-        <strong>Bilgisayarınızda · Qwen3.5-4B · 4-bit</strong>
+        <strong>Bilgisayarınızda · Qwen3.5-9B · 4-bit</strong>
         <span>
           {status
             ? labels[status.phase] || labels.unknown
@@ -94,6 +94,7 @@ export function LocalAIStatus({
         Yardımcı kapanınca model ve ona ait Ollama süreci kapanır.
         Cloudflare AI kotası kullanılmaz.
       </p>
+      <p>9B / 4-bit model, 16 GB ekran kartında yaklaşık 7–10 GiB model VRAM hedefiyle ayarlanır. Gerçek ölçüm aşağıda gösterilir; ölçüm hedefi aşarsa model boşaltılır. Yeni model hazır olduktan sonra eski 4B ağırlıkları silinir; şirket hafızası ve hesap girişleri korunur.</p>
       <p>
         İlk açılışta AI otomatik kurulur. Çalıştırıcı, model ve knowledge.sqlite
         veritabanı çalıştırdığınız BAT dosyasının yanındaki ai klasöründe tutulur.
@@ -135,8 +136,9 @@ export function LocalAIStatus({
       )}
       {status?.phase === "error" && (
         <p role="alert">
-          Kurulum tamamlanamadı. İnterneti ve boş disk alanını kontrol edip
-          aynı kurulum düğmesiyle tekrar deneyin. Ayrı Ollama kurulumu gerekmez.
+          {status.code === "GPU_LIMIT"
+            ? "Modelin bildirilen GPU belleği 10 GiB hedefini aştı ve model boşaltıldı. Bellek ayarları kontrol edilmeli; model yeniden indirilmez."
+            : "Kurulum tamamlanamadı. İnterneti ve boş disk alanını kontrol edip aynı kurulum düğmesiyle tekrar deneyin. Ayrı Ollama kurulumu gerekmez."}
         </p>
       )}
       {error && (
