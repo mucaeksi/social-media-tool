@@ -67,6 +67,7 @@ export async function supervise({
   };
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
+  process.on("SIGHUP", stop);
   const parentMessage = (message) => {
     if (message?.type === "stop") stop();
   };
@@ -124,6 +125,7 @@ export async function supervise({
     clearInterval(retryTimer);
     process.off("SIGINT", stop);
     process.off("SIGTERM", stop);
+    process.off("SIGHUP", stop);
     process.off("message", parentMessage);
   }
 }

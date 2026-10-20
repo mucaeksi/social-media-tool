@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792484669.9993882,
-    "seen": 1792484688.433502,
-    "ast_hash": "1727d6253ec4778b914e8ef7e561cdc5",
+    "mtime": 1792486912.6944263,
+    "seen": 1792486976.6173432,
+    "ast_hash": "2630d98173285ecc262626d477726358",
     "semantic_hash": ""
   },
   "README.md": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/cloudflare.yml": {
-    "mtime": 1792484561.7882638,
-    "seen": 1792484688.4334786,
-    "ast_hash": "4899a9a4910f925c9b76445f0cd12ee0",
+    "mtime": 1792486911.650434,
+    "seen": 1792486976.617307,
+    "ast_hash": "ee39df6b5d27bbf2570150f9cecc1f1d",
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
@@ -552,15 +552,15 @@
     "semantic_hash": ""
   },
   "companion/package.json": {
-    "mtime": 1792484670.217536,
-    "seen": 1792484688.430485,
-    "ast_hash": "d2a19b193fc6068afcbc09e7fb24d9b2",
+    "mtime": 1792486912.9184597,
+    "seen": 1792486976.6130915,
+    "ast_hash": "e8f543769d0cd951d2e4b13e7224966c",
     "semantic_hash": ""
   },
   "companion/start.mjs": {
-    "mtime": 1792484430.9452198,
-    "seen": 1792484688.4305193,
-    "ast_hash": "a7d7866bf44cb1ce80c506af065cb041",
+    "mtime": 1792486598.5329473,
+    "seen": 1792486976.6131315,
+    "ast_hash": "efefccf9a8dab6d412dff631b848a438",
     "semantic_hash": ""
   },
   "scripts/build-companion.mjs": {
@@ -618,15 +618,15 @@
     "semantic_hash": ""
   },
   "docs/SIRKET_BILGISAYARI.md": {
-    "mtime": 1792484669.4673915,
-    "seen": 1792484688.4495676,
-    "ast_hash": "db17dbd072af38423e9db7d8b17067a9",
+    "mtime": 1792486912.918865,
+    "seen": 1792486976.6242933,
+    "ast_hash": "25831ca88d3661af92193eafa081def7",
     "semantic_hash": ""
   },
   "companion/launch.mjs": {
-    "mtime": 1792471950.3774414,
-    "seen": 1792473384.1757562,
-    "ast_hash": "df79a824ad404c067f46eeb8fce7c334",
+    "mtime": 1792486597.504955,
+    "seen": 1792486976.6129394,
+    "ast_hash": "1831f7460a7ece2eba85094c1d133df8",
     "semantic_hash": ""
   },
   "companion/locations.mjs": {
@@ -636,15 +636,15 @@
     "semantic_hash": ""
   },
   "companion/release.mjs": {
-    "mtime": 1792484431.4692159,
-    "seen": 1792484688.4304872,
-    "ast_hash": "89b3a2039182b7ddae3d4264e8b37bdd",
+    "mtime": 1792486599.0329437,
+    "seen": 1792486976.6130946,
+    "ast_hash": "b0986c6f31eb3172731bd07fe1041bf9",
     "semantic_hash": ""
   },
   "companion/supervisor.mjs": {
-    "mtime": 1792471950.3774414,
-    "seen": 1792473384.175763,
-    "ast_hash": "4e80f14fe8f19504d23211998d3b447e",
+    "mtime": 1792486598.0249512,
+    "seen": 1792486976.6131337,
+    "ast_hash": "9a0b0de0a21b914eb3dfa764370bb68e",
     "semantic_hash": ""
   },
   "companion/updater.mjs": {
@@ -654,27 +654,27 @@
     "semantic_hash": ""
   },
   "tests/companion/update.test.mjs": {
-    "mtime": 1792484561.2722676,
-    "seen": 1792484688.4328551,
-    "ast_hash": "814cce4369e1ca786d02f6679f9f3ecb",
+    "mtime": 1792487101.4890103,
+    "seen": 1792487109.6366684,
+    "ast_hash": "33a3371fbc0a1b92fda821ac3dfe6045",
     "semantic_hash": ""
   },
   "companion/local-ai.mjs": {
-    "mtime": 1792478733.5962393,
-    "seen": 1792478755.293005,
-    "ast_hash": "3386472bbd6c8d0f545d64f3b12a2abe",
+    "mtime": 1792487045.4134276,
+    "seen": 1792487109.6339025,
+    "ast_hash": "46cd12853779dbbfe19bb0a86f463b7d",
     "semantic_hash": ""
   },
   "shared/local-ai.mjs": {
-    "mtime": 1792478688.1726022,
-    "seen": 1792478755.2937212,
-    "ast_hash": "d2250c334c76c9a397559243f6bd3fe7",
+    "mtime": 1792486600.032936,
+    "seen": 1792486976.6143677,
+    "ast_hash": "6fb1b7e37ec46f949dca0ddd99cc806b",
     "semantic_hash": ""
   },
   "src/LocalAIStatus.tsx": {
-    "mtime": 1792478688.6605983,
-    "seen": 1792478755.2939858,
-    "ast_hash": "2464b977e0e8cb15361221fbd92f73b9",
+    "mtime": 1792486601.1209276,
+    "seen": 1792486976.6147814,
+    "ast_hash": "086550dff109f87df6d3c2324216a129",
     "semantic_hash": ""
   },
   "tests/browser/local-ai.spec.mjs": {
@@ -684,9 +684,9 @@
     "semantic_hash": ""
   },
   "tests/companion/local-ai.test.mjs": {
-    "mtime": 1792478734.1042352,
-    "seen": 1792478755.2945228,
-    "ast_hash": "3b75b9c70f293a0f9bcbd6d25825251c",
+    "mtime": 1792486912.16243,
+    "seen": 1792486976.6157346,
+    "ast_hash": "aa27d8bbe68a8fb67822c437903b82b7",
     "semantic_hash": ""
   },
   "tests/fixtures/release-v1.1.mjs": {
@@ -822,9 +822,9 @@
     "semantic_hash": ""
   },
   "worker/knowledge.mjs": {
-    "mtime": 1792477169.0003705,
-    "seen": 1792477222.969742,
-    "ast_hash": "047729bf7ff9609a79acb171dbb2a1fa",
+    "mtime": 1792486599.52894,
+    "seen": 1792486976.6167798,
+    "ast_hash": "679a6838271df377d56d397469f1f307",
     "semantic_hash": ""
   },
   "worker/media-transfer.mjs": {
@@ -891,6 +891,36 @@
     "mtime": 1792485089.3882296,
     "seen": 1792485091.8297634,
     "ast_hash": "22942fb69dff63a12567be2620362459",
+    "semantic_hash": ""
+  },
+  "companion/ai-install.mjs": {
+    "mtime": 1792487015.449662,
+    "seen": 1792487109.6337824,
+    "ast_hash": "3ccb94376a5d62773fcd44de6e071c5c",
+    "semantic_hash": ""
+  },
+  "companion/install-bundle.mjs": {
+    "mtime": 1792486597.0129588,
+    "seen": 1792486976.6129365,
+    "ast_hash": "1e0001af81e06ae25170e4423a7498d8",
+    "semantic_hash": ""
+  },
+  "companion/local-memory.mjs": {
+    "mtime": 1792486910.5144427,
+    "seen": 1792486976.6129448,
+    "ast_hash": "a0de5ef457bb75fec2056f8391b2074d",
+    "semantic_hash": ""
+  },
+  "companion/ollama-host.mjs": {
+    "mtime": 1792487014.9416656,
+    "seen": 1792487109.6340466,
+    "ast_hash": "81ae52ed86de2ea1a03727b3812f1d73",
+    "semantic_hash": ""
+  },
+  "tests/companion/ai-install.test.mjs": {
+    "mtime": 1792487101.9970064,
+    "seen": 1792487109.6365116,
+    "ast_hash": "55e76c4c45697c77027d6f45ef19cea0",
     "semantic_hash": ""
   }
 }

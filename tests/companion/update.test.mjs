@@ -22,6 +22,7 @@ import {
   sha256,
   manifestPath,
   archivePath,
+  sourceVersion,
 } from "../../companion/release.mjs";
 import { production } from "../../companion/locations.mjs";
 
@@ -321,9 +322,13 @@ test("çevrimdışı güncelleme kontrolünde uygulama çalışır, normal kapan
 test("bootstrap aday denetleyicideki sözdizimi hatasından geri döner", async (t) => {
   const f = await fixture(t);
   const bundle = join(f.root, "bundle");
-  await mkdir(join(bundle, "companion"), { recursive: true });
-  for (const name of ["launch.mjs", "locations.mjs", "release.mjs"])
-    await cp(`companion/${name}`, join(bundle, "companion", name));
+  const files = extractRelease(archive, manifest.version);
+  files.set("companion/supervisor.mjs", Buffer.from('console.log("FALLBACK_OK"); process.disconnect();'));
+  files.set("companion/release.json", Buffer.from(JSON.stringify({ protocol: 1, version: sourceVersion(files) })));
+  for (const [path, bytes] of files) {
+    await mkdir(join(bundle, path, ".."), { recursive: true });
+    await writeFile(join(bundle, path), bytes);
+  }
   // A tiny fallback proves the actual bootstrap chooses the previous folder;
   // no model, real social login or production request is made.
   await writeFile(
@@ -455,7 +460,7 @@ test(
           async closeAll() { this.opened.clear(); }
         }
       \` };
-      if (url.endsWith("/companion/local-ai.mjs")) return {format:"module", shortCircuit:true, source: "export class LocalAI { constructor(){this.busy=false;} async execute(){this.busy=true;await new Promise(r=>setTimeout(r,100));this.busy=false;return {ok:true,answer:'fixture',posts:[]};} }"};
+      if (url.endsWith("/companion/local-ai.mjs")) return {format:"module", shortCircuit:true, source: "export class LocalAI { constructor(){this.busy=false;} setup(options){if(options.automatic)process.send({type:'fixture-auto-setup'});} async close(){process.send({type:'fixture-ai-closed'});} async execute(){this.busy=true;await new Promise(r=>setTimeout(r,100));this.busy=false;return {ok:true,answer:'fixture',posts:[]};} }"};
       if (url.endsWith("/companion/research.mjs")) return {format:"module", shortCircuit:true, source: "export class WebsiteResearch { async close() {} }"};
       return next(url, context);
     }});
@@ -489,6 +494,8 @@ test(
     const messages = [];
     child.on("message", (m) => messages.push(m));
     await until(() => messages.some((m) => m.type === "ready"));
+    if (process.platform === "win32")
+      assert.ok(messages.some((m) => m.type === "fixture-auto-setup"), "Windows açılışında AI kurulumu kendiliğinden başlar");
     child.send({
       type: "fixture-command",
       id: "open",
@@ -537,5 +544,6 @@ test(
     child.send({ type: "prepare-update" });
     assert.equal(await exited, 75);
     assert.ok(messages.some((m) => m.type === "update-ready"));
+    assert.ok(messages.some((m) => m.type === "fixture-ai-closed"), "Güncelleme öncesi AI süreç sahibi kapanır");
   },
 );

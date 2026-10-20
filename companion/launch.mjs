@@ -4,8 +4,9 @@ import { createServer } from "node:net";
 import { readFile, writeFile, rename } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { updateDirectory } from "./locations.mjs";
+import { updateDirectory, directory } from "./locations.mjs";
 import { validVersion } from "./release.mjs";
+import { installBundle } from "./install-bundle.mjs";
 
 if (Number(process.versions.node.split(".")[0]) < 24) {
   console.error("Node.js 24 veya üzeri LTS kurun.");
@@ -30,8 +31,10 @@ try {
   }
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
+  process.on("SIGHUP", stop);
+  const installedRoot = await installBundle(bundleRoot, directory);
   do {
-    let root = bundleRoot;
+    let root = installedRoot;
     try {
       const state = JSON.parse(
         await readFile(join(updateDirectory, "current.json"), "utf8"),

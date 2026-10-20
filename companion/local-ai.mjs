@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   LOCAL_MODEL,
   LOCAL_AI_LIMITS,
@@ -12,6 +13,8 @@ import {
   localFail,
 } from "../shared/local-ai.mjs";
 import { directory as dataDirectory } from "./locations.mjs";
+import { installPortable, importLegacyModel, runtimeExecutable, modelDirectory } from "./ai-install.mjs";
+import { LocalMemory } from "./local-memory.mjs";
 
 const postFormat = {
   type: "object",
@@ -31,6 +34,8 @@ export class LocalAI {
     spawnProcess = spawn,
     platform = process.platform,
     runtimePath,
+    installer = installPortable,
+    legacyModels,
   } = {}) {
     Object.assign(this, {
       directory,
@@ -38,22 +43,26 @@ export class LocalAI {
       spawnProcess,
       platform,
       runtimePath,
+      installer,
+      legacyModels,
     });
     this.phase = "unknown";
     this.busy = false;
     this.progress = null;
     this.failure = null;
+    this.memory = new LocalMemory(directory);
+    this.closing = false;
   }
   async http(path, body, timeout = 5000) {
     // Fixed loopback endpoint; no URL/model/command can be supplied by the panel.
-    const response = await this.fetcher(`http://127.0.0.1:11434/api/${path}`, {
+    const response = await this.fetcher(`http://127.0.0.1:11435/api/${path}`, {
       method: body ? "POST" : "GET",
       headers: { "Content-Type": "application/json" },
       body: body ? JSON.stringify(body) : undefined,
       redirect: "error",
-      signal: this.generationSignal
-        ? AbortSignal.any([this.generationSignal, AbortSignal.timeout(timeout)])
-        : AbortSignal.timeout(timeout),
+      signal: AbortSignal.any([AbortSignal.timeout(timeout),
+        ...(this.generationSignal ? [this.generationSignal] : []),
+        ...(this.setupController ? [this.setupController.signal] : [])]),
     });
     if (!response.ok || response.redirected) localFail("OFFLINE");
     return response;
@@ -72,10 +81,7 @@ export class LocalAI {
     for (const path of [
       this.runtimePath,
       process.env.STUDIO_OLLAMA,
-      process.env.LOCALAPPDATA &&
-        join(process.env.LOCALAPPDATA, "Programs/Ollama/ollama.exe"),
-      process.env.PROGRAMFILES &&
-        join(process.env.PROGRAMFILES, "Ollama/ollama.exe"),
+      runtimeExecutable(this.directory),
     ].filter(Boolean)) {
       try {
         await access(path);
@@ -85,28 +91,31 @@ export class LocalAI {
     return null;
   }
   async startServer() {
+    if (this.closing) localFail("OFFLINE");
     try {
       await this.http("tags");
-      return;
-    } catch {}
+      if (this.serverHost?.connected) return;
+      localFail("PORT_IN_USE");
+    } catch (e) { if (e.code === "PORT_IN_USE") throw e; }
     const executable = await this.executable();
     if (!executable) localFail("RUNTIME_MISSING");
-    const child = this.spawnProcess(executable, ["serve"], {
-      stdio: "ignore",
+    await mkdir(this.directory, { recursive: true });
+    await mkdir(modelDirectory(this.directory), { recursive: true });
+    const child = this.spawnProcess(process.execPath,
+      [fileURLToPath(new URL("./ollama-host.mjs", import.meta.url)), executable, modelDirectory(this.directory)], {
+      stdio: ["ignore", "ignore", "ignore", "ipc"],
       windowsHide: true,
       detached: true,
-      env: {
-        ...process.env,
-        OLLAMA_HOST: "127.0.0.1:11434",
-        OLLAMA_NO_CLOUD: "1",
-        OLLAMA_MAX_LOADED_MODELS: "1",
-        OLLAMA_NUM_PARALLEL: "1",
-      },
+      cwd: this.directory,
+      env: process.env,
     });
+    this.serverHost = child;
+    this.serverExited = new Promise((resolve) => { child.once("exit", resolve); child.once("error", resolve); });
     child.on("error", () => {});
     child.unref();
     for (let i = 0; i < 20; i++) {
       await new Promise((r) => setTimeout(r, 500));
+      if (this.closing || child.exitCode !== null) localFail("OFFLINE");
       try {
         await this.http("tags");
         return;
@@ -186,82 +195,69 @@ export class LocalAI {
       busy: this.busy,
       stage: this.stage || null,
       runtime,
+      memory: this.memory.stats(),
     };
   }
   async installRuntime() {
-    if (await this.executable()) return;
+    if (this.runtimePath || process.env.STUDIO_OLLAMA) {
+      if (await this.executable()) return;
+    }
     if (this.platform !== "win32") localFail("RUNTIME_MISSING");
-    await new Promise((resolve, reject) => {
-      // Windows Package Manager verifies the publisher manifest/hash. No shell,
-      // arbitrary executable, installer URL or account credentials are accepted.
-      const child = this.spawnProcess(
-        "winget.exe",
-        [
-          "install",
-          "--id",
-          "Ollama.Ollama",
-          "--exact",
-          "--source",
-          "winget",
-          "--silent",
-          "--accept-package-agreements",
-          "--accept-source-agreements",
-          "--disable-interactivity",
-        ],
-        { stdio: "ignore", windowsHide: true },
-      );
-      const timer = setTimeout(() => {
-        child.kill();
-        reject(Object.assign(new Error(), { code: "INSTALL_FAILED" }));
-      }, 900000);
-      child.once("error", () => {
-        clearTimeout(timer);
-        reject(Object.assign(new Error(), { code: "INSTALL_FAILED" }));
+    try {
+      await this.installer({ directory: this.directory, platform: this.platform,
+        signal: this.setupController?.signal,
+        progress: (value) => { this.progress = value; },
       });
-      child.once("exit", (code) => {
-        clearTimeout(timer);
-        code === 0
-          ? resolve()
-          : reject(Object.assign(new Error(), { code: "INSTALL_FAILED" }));
-      });
-    });
+    } catch { localFail("INSTALL_FAILED"); }
   }
-  setup() {
+  setup({ automatic = false } = {}) {
     if (this.busy) localFail("BUSY");
+    if (this.closing) localFail("OFFLINE");
     this.busy = true;
+    this.setupController = new AbortController();
     this.failure = null;
     this.phase = "installing";
     this.progress = null;
     this.setupTask = (async () => {
+      this.memory.initialize();
+      this.stage = "AI çalıştırıcısı aynı kurulum klasörüne hazırlanıyor";
       await this.installRuntime();
+      this.setupController.signal.throwIfAborted();
+      this.stage = "Önceki model dosyaları kontrol ediliyor";
+      await importLegacyModel(this.directory, this.legacyModels);
       await this.startServer();
-      this.phase = "downloading";
-      const response = await this.http(
-        "pull",
-        { model: LOCAL_MODEL, stream: true },
-        3600000,
-      );
-      let pending = "";
-      const decoder = new TextDecoder();
-      for await (const bytes of response.body) {
-        pending += decoder.decode(bytes, { stream: true });
-        if (pending.length > 65536) localFail("FAILED");
-        let index;
-        while ((index = pending.indexOf("\n")) >= 0) {
-          const line = pending.slice(0, index);
-          pending = pending.slice(index + 1);
-          if (!line.trim()) continue;
-          const event = JSON.parse(line);
-          if (event.error) localFail("FAILED");
-          if (event.total > 0 && event.completed >= 0)
-            this.progress = Math.max(
-              0,
-              Math.min(1, event.completed / event.total),
-            );
+      let installed;
+      try { installed = await this.installedModel(); }
+      catch (e) { if (e.code !== "MODEL_MISSING") throw e; }
+      if (!installed) {
+        this.phase = "downloading";
+        this.stage = "Küçük model indiriliyor; sosyal hesap girişlerine devam edebilirsiniz";
+        const response = await this.http(
+          "pull",
+          { model: LOCAL_MODEL, stream: true },
+          3600000,
+        );
+        let pending = "";
+        const decoder = new TextDecoder();
+        for await (const bytes of response.body) {
+          pending += decoder.decode(bytes, { stream: true });
+          if (pending.length > 65536) localFail("FAILED");
+          let index;
+          while ((index = pending.indexOf("\n")) >= 0) {
+            const line = pending.slice(0, index);
+            pending = pending.slice(index + 1);
+            if (!line.trim()) continue;
+            const event = JSON.parse(line);
+            if (event.error) localFail("FAILED");
+            if (event.total > 0 && event.completed >= 0)
+              this.progress = Math.max(0, Math.min(1, event.completed / event.total));
+          }
         }
+        if (pending.trim() && JSON.parse(pending).error) localFail("FAILED");
       }
-      if (pending.trim() && JSON.parse(pending).error) localFail("FAILED");
       const model = await this.installedModel();
+      const saved = JSON.parse(await readFile(join(this.directory, "local-ai-model.json"), "utf8").catch(() => "null"));
+      if (automatic && saved?.digest && saved.digest !== model.digest) localFail("MODEL_CHANGED");
       const info = await this.json("show", { model: LOCAL_MODEL });
       if (
         !Array.isArray(info.capabilities) ||
@@ -274,6 +270,8 @@ export class LocalAI {
         JSON.stringify({ model: LOCAL_MODEL, digest: model.digest }),
         { mode: 0o600 },
       );
+      this.stage = "Model GPU/CPU belleğine yükleniyor";
+      await this.warmModel();
       this.phase = "ready";
       this.progress = null;
     })()
@@ -283,12 +281,15 @@ export class LocalAI {
           "RUNTIME_MISSING",
           "INSTALL_FAILED",
           "MODEL_CHANGED",
+          "PORT_IN_USE",
         ].includes(e.code)
           ? e.code
           : "FAILED";
       })
       .finally(() => {
         this.busy = false;
+        this.setupController = null;
+        this.stage = null;
       });
     return {
       model: LOCAL_MODEL,
@@ -297,6 +298,21 @@ export class LocalAI {
       busy: true,
       code: null,
     };
+  }
+  async warmModel() {
+    const response = await this.json("generate", { model: LOCAL_MODEL, prompt: "", stream: false,
+      keep_alive: -1, options: { num_ctx: LOCAL_AI_LIMITS.context, num_thread: 4, num_batch: 128 } }, 180000);
+    if (response.done !== true) localFail("OFFLINE");
+  }
+  async close() {
+    if (this.closing) return;
+    this.closing = true;
+    this.setupController?.abort();
+    this.generationController?.abort();
+    if (this.serverHost?.connected) this.serverHost.send({ type: "stop" });
+    await Promise.race([this.setupTask || Promise.resolve(), new Promise((r) => setTimeout(r, 2000))]);
+    if (this.serverExited) await Promise.race([this.serverExited, new Promise((r) => setTimeout(r, 5000))]);
+    this.serverHost = null;
   }
   async chat(messages, { json = false, tokens = 700 } = {}) {
     const hasImage = messages.some(
@@ -317,7 +333,7 @@ export class LocalAI {
         model: LOCAL_MODEL,
         stream: false,
         think: false,
-        keep_alive: "2m",
+        keep_alive: -1,
         messages,
         ...(json ? { format: postFormat } : {}),
         options: {
@@ -371,6 +387,7 @@ export class LocalAI {
       );
       if (saved?.model !== LOCAL_MODEL || saved.digest !== installed.digest)
         localFail("MODEL_MISSING");
+      this.memory.context(input);
       let observation = input.resume?.observation || null;
       this.stage = input.image
         ? "Görsel inceleniyor"
@@ -393,16 +410,19 @@ export class LocalAI {
         );
       const messages = [
         { role: "system", content: localSystem },
-        { role: "user", content: localReference(input, observation) },
+        { role: "user", content: localReference({ ...input, ...this.memory.current(input.companyId) }, observation) },
       ];
-      if (input.mode === "chat")
-        return {
+      if (input.mode === "chat") {
+        const result = {
           ok: true,
           companyId: input.companyId,
           answer: await this.chat(messages, { tokens: 1000 }),
           posts: [],
           observation,
         };
+        this.memory.generated(input.companyId, input, result);
+        return result;
+      }
       const posts = [...(input.resume?.posts || [])];
       onProgress({ posts: [...posts], observation });
       for (const platform of input.selected) {
@@ -447,7 +467,7 @@ export class LocalAI {
         posts.push(post);
         onProgress({ posts: [...posts], observation });
       }
-      return {
+      const result = {
         ok: true,
         companyId: input.companyId,
         answer:
@@ -455,6 +475,8 @@ export class LocalAI {
         posts,
         observation,
       };
+      this.memory.generated(input.companyId, input, result);
+      return result;
     } catch (e) {
       if (this.generationController?.signal.aborted) localFail("CANCELLED");
       throw e;

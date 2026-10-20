@@ -58,14 +58,16 @@ async function fixture(t, fn, { measure = false } = {}) {
   );
   const calls = [];
   const fetcher = async (url, opts) => {
-    assert.ok(url.startsWith("http://127.0.0.1:11434/api/"));
+    assert.ok(url.startsWith("http://127.0.0.1:11435/api/"));
     assert.equal(opts.redirect, "error");
     const body = opts.body ? JSON.parse(opts.body) : null;
     calls.push({ url, body });
     if (url.endsWith("/ps") && !measure) return Response.json({ models: [] });
     return fn ? fn(url, body, opts) : Response.json({ models: [model] });
   };
-  return { directory, calls, ai: new LocalAI({ directory, fetcher }) };
+  const ai = new LocalAI({ directory, fetcher });
+  ai.startServer = async () => {};
+  return { directory, calls, ai };
 }
 function responseFor(platform) {
   return {
@@ -82,7 +84,7 @@ test("küçük model, yalnız loopback, sabit kaynak ve sınırlı GPU bağlamı
     if (url.endsWith("tags")) return Response.json({ models: [model] });
     assert.equal(body.model, LOCAL_MODEL);
     assert.equal(body.think, false);
-    assert.equal(body.keep_alive, "2m");
+    assert.equal(body.keep_alive, -1);
     assert.equal(body.options.num_ctx, 16384);
     assert.equal(body.options.num_thread, 4);
     assert.ok(body.messages.some((m) => m.content.includes("Kurgu Mobilya")));
@@ -265,7 +267,7 @@ test("üretim sürerken ikinci üretim/kurulum reddedilir; durum sorgusu engelle
 
 test("kurulum arka planda ilerler; model özeti doğrulanır ve profil/cihaz verileri korunur", async (t) => {
   const f = await fixture(t, (url) =>
-    url.endsWith("show")
+    url.endsWith("generate") ? Response.json({ done: true }) : url.endsWith("show")
       ? Response.json({ capabilities: ["completion", "vision"] })
       : url.endsWith("pull")
         ? new Response('{"total":100,"completed":50}\n{"status":"success"}\n')
@@ -287,21 +289,32 @@ test("kurulum arka planda ilerler; model özeti doğrulanır ve profil/cihaz ver
   );
 });
 
-test("Windows kurucusu yalnızca sabit WinGet paketi çağırır, shell açılmaz", async (t) => {
+test("Otomatik açılış hazır modeli yeniden indirmez; değişmiş onaylı model kendiliğinden kabul edilmez", async (t) => {
+  let changed = false;
+  const f = await fixture(t, (url) => url.endsWith("show")
+    ? Response.json({ capabilities: ["completion", "vision"] })
+    : url.endsWith("generate") ? Response.json({ done: true })
+    : Response.json({ models: [{ ...model, digest: changed ? "b".repeat(64) : model.digest }] }));
+  f.ai.installRuntime = async () => {};
+  f.ai.setup({ automatic: true }); await f.ai.setupTask;
+  assert.equal(f.ai.phase, "ready");
+  assert.equal(f.calls.filter((c) => c.url.endsWith("pull")).length, 0);
+  assert.equal(f.calls.find((c) => c.url.endsWith("generate")).body.keep_alive, -1);
+  changed = true;
+  f.ai.setup({ automatic: true }); await f.ai.setupTask;
+  assert.equal(f.ai.failure, "MODEL_CHANGED");
+  assert.equal(JSON.parse(await readFile(join(f.directory, "local-ai-model.json"))).digest, model.digest);
+});
+
+test("Windows kurucusu sabit portable AI paketini aynı veri klasörüne hazırlar", async (t) => {
   const f = await fixture(t);
   const calls = [];
   f.ai.platform = "win32";
   f.ai.executable = async () => null;
-  f.ai.spawnProcess = (exe, args, options) => {
-    calls.push({ exe, args, options });
-    const child = new EventEmitter();
-    setImmediate(() => child.emit("exit", 0));
-    return child;
-  };
+  f.ai.installer = async (options) => calls.push(options);
   await f.ai.installRuntime();
-  assert.equal(calls[0].exe, "winget.exe");
-  assert.ok(calls[0].args.includes("Ollama.Ollama"));
-  assert.equal(calls[0].options.shell, undefined);
+  assert.equal(calls[0].directory, f.directory);
+  assert.equal(calls[0].platform, "win32");
 });
 
 test("v1.1 güncelleyicisi AI eklenen yeni kaynak paketini doğrulayarak açabilir", async (t) => {

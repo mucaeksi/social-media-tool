@@ -153,6 +153,7 @@ function connect(config) {
       commandsInFlight++;
       try {
         const result = await researcher.execute(message.input);
+        if (message.input.companyId) localAI.memory.research(message.input.companyId, result);
         if (socket.readyState === WebSocket.OPEN)
           socket.send(
             JSON.stringify({ type: "research-result", id: message.id, result }),
@@ -255,6 +256,7 @@ async function stop(code = 0) {
   clearInterval(heartbeat);
   socket?.close();
   localAI.generationController?.abort();
+  await localAI.close();
   await researcher?.close();
   await pool?.queue;
   await pool?.closeAll();
@@ -266,6 +268,7 @@ async function stop(code = 0) {
 }
 process.on("SIGINT", () => void stop());
 process.on("SIGTERM", () => void stop());
+process.on("SIGHUP", () => void stop());
 // Only the local supervisor can request a restart. Cloud commands cannot update
 // or run code. Never interrupt an open login or an in-flight/queued operation.
 process.on("message", (message) => {
@@ -286,6 +289,10 @@ try {
     throw new Error("Node.js 24 veya üzerini kurun.");
   const executablePath = await firefoxPath();
   researcher = new WebsiteResearch({ executablePath });
+  if (process.platform === "win32") {
+    console.log("Yerel AI otomatik hazırlanıyor. Dosyalar SosyalStudio klasöründe tutulur; eşleştirme ve hesap girişlerine devam edebilirsiniz.");
+    localAI.setup({ automatic: true });
+  }
   const config = await configuration();
   pool = new ProfileBrowsers({
     directory: join(directory, "profiles"),
@@ -294,6 +301,7 @@ try {
   connect(config);
   process.send?.({ type: "ready" });
 } catch (error) {
+  await localAI.close();
   console.error(error.message);
   process.exitCode = 1;
   process.disconnect?.();

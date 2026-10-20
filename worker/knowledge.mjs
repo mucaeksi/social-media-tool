@@ -102,7 +102,7 @@ export function registerKnowledge(app) {
     const response = await computerBroker(c.env, {
       action: "research",
       deviceId: device.id,
-      input: payload,
+      input: { ...payload, companyId: input.companyId },
     });
     const result = await response.json();
     if (!response.ok)

@@ -52,7 +52,8 @@ export const localErrors = {
   RUNTIME_MISSING:
     "AI çalıştırıcısı bulunamadı. Yerel AI kurulumu düğmesini kullanın.",
   INSTALL_FAILED:
-    "Otomatik kurulum tamamlanamadı. Windows App Installer/WinGet ve interneti kontrol edin veya Ollama'yı resmi sitesinden kurun.",
+    "Otomatik AI kurulumu tamamlanamadı. İnterneti ve kurulum klasöründeki boş alanı kontrol edip tekrar deneyin.",
+  PORT_IN_USE: "AI için ayrılmış yerel bağlantı başka bir süreçte kullanımda. Yardımcıyı kapatıp yeniden açın.",
   MODEL_MISSING: "Küçük model henüz indirilmedi. Yerel AI kurulumunu başlatın.",
   MODEL_CHANGED:
     "Modelin boyutu, özeti veya 4-bit biçimi doğrulanamadı. Kurulum düğmesiyle yeniden doğrulayın.",

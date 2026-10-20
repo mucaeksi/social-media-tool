@@ -3,6 +3,7 @@ import { Download, RefreshCw } from "lucide-react";
 import { api } from "./api.ts";
 
 type Status = {
+  memory?: { sources: number; generations: number; bytes: number };
   runtime?: {
     loaded: boolean;
     gpuBytes: number | null;
@@ -89,14 +90,14 @@ export function LocalAIStatus({
         </span>
       </div>
       <p>
-        Küçük model yalnızca içerik istediğinizde çalışır; son işlemden 2 dakika
-        sonra bellekten çıkarılır. Şirket hafızası ve taslaklar Cloudflare’de
-        saklanır. Cloudflare AI kotası kullanılmaz.
+        Yardımcı açılınca Ollama başlar ve model bellekte hazır tutulur.
+        Yardımcı kapanınca model ve ona ait Ollama süreci kapanır.
+        Cloudflare AI kotası kullanılmaz.
       </p>
       <p>
-        İlk kurulum Windows’ta Ollama çalıştırıcısını ve birkaç GB’lık modeli
-        indirir. Hesap girişleriniz korunur. Bilgisayar ve yardımcı açık
-        kalmalı.
+        İlk açılışta AI otomatik kurulur. Çalıştırıcı, model ve knowledge.sqlite
+        veritabanı aynı SosyalStudio klasörünün ai bölümünde tutulur.
+        Şirket hafızası Cloudflare’de de korunur; mevcut hesap girişleri silinmez.
       </p>
       {status?.progress != null && (
         <progress
@@ -106,6 +107,8 @@ export function LocalAIStatus({
         />
       )}
       {status?.stage && <p role="status">{status.stage}</p>}
+      {status?.memory && <p>Yerel hafıza: {status.memory.sources} kaynak, {status.memory.generations} taslak/yanıt · {(status.memory.bytes / 1024 ** 2).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} MB.
+        Kaynak metinleri onaylanmadan kesin şirket bilgisi olarak kullanılmaz.</p>}
       {status && (
         <p>
           {status.runtime
@@ -132,16 +135,8 @@ export function LocalAIStatus({
       )}
       {status?.phase === "error" && (
         <p role="alert">
-          Kurulum tamamlanamadı. İnternet/WinGet durumunu kontrol edin.
-          Gerekirse{" "}
-          <a
-            href="https://ollama.com/download/windows"
-            target="_blank"
-            rel="noreferrer"
-          >
-            resmi Ollama kurulumunu
-          </a>{" "}
-          yapıp tekrar deneyin.
+          Kurulum tamamlanamadı. İnterneti ve boş disk alanını kontrol edip
+          aynı kurulum düğmesiyle tekrar deneyin. Ayrı Ollama kurulumu gerekmez.
         </p>
       )}
       {error && (
