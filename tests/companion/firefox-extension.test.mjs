@@ -54,6 +54,7 @@ test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve 
     assert.equal(managed.changed, true);
     browser = await puppeteer.launch({ browser: "firefox", executablePath: managedExecutable, headless: true, userDataDir: profile,
       // Test-only: WebDriver may inspect the installed extension's own popup.
+      env: { ...process.env, MOZ_REMOTE_ALLOW_SYSTEM_ACCESS: "1" },
       args: ["--remote-allow-system-access"],
       extraPrefsFirefox: { "xpinstall.signatures.required": false, "extensions.autoDisableScopes": 0, "extensions.startupScanScopes": 1, "remote.system-access-check.enabled": false, "extensions.webextensions.uuids": JSON.stringify({ [extensionId]: uuid }) } });
     // No installExtension call: the dedicated profile loads the extension on startup.
