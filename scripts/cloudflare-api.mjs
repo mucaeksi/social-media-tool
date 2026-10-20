@@ -30,21 +30,52 @@ export async function cfApi(
     throw new Error(
       "GitHub repository secret CLOUDFLARE_API eksik. Secret değeri kaynak koddan okunmaz.",
     );
-  const response = await fetch(
-    `https://api.cloudflare.com/client/v4${endpoint}`,
-    {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(body ? { "Content-Type": "application/json" } : {}),
+  let response;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    response = await fetch(
+      `https://api.cloudflare.com/client/v4${endpoint}`,
+      {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          ...(body ? { "Content-Type": "application/json" } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: AbortSignal.timeout(30000),
+        redirect: "error",
       },
-      body: body ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(30000),
-    },
-  );
+    );
+    // Only repeat reads with a known temporary upstream failure. A write may
+    // already have succeeded; retrying it could duplicate a resource or action.
+    if (
+      method !== "GET" ||
+      ![502, 503, 504].includes(response.status) ||
+      attempt === 2
+    )
+      break;
+    await response.body?.cancel();
+    await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+  }
   if (allow404 && response.status === 404) return null;
   if (response.status === 204) return null;
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+    if (!data || typeof data !== "object" || Array.isArray(data))
+      throw new Error();
+  } catch {
+    // Never put an HTML error body (which may contain reflected credentials or
+    // provider internals) in CI logs or the committed deployment receipt.
+    throw Object.assign(
+      new Error(
+        safeMessage(
+          `Cloudflare ${method} ${endpoint}: HTTP ${response.status}. Geçerli JSON yanıtı alınamadı; dağıtım durduruldu.`,
+        ),
+      ),
+      { status: response.status, codes: [] },
+    );
+  }
   if (!response.ok || data.success === false) {
     const details = (data.errors ?? [])
       .map((error) => `${error.code}: ${error.message}`)

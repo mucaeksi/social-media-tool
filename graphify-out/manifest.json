@@ -162,9 +162,9 @@
     "semantic_hash": ""
   },
   "scripts/cloudflare-api.mjs": {
-    "mtime": 1792471950.3894734,
-    "seen": 1792473384.1757762,
-    "ast_hash": "6fbb4aa9bcd42d4c36393e10737bf20d",
+    "mtime": 1792473678.0595016,
+    "seen": 1792473679.695613,
+    "ast_hash": "b3edac34ed4b8b3a9a01280a4529fca2",
     "semantic_hash": ""
   },
   "scripts/deploy-cloudflare.mjs": {
@@ -705,6 +705,12 @@
     "mtime": 1792473374.7976937,
     "seen": 1792473384.175859,
     "ast_hash": "4a46434a4e4ba73789416c308b668038",
+    "semantic_hash": ""
+  },
+  "tests/deploy/cloudflare-api.test.mjs": {
+    "mtime": 1792473660.8007278,
+    "seen": 1792473671.6630483,
+    "ast_hash": "2e817971f8f7e56a94a0fe4469750e13",
     "semantic_hash": ""
   }
 }
