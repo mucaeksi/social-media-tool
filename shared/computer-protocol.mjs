@@ -28,6 +28,7 @@ export function computerCommand(value) {
     !value ||
     ![
       "open",
+      "workspace",
       "screen",
       "click",
       "type",

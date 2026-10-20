@@ -13,6 +13,10 @@
 
 Site metni, kullanıcı özeti ve görsel yazıları referans verisidir. Bunlar araç/sistem talimatına dönüştürülmez. Model ağırlıkları eğitilmez. Otomatik arka plan site taraması yapılmaz; araştırmayı kullanıcı başlatır.
 
+## Tek şirket penceresi
+
+Yardımcı 1.4 ile **Hesap bağlantıları → Şirket Firefox’unu aç**, kayıtlı sosyal ağları ortak şirket profilinde sekme olarak açar. Ağlara bu pencerede giriş yapın; normal Firefox’taki şifreler otomatik aktarılmaz. Panelde **Sosyal ağ seç** ile geçiş yapılır. Aynı ağdaki ek hesaplar ayrı profil kullanır; önce mevcut ekranı kapatın. Eski hesap profilleri korunur ve yeni ortak profile otomatik birleştirilmez. Kurulum ayrıntıları [Windows rehberindedir](SIRKET_BILGISAYARI.md). Bu değişiklik diğer platformların otomatik yayın adaptörlerinin tamamlandığı anlamına gelmez.
+
 ## Firefox görevleri
 
 **Hesap bağlantıları → Hesap ekranını aç → Firefox görevleri**:

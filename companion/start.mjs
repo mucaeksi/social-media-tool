@@ -121,7 +121,7 @@ function connect(config) {
     socket.send(
       JSON.stringify({
         type: "hello",
-        capabilities: ["local-ai-v1", "research-v1", "browser-tasks-v1"],
+        capabilities: ["local-ai-v1", "research-v1", "browser-tasks-v1", "company-tabs-v1"],
       }),
     );
     heartbeat = setInterval(() => {

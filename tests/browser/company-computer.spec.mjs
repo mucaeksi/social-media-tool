@@ -15,6 +15,7 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
       profileUrl: "https://x.com/fixture",
     };
   const viewId = crypto.randomUUID(),
+    selectedViewId = crypto.randomUUID(),
     frame = (
       await sharp({
         create: { width: 1280, height: 800, channels: 3, background: "white" },
@@ -24,12 +25,14 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
     ).toString("base64");
   let paired = false,
     online = false;
+  const secondAccount = { ...account, id: crypto.randomUUID(), platform: "facebook", label: "Firma Facebook" };
   try {
     for (const name of ["Bilgisayar şirket A", "Bilgisayar şirket B"])
       companies.push(
         await (await request.post("/api/companies", { data: { name } })).json(),
       );
     account.companyId = companies[0].id;
+    secondAccount.companyId = companies[0].id;
     await page.route("**/api/health", async (route) => {
       const response = await route.fetch();
       await route.fulfill({
@@ -42,7 +45,7 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
         json:
           new URL(route.request().url()).searchParams.get("companyId") ===
           account.companyId
-            ? [account]
+            ? [account, secondAccount]
             : [],
       }),
     );
@@ -54,6 +57,7 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
           json: {
             devices: paired ? [device] : [],
             onlineDeviceId: online ? device.id : null,
+            companyTabs: true,
             active: null,
             commandsUsed: 0,
             dailyCommands: 20000,
@@ -75,8 +79,8 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
           input.action === "close"
             ? { closed: true, loginVerified: false }
             : {
-                accountId: account.id,
-                viewId,
+                accountId: path.split("/")[4],
+                viewId: path.includes(secondAccount.id) ? selectedViewId : viewId,
                 frame,
                 width: 1280,
                 height: 800,
@@ -98,7 +102,7 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
       page.getByRole("link", { name: "Windows yardımcısını indir" }),
     ).toHaveAttribute("href", "/indir/sosyal-studio-bilgisayar.zip");
     await expect(
-      page.getByRole("button", { name: "Hesap ekranını aç", exact: true }),
+      page.getByRole("button", { name: "Hesap ekranını aç", exact: true }).first(),
     ).toBeDisabled();
     await page
       .getByRole("button", { name: "Bilgisayarı eşleştir", exact: true })
@@ -115,7 +119,7 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
       page.getByText("Bilgisayar çevrimiçi", { exact: true }),
     ).toBeVisible();
     await page
-      .getByRole("button", { name: "Hesap ekranını aç", exact: true })
+      .getByRole("button", { name: "Şirket Firefox’unu aç", exact: true })
       .click();
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("img")).toBeVisible();
@@ -138,13 +142,17 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
     await expect(
       dialog.getByLabel("Seçili alana yazılacak metin (gizli gösterilir)"),
     ).toHaveValue("");
+    expect(commands.some((c) => c.action === "workspace")).toBe(true);
+    await dialog.getByLabel("Sosyal ağ seç").selectOption(secondAccount.id);
+    await expect(dialog.getByRole("heading", { name: "Firma Facebook" })).toBeVisible();
+    expect(commands.some((c) => c.action === "open" && c.switchAccount && c.previousViewId === viewId && c.path.includes(secondAccount.id))).toBe(true);
     await page
       .getByRole("combobox", { name: "Aktif şirket" })
       .selectOption(companies[1].id, { force: true });
     await expect(dialog).toHaveCount(0);
     await expect
       .poll(() =>
-        commands.some((c) => c.action === "close" && c.viewId === viewId),
+        commands.some((c) => c.action === "close" && c.viewId === selectedViewId),
       )
       .toBe(true);
     await expect(page.getByText("Firma X", { exact: true })).toHaveCount(0);

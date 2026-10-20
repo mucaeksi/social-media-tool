@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { bodyLimit } from "hono/body-limit";
 import { selectedSchema } from "../shared/schemas.mjs";
-import { computerBroker } from "./company-computer.mjs";
+import { computerBroker, computerAccount } from "./company-computer.mjs";
 import { computerError } from "../shared/computer-protocol.mjs";
 import {
   LOCAL_MODEL,
@@ -379,12 +379,7 @@ export function registerLocalAI(app) {
       deviceId: device.id,
       userId: c.get("identity").id,
       viewId: input.viewId,
-      account: {
-        id: row.id,
-        companyId: row.company_id,
-        platform: row.platform,
-        profileUrl: row.profile_url,
-      },
+      account: await computerAccount(c.env.DB, row),
       command: { action: "read" },
     });
     const result = await response.json();

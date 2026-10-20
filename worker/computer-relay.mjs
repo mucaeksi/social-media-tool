@@ -148,6 +148,7 @@ export class CompanyComputer {
       if (input.action === "status")
         return Response.json({
           onlineDeviceId: sockets[0]?.deserializeAttachment().id ?? null,
+          companyTabs: Boolean(sockets[0]?.deserializeAttachment().companyTabs),
           active: lease
             ? {
                 accountId: lease.accountId,
@@ -167,6 +168,10 @@ export class CompanyComputer {
           "Şirket bilgisayarı çevrimdışı. Bilgisayarda Sosyal Studio yardımcısını başlatın.",
         );
       const { command, account, userId } = input;
+      const opening = ["open", "workspace"].includes(command.action);
+      if ((command.action === "workspace" || input.switchAccount) &&
+          !socket.deserializeAttachment().companyTabs)
+        throw computerError(409, "Tek pencereli Firefox için açık hesapları kapatıp yardımcı güncellemesini bekleyin.");
       if (
         (lease?.exclusiveJobId && lease.exclusiveJobId !== input.jobId) ||
         (input.jobExclusive && lease)
@@ -175,9 +180,15 @@ export class CompanyComputer {
           409,
           "Hesap ekranı başka bir görevde. İşlem kontrolü ele geçirmedi.",
         );
+      const switching = opening && input.switchAccount && lease &&
+        !lease.exclusiveJobId && lease.userId === userId &&
+        lease.companyId === account.companyId &&
+        lease.account?.profileScope === "company" && account.profileScope === "company" &&
+        lease.viewId === input.previousViewId;
       if (
         ![
           "open",
+          "workspace",
           "screen",
           "click",
           "type",
@@ -193,13 +204,13 @@ export class CompanyComputer {
           409,
           "Bu işlem için yardımcı güncellemesi gerekli. Açık hesapları kapatıp güncellemeyi bekleyin.",
         );
-      if (lease && (lease.userId !== userId || lease.accountId !== account.id))
+      if (lease && !switching && (lease.userId !== userId || lease.accountId !== account.id))
         throw computerError(
           409,
           "Başka bir hesap ekranı kullanımda. Önce onu kapatın.",
         );
       if (
-        command.action !== "open" &&
+        !opening &&
         (!lease ||
           lease.viewId !== input.viewId ||
           lease.companyId !== account.companyId)
@@ -227,7 +238,11 @@ export class CompanyComputer {
         second,
         burst: burst + 1,
       });
-      if (!lease) {
+      if (switching) {
+        lease = { ...lease, accountId: account.id, account,
+          viewId: crypto.randomUUID(), expiresAt: Date.now() + COMPUTER_LIMITS.leaseMs };
+        await this.ctx.storage.put("lease", lease);
+      } else if (!lease) {
         lease = {
           accountId: account.id,
           companyId: account.companyId,
@@ -254,7 +269,7 @@ export class CompanyComputer {
           accountId: account.id,
         });
       } catch (error) {
-        if (command.action === "open") await this.ctx.storage.delete("lease");
+        if (opening) await this.ctx.storage.delete("lease");
         throw error;
       }
     } catch (error) {
@@ -480,6 +495,8 @@ export class CompanyComputer {
         tasks:
           Array.isArray(value.capabilities) &&
           value.capabilities.includes("browser-tasks-v1"),
+        companyTabs:
+          Array.isArray(value.capabilities) && value.capabilities.includes("company-tabs-v1"),
       });
       return;
     }

@@ -49,7 +49,9 @@ export class ProfileBrowsers {
     )
       throw new Error("Hesap kimliği geçersiz.");
     const config = this.platforms[account.platform],
-      key = `${account.companyId}-${account.id}`;
+      shared = account.profileScope === "company",
+      key = shared ? `company-${account.companyId}` : `${account.companyId}-${account.id}`;
+    const opening = ["open", "workspace"].includes(command.action);
     let entry = this.opened.get(key);
     if (command.action === "close") {
       const authDetected = entry
@@ -67,7 +69,7 @@ export class ProfileBrowsers {
       };
     }
     if (!entry) {
-      if (command.action !== "open")
+      if (!opening)
         throw new Error("Önce hesap ekranını açın.");
       // Keep a bounded number of browser processes. Closed profiles keep their
       // complete local browser data, including IndexedDB and persistent cookies.
@@ -113,6 +115,8 @@ export class ProfileBrowsers {
                 "browser.startup.page": 3,
                 "browser.sessionstore.resume_from_crash": true,
                 "security.fileuri.strict_origin_policy": true,
+                "signon.rememberSignons": true,
+                "signon.autofillForms": true,
               },
             }
           : {}),
@@ -124,21 +128,22 @@ export class ProfileBrowsers {
                 ...(this.testing ? ["--no-sandbox"] : []),
               ],
       });
-      entry = { browser, existing };
+      entry = { browser, existing, accountPages: new Map() };
       this.opened.set(key, entry);
       browser.on("disconnected", () => {
         if (this.opened.get(key) === entry) this.opened.delete(key);
       });
     }
     const pages = await entry.browser.pages();
+    const remembered = shared ? entry.accountPages.get(account.id) : entry.selectedPage;
     let page =
-      (entry.selectedPage &&
-      pages.includes(entry.selectedPage) &&
-      this.allowed(entry.selectedPage.url(), config)
-        ? entry.selectedPage
+      (remembered &&
+      pages.includes(remembered) &&
+      this.allowed(remembered.url(), config)
+        ? remembered
         : null) ||
-      pages.find((p) => this.allowed(p.url(), config)) ||
-      pages[0] ||
+      pages.find((p) => this.platformPage(p.url(), config)) ||
+      pages.find((p) => p.url() === "about:blank") ||
       (await entry.browser.newPage());
     await page.setViewport({ width: 1280, height: 800 });
     let extra = {};
@@ -177,7 +182,7 @@ export class ProfileBrowsers {
     // A dedicated app profile only. Its debugging transport stays on this computer;
     // no public debugging port, arbitrary URL, script or local file is exposed.
     if (
-      command.action === "open" ||
+      opening ||
       command.action === "login" ||
       command.action === "profile"
     ) {
@@ -186,17 +191,42 @@ export class ProfileBrowsers {
         : accountProfileUrl(account.profileUrl, account.platform);
       const target =
         command.action === "login" ||
-        (command.action === "open" && !entry.existing)
+        (opening && !entry.existing)
           ? config.login
           : profile || config.home;
       if (!this.allowed(target, config))
         throw new Error("Sosyal ağ dışındaki adres açılamaz.");
-      if (command.action !== "open" || !this.allowed(page.url(), config))
+      if (!opening || !this.allowed(page.url(), config))
         await page
           .goto(target, { waitUntil: "domcontentloaded", timeout: 18000 })
           .catch(() => {});
     }
-    if (!["open", "screen"].includes(command.action)) {
+    if (command.action === "workspace") {
+      if (!shared || !Array.isArray(account.workspaceAccounts) ||
+          account.workspaceAccounts.length > 9)
+        throw new Error("Şirket sekmeleri doğrulanamadı.");
+      const seen = new Set();
+      const targets = account.workspaceAccounts.map((target) => {
+        if (!uuid.test(target.id) || target.companyId !== account.companyId ||
+            !this.platforms[target.platform] || seen.has(target.platform))
+          throw new Error("Şirket sekmeleri doğrulanamadı.");
+        seen.add(target.platform);
+        return target;
+      });
+      await Promise.all(targets.map(async (target) => {
+        const cfg = this.platforms[target.platform];
+        const current = await entry.browser.pages();
+        const saved = entry.accountPages.get(target.id);
+        let tab = saved && current.includes(saved) && this.allowed(saved.url(), cfg)
+          ? saved : current.find((p) => this.platformPage(p.url(), cfg));
+        if (!tab) {
+          tab = await entry.browser.newPage();
+          await tab.goto(cfg.login, { waitUntil: "domcontentloaded", timeout: 8000 }).catch(() => {});
+        }
+        entry.accountPages.set(target.id, tab);
+      }));
+    }
+    if (!opening && command.action !== "screen") {
       if (!this.allowed(page.url(), config))
         throw new Error("İşlem yalnızca bu sosyal ağın ekranında yapılabilir.");
       await page.bringToFront();
@@ -233,6 +263,8 @@ export class ProfileBrowsers {
     }
     if (!this.allowed(page.url(), config))
       throw new Error("Sosyal ağ dışındaki ekran iletilemez.");
+    entry.accountPages.set(account.id, page);
+    await page.bringToFront();
     if (command.noFrame)
       return {
         ...extra,
@@ -277,7 +309,7 @@ export class ProfileBrowsers {
         (u.protocol === "https:" ||
           (this.testing &&
             u.protocol === "http:" &&
-            u.hostname === "127.0.0.1")) &&
+            /^127\.\d+\.\d+\.\d+$/.test(u.hostname))) &&
         !u.username &&
         !u.password &&
         (this.testing || !u.port || u.port === "443") &&
@@ -292,5 +324,9 @@ export class ProfileBrowsers {
       [...this.opened.values()].map((e) => e.browser.close()),
     );
     this.opened.clear();
+  }
+  platformPage(value, config) {
+    if (!this.allowed(value, config)) return false;
+    return domainMatches(new URL(value).hostname, [new URL(config.home).hostname.replace(/^www\./, "")]);
   }
 }

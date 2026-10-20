@@ -234,6 +234,8 @@ test("Kimliği doğrulanmış yardımcı hesabı açar; kullanıcı/hesap/görü
   });
   const status = await (await request("/api/computer/status")).json();
   assert.equal(status.onlineDeviceId, device.id);
+  assert.equal(status.companyTabs, false);
+  assert.equal((await command(accountId, { action: "workspace" })).status, 409);
   const opened = await command(accountId, { action: "open" });
   assert.equal(opened.status, 200);
   const view = await opened.json();

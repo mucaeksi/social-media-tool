@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { computerBroker } from "./company-computer.mjs";
+import { computerBroker, computerAccount } from "./company-computer.mjs";
 import { transferMedia } from "./media-transfer.mjs";
 import { publicationURL, publicationBelongsTo } from "../shared/scheduling.mjs";
 import { createCloudStore } from "./store.mjs";
@@ -75,13 +75,7 @@ export async function executePublication(c, id) {
   const snapshot = JSON.parse(row.snapshot);
   let viewId,
     sending = false;
-  const target = {
-    id: account.id,
-    companyId: account.company_id,
-    platform: account.platform,
-    label: account.label,
-    profileUrl: account.profile_url,
-  };
+  const target = await computerAccount(c.env.DB, account);
   const command = async (value) => {
     const response = await broker({
       action: "command",

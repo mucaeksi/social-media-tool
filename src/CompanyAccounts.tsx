@@ -37,6 +37,7 @@ type Profile = {
   authDetected: number | null;
 };
 type ComputerStatus = {
+  companyTabs?: boolean;
   devices: { id: string; name: string }[];
   onlineDeviceId: string | null;
   active: { accountId: string; companyId: string; owned: boolean } | null;
@@ -228,11 +229,15 @@ export function CompanyAccounts({
     operation.current = next;
     await next;
   }
-  async function open(target: Account) {
+  async function open(target: Account, workspace = false) {
     await run(async () => {
       const next = await api<Screen>(
         `/api/computer/accounts/${target.id}/command`,
-        { method: "POST", body: JSON.stringify({ action: "open" }) },
+        { method: "POST", body: JSON.stringify({
+          action: workspace ? "workspace" : "open",
+          switchAccount: Boolean(live.current),
+          previousViewId: live.current?.viewId,
+        }) },
       );
       if (!mounted.current || currentCompany.current !== target.companyId) {
         sendClose(next);
@@ -446,6 +451,18 @@ export function CompanyAccounts({
       {!company && (
         <p className="browser-message">Hesapları görmek için şirket seçin.</p>
       )}
+      {company && admin && (
+        <section className="card">
+          <h2>Tek pencerede sosyal ağlar</h2>
+          <p>Şirketin her sosyal ağdaki ilk hesabı aynı kalıcı Firefox profilini kullanır.
+            Açılan sekmelerde giriş yapıp sayfalarını sabitleyebilirsin.
+            Aynı ağdaki ek hesaplar ayrı profilde tutulur.</p>
+          <button className="primary" disabled={!online || busy || !accounts.length || !status?.companyTabs}
+            onClick={() => void open(accounts[0], true)}>Şirket Firefox’unu aç</button>
+          {online && !status?.companyTabs && <p>Bu özellik için açık hesap ekranlarını kapatıp yardımcının güncellenmesini bekleyin.</p>}
+          {!accounts.length && <p>Önce aşağıdan şirkete ait sosyal hesapları ekleyin.</p>}
+        </section>
+      )}
       <div className="connections-grid">
         {platforms.map((p) => (
           <section
@@ -609,6 +626,12 @@ export function CompanyAccounts({
               </p>
             )}
             <div className="browser-toolbar">
+              {status?.companyTabs && <label>Sosyal ağ seç
+                <select value={screen.accountId} disabled={busy}
+                  onChange={(e) => { const selected = accounts.find((a) => a.id === e.target.value); if (selected) void open(selected); }}>
+                  {accounts.map((a) => <option key={a.id} value={a.id}>{a.label} · {platforms.find((p) => p.id === a.platform)?.name}</option>)}
+                </select>
+              </label>}
               {[
                 ["login", "Giriş ekranını aç"],
                 ["profile", "Kayıtlı sayfayı aç"],

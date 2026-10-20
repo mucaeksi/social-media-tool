@@ -4,6 +4,14 @@
 
 Panel, şirket kayıtları, taslaklar ve AI verileri Cloudflare'de; kaynak kod GitHub'da kalır. Kullanıcının onayıyla sosyal hesap tarayıcıları artık **Windows 10/11 şirket bilgisayarında Mozilla Firefox** ile çalışır. Chrome'un kişisel/iş profilleri kullanılmaz. Eklenti, ücretli tarayıcı servisi, API kredisi veya modemden port açma gerekmez. Bilgisayarın elektrik/internet maliyeti vardır.
 
+## Tek pencereli şirket Firefox’u (1.4)
+
+Hesap bağlantılarında **Şirket Firefox’unu aç** seçeneğini kullanın. Şirkete kayıtlı her sosyal ağın ilk hesabı aynı Firefox penceresinde ayrı sekmede açılır. Bilgisayarda bu sekmelere doğrudan giriş yapıp sayfaları sabitleyebilirsiniz. Panelde **Sosyal ağ seç** ile aynı pencerede ilgili hesabı kontrol edin; seçim önceki panel görünümünü geçersiz kılar. **Firefox’u kapat, girişi koru** ortak pencerenin bütün sekmelerini kapatır ve profili korur.
+
+Yeni ortak profil `%LOCALAPPDATA%\SosyalStudio\profiles\company-<şirket-id>` altındadır. Aynı platformdaki ikinci ve sonraki hesaplar ayrı hesap profilinde tutulur; bunlara geçmeden açık ekranı kapatın. Farklı şirketlerin girişleri paylaşılmaz. İlk kurulumda kullanıcı ağlara kendisi giriş yapar; CAPTCHA ve ek doğrulama kullanıcıya aittir. Firefox’un kendi parola kaydetmesi açıktır; uygulama parola kasasını okumaz. Sekmenin açılması veya kayıtlı bir parolanın bulunması, doğru hesaba giriş yapıldığını doğrulamaz.
+
+Önceki `profiles\<şirket-id>-<hesap-id>` klasörleri silinmez veya birleştirilmez. Ortak profile geçerken bir defa yeniden giriş gerekir. Normal Firefox’taki şifreler/çerezler otomatik taşınmaz; normal profiliniz korunur. Açık ekranları kapatıp yardımcının güncellenmesini bekleyin.
+
 ## İlk kurulum
 
 1. Şirket bilgisayarında [Node.js 24 veya üzeri LTS](https://nodejs.org/en/download) ve [Mozilla Firefox](https://www.mozilla.org/firefox/new/) kurulu olmalı. Yardımcı, 64 veya 32 bit Program Files klasörlerinde Firefox'u arar. Farklı kurulumda `STUDIO_FIREFOX` ortam değişkenine `firefox.exe` dosyasının tam yolunu verin.
@@ -11,7 +19,7 @@ Panel, şirket kayıtları, taslaklar ve AI verileri Cloudflare'de; kaynak kod G
 3. `companion\Kur-ve-Baslat.cmd` dosyasına çift tıklayın. Paket kilidindeki npm bağımlılıkları özetleri doğrulanarak, kurulum betikleri çalıştırılmadan kurulur; ayrı bir tarayıcı indirilmez. Windows güvenlik uyarısı çıkarsa kaynak depoyu ve dosyaları inceleyin; imzasız bir kaynak paketidir.
 4. Panelde **Bilgisayarı eşleştir** düğmesine basın. Gösterilen tek kullanımlık kodu yardımcı penceresine yapıştırıp Enter'a basın. Kod 10 dakika geçerlidir; sonraki kod öncekinin yerine geçer. Kod ve cihaz dosyasını paylaşmayın. Cihaz kaydı en fazla birdir; değiştirmek için önce panelden eski bilgisayarı kaldırın.
 5. Panel **Bilgisayar çevrimiçi** gösterdiğinde şirketi seçip **Hesap ekranını aç** düğmesine basın. Sosyal ağdaki alana ekran üzerinden tıklayın; altındaki gizli metin alanına kullanıcı adını/şifreyi/kodu yazıp **Seçili alana yaz** düğmesiyle aktarın. **Sonraki alan**, **Enter** ve kaydırma düğmeleriyle ilerleyin. İsterseniz şirket bilgisayarında açılan Firefox penceresinde doğrudan giriş yapın.
-6. **Firefox'u kapat, girişi koru** yalnızca ilgili tarayıcıyı kapatır. Sosyal ağdan çıkış yapılmaz; sonraki açılış aynı Firefox profilini kullanır. Şirket/hesap başına ayrı profil; en fazla üç tarayıcı süreci aynı anda açıktır. Diğer hesapların profilleri diskte korunur.
+6. **Firefox'u kapat, girişi koru** yalnızca ilgili tarayıcıyı kapatır. Sosyal ağdan çıkış yapılmaz; sonraki açılış aynı Firefox profilini kullanır. Şirketin ilk sosyal hesapları aynı profili kullanır; aynı platformdaki ek hesaplar ayrıdır. En fazla üç tarayıcı süreci aynı anda açıktır. Diğer hesapların profilleri diskte korunur.
 
 İlk gerçek X girişi ve profil yeniden açıldığında girişin korunması **şirket bilgisayarında hesap sahibi tarafından doğrulanmalıdır**. Bu belge veya profil dosyasının varlığı hesapların bağlandığı anlamına gelmez. Firefox kullanılması, X'in/diğer ağların erişime izin vereceğini veya tekrar doğrulama istemeyeceğini garanti etmez. CAPTCHA ve cihaz doğrulaması kullanıcı tarafından yapılır. Otomatik yayınlama bu sürümde yoktur.
 
@@ -37,7 +45,7 @@ Otomatik güncellemesiz eski ZIP'i indirdiyseniz bu yeni paketi **bir kez** indi
 
 ## Verilerin yeri ve erişim
 
-- Cihaz kimliği/erişim anahtarı `%LOCALAPPDATA%\SosyalStudio\device.json`; Firefox profilleri `%LOCALAPPDATA%\SosyalStudio\profiles\<şirket-id>-<hesap-id>` içindedir. Bunlar Git'e veya Cloudflare'e yüklenmez. Dosya izinleri ilgili Windows hesabına bağlıdır; disk şifrelemesi ve Windows hesabının korunması önemlidir. Tam profil, Firefox'un çerezlerini, yerel depolamayı ve IndexedDB'sini içerir; bunların hepsinin ayrıca uygulama tarafından şifrelendiği iddia edilmez.
+- Cihaz kimliği/erişim anahtarı `%LOCALAPPDATA%\SosyalStudio\device.json`; Ortak Firefox profili `%LOCALAPPDATA%\SosyalStudio\profiles\company-<şirket-id>`, ek/eski hesap profilleri aynı dizinin `<şirket-id>-<hesap-id>` klasörlerindedir. Bunlar Git'e veya Cloudflare'e yüklenmez. Dosya izinleri ilgili Windows hesabına bağlıdır; disk şifrelemesi ve Windows hesabının korunması önemlidir. Tam profil, Firefox'un çerezlerini, yerel depolamayı ve IndexedDB'sini içerir; bunların hepsinin ayrıca uygulama tarafından şifrelendiği iddia edilmez.
 - Panel ile yardımcı arasında TLS/WSS kullanılır. D1'de cihaz anahtarının yalnızca SHA-256 özeti ve profilin son açılma zamanı saklanır. Eşleştirme kodunun da yalnızca özeti saklanır; kullanım sonrası silinir.
 - Ekran görüntüleri ve klavye girdileri Cloudflare üzerinden bellekte iletilir; D1/R2 veya loglara yazılmaz. Yardımcı, geliştirici hata metnini/URL'yi veya şifreleri terminale yazmaz. Hesap ekranına yalnızca panel yöneticisi erişir; aynı anda tek operatör/hesap ekranı kontrol edilir. 15 dakika etkin istek gelmezse kontrol kilidi sona erer; Firefox profili korunur.
 - Yardımcı yalnızca kayıtlı hesabın sosyal ağ adreslerini, ekran görüntüsünü ve sınırlı fare/klavye işlemlerini kabul eder. Genel terminal, JavaScript çalıştırma, dosya okuma/yükleme veya genel gezinme arayüzü yoktur. Firefox otomasyon bağlantısı şirket bilgisayarının yerel döngü adresindedir; internete port açılmaz.

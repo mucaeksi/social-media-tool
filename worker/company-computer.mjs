@@ -24,6 +24,16 @@ export function computerBroker(env, payload, upgradeHeaders) {
         },
   );
 }
+export async function computerAccount(db, row) {
+  const primary = await db.prepare(
+    "SELECT id FROM social_accounts WHERE company_id=? AND platform=? ORDER BY created_at,id LIMIT 1",
+  ).bind(row.company_id, row.platform).first();
+  return {
+    id: row.id, companyId: row.company_id, platform: row.platform,
+    label: row.label, profileUrl: row.profile_url,
+    profileScope: primary?.id === row.id ? "company" : "account",
+  };
+}
 export function registerCompanyComputer(app) {
   app.use("/api/computer/*", async (c, next) => {
     if (!c.env.COMPANY_COMPUTER)
@@ -157,13 +167,25 @@ export function registerCompanyComputer(app) {
       throw computerError(400, "Bu işlem yayın kuyruğundan başlatılmalıdır.");
     delete command.media;
     const viewId =
-      command.action === "open" ? undefined : z.uuid().parse(input.viewId);
+      ["open", "workspace"].includes(command.action) ? undefined : z.uuid().parse(input.viewId);
     const row = await c.env.DB.prepare(
       "SELECT id,company_id,platform,label,profile_url FROM social_accounts WHERE id=?",
     )
       .bind(z.uuid().parse(c.req.param("id")))
       .first();
     if (!row) throw computerError(404, "Sosyal hesap bulunamadı.");
+    const target = await computerAccount(c.env.DB, row);
+    if (command.action === "workspace") {
+      if (target.profileScope !== "company")
+        throw computerError(409, "Şirket penceresi için bu platformun ilk hesabını seçin.");
+      const { results } = await c.env.DB.prepare(
+        "SELECT a.* FROM social_accounts a WHERE company_id=? AND id=(SELECT b.id FROM social_accounts b WHERE b.company_id=a.company_id AND b.platform=a.platform ORDER BY b.created_at,b.id LIMIT 1) ORDER BY created_at,id LIMIT 9",
+      ).bind(row.company_id).all();
+      target.workspaceAccounts = results.map((a) => ({
+        id: a.id, companyId: a.company_id, platform: a.platform,
+        label: a.label, profileUrl: a.profile_url, profileScope: "company",
+      }));
+    }
     if (command.action === "upload")
       command.media = await transferMedia(
         c,
@@ -181,21 +203,17 @@ export function registerCompanyComputer(app) {
       viewId,
       deviceId: device.id,
       userId: c.get("identity").id,
-      account: {
-        id: row.id,
-        companyId: row.company_id,
-        platform: row.platform,
-        label: row.label,
-        profileUrl: row.profile_url,
-      },
+      switchAccount: input.switchAccount === true,
+      previousViewId: input.previousViewId,
+      account: target,
     });
-    if (response.ok && ["open", "close"].includes(command.action)) {
+    if (response.ok && ["open", "workspace", "close"].includes(command.action)) {
       const result = await response.clone().json();
       const hint =
         typeof result.authDetected === "boolean"
           ? Number(result.authDetected)
           : null;
-      if (command.action === "open")
+      if (["open", "workspace"].includes(command.action))
         await c.env.DB.prepare(
           "INSERT INTO computer_profiles(account_id,device_id,last_opened_at,auth_detected) VALUES(?,?,?,?) ON CONFLICT(account_id,device_id) DO UPDATE SET last_opened_at=excluded.last_opened_at,auth_detected=excluded.auth_detected",
         )
