@@ -996,9 +996,9 @@
     "semantic_hash": ""
   },
   "tests/companion/firefox-extension.test.mjs": {
-    "mtime": 1792500898.2742736,
-    "seen": 1792500901.6969118,
-    "ast_hash": "4fa67036093739fe6de85ec5263c8182",
+    "mtime": 1792501083.9209645,
+    "seen": 1792501087.070563,
+    "ast_hash": "563c572c465b8d3f56c84b91f6c1e26e",
     "semantic_hash": ""
   },
   "tests/firefox-extension.test.mjs": {

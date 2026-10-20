@@ -14,7 +14,7 @@ test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve 
   const directory = await mkdtemp(join(tmpdir(), "studio-extension-native-"));
   const extensionId = "firefox@sosyal-studio.local", uuid = "baf10523-2fb7-4c87-a821-39ced556aba0";
   const companyId = crypto.randomUUID(), accountId = crypto.randomUUID(), secondAccountId = crypto.randomUUID();
-  let user = { id: "fixture-admin", role: "admin" }, origin, browser;
+  let user = { id: "fixture-admin", role: "admin" }, origin, browser, stage = "kurulum", popup;
   const server = createServer((request, response) => {
     response.setHeader("Content-Type", "text/html; charset=utf-8");
     if (request.url.startsWith("/api/auth/me")) response.end(JSON.stringify({ user }));
@@ -68,13 +68,15 @@ test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve 
       window.addEventListener("message", receive);
       window.postMessage({ source: "sosyal-studio-panel-v1", id, action, ...extra }, location.origin);
     }), { action, extra });
-    const popup = await browser.newPage();
+    stage = "eklenti penceresi";
+    popup = await browser.newPage();
     popup.on("pageerror", (e) => console.error("Popup fixture:", e.message));
     // Firefox BiDi does not emit load events consistently for extension pages.
     // BiDi forbids navigating to extension URLs in current Developer Edition.
     // The copied test extension explicitly makes this popup web-accessible.
     await popup.evaluate((url) => { location.href = url; }, `moz-extension://${uuid}/popup.html`);
     await popup.waitForFunction(() => document.querySelector("#status").textContent.length > 0);
+    stage = "ilk hesabı bağlama";
     assert.equal((await rpc("status")).version, "1.1.0");
     assert.equal((await rpc("read", { companyId, accountId })).ok, false);
     assert.equal((await rpc("connect", { target: { companyId, accountId, companyName: "Kurgu" } })).pending, true);
@@ -87,6 +89,7 @@ test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve 
     await popup.waitForFunction(() => document.querySelector("#status").textContent.includes("1 panel bağlantısı etkin"));
     assert.equal((await rpc("status")).binding.accountId, accountId);
     const windowId = (await rpc("status")).window.windowId;
+    stage = "ikinci hesabı bağlama";
     const secondTab = await popup.evaluate(({ windowId, url }) => browser.tabs.create({ windowId, url, active: false }), { windowId, url: origin + "/kurgu-ikinci" });
     await browser.waitForTarget((t) => t.url() === origin + "/kurgu-ikinci");
     await rpc("connect", { target: { companyId, accountId: secondAccountId, companyName: "Kurgu" } });
@@ -100,6 +103,7 @@ test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve 
     assert.equal((await rpc("read", { companyId, accountId })).page.url, origin + "/kurgu");
     assert.equal((await rpc("select-target", { companyId, accountId })).ok, true);
     assert.equal((await rpc("status")).binding.accountId, accountId);
+    stage = "şirket kimliği ve taslak";
     const outside = await popup.evaluate((url) => browser.windows.create({ url }), origin + "/other-window");
     const outsideTabId = outside.tabs[0].id;
     const windowTabs = await rpc("tabs", { companyId });
@@ -141,6 +145,7 @@ test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve 
     assert.equal((await rpc("status")).ok, false, "Oturum değişince yetki korunmaz");
     user = { id: "fixture-admin", role: "admin" };
     await rpc("disconnect");
+    stage = "otomatik eklenti güncellemesi";
     sourceFiles["manifest.json"] = JSON.stringify({ ...JSON.parse(sourceFiles["manifest.json"]), version: "99.0.0" });
     await writeFile(bundlePath, JSON.stringify({ format: 1, files: sourceFiles }));
     await prepareFirefoxExtension(directory, { profile: true, bundleURL: bundlePath });
@@ -151,6 +156,10 @@ test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve 
       await new Promise((r) => setTimeout(r, 100));
     }
     assert.equal(reloaded, true, "Yardımcının yenilediği eklenti bağlantılar kapatılınca otomatik yeniden yüklenir");
+  } catch (error) {
+    const state = await popup?.evaluate(() => document.body.innerText.slice(0, 600)).catch(() => "");
+    error.message += ` [${stage}; test penceresi: ${state || "yok"}; ${error.stack?.split("\n").filter((s) => s.includes("firefox-extension.test.mjs")).join(" ") || ""}]`;
+    throw error;
   } finally {
     await browser?.close(); server.closeAllConnections(); await new Promise((r) => server.close(r));
     await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
