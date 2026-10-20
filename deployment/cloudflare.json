@@ -1,9 +1,44 @@
 {
-  "status": "failed",
-  "source_commit": "37b4a6772f135e0ab4b4a708e3f48baa8e87349f",
-  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39374039220",
-  "updated_at": "2026-10-20T05:19:26.725Z",
-  "url": null,
-  "verified": false,
-  "error": "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+  "status": "success",
+  "source_commit": "0271be79e0f95c680e8b147fad3321956c350cd6",
+  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39374446252",
+  "updated_at": "2026-10-20T05:24:32.937Z",
+  "url": "https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev",
+  "zero_trust": {
+    "plan": "Teams Free Base",
+    "price": 0,
+    "activeSeats": 0,
+    "limits": {
+      "activeSeats": 50,
+      "accessApps": 500,
+      "identityProviders": 50,
+      "serviceTokens": 50,
+      "policiesPerApp": 1000
+    },
+    "checkedAt": "2026-10-20T05:25:03.293Z",
+    "seatEnforcement": "Cloudflare Free planı girişte 50 aktif koltuğu uygular"
+  },
+  "workers_ai": {
+    "plan": "Workers Free",
+    "price": 0,
+    "dailyNeurons": 10000,
+    "applicationBudget": 9000,
+    "checkedAt": "2026-10-20T05:25:03.770Z",
+    "paidSubscriptionFound": false
+  },
+  "social_profiles": {
+    "woodMoodProfiles": 9,
+    "expectedWoodMoodProfiles": 9,
+    "socialLoginsVerified": false
+  },
+  "verified": true,
+  "components": {
+    "worker": "sosyal-studio",
+    "database": "Cloudflare D1",
+    "media": "Cloudflare R2",
+    "login": "Kullanıcı adı ve şifre — D1 oturumları",
+    "socialBrowser": "Cloudflare Browser Run — deneysel hesap girişi",
+    "companyComputer": "Windows Firefox — otomatik güncelleme, kalıcı profiller ve Qwen3.5-4B yerel AI bağlantısı; gerçek kullanıcı/model kontrolü bilgisayarda yapılmalı",
+    "ai": "Cloudflare Workers AI — görsel + özet, platform metinleri ve şirket hafızası"
+  }
 }
