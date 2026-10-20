@@ -594,9 +594,9 @@
     "semantic_hash": ""
   },
   "tests/cloud/company-computer.test.mjs": {
-    "mtime": 1792484853.477978,
-    "seen": 1792484879.8902009,
-    "ast_hash": "a1b3ad3c588a84b6aee951a13b0db69a",
+    "mtime": 1792500263.7428708,
+    "seen": 1792500270.2128668,
+    "ast_hash": "f7915991ffc7ab4836b345f9cbdca063",
     "semantic_hash": ""
   },
   "tests/companion/firefox.test.mjs": {
@@ -1032,9 +1032,9 @@
     "semantic_hash": ""
   },
   "companion/studio-firefox.mjs": {
-    "mtime": 1792499456.055337,
-    "seen": 1792499958.602695,
-    "ast_hash": "cb09c17c644d6c05b79f8c1a755c8f08",
+    "mtime": 1792500264.262867,
+    "seen": 1792500270.2080686,
+    "ast_hash": "d6289b8ab2dd41581b082803d4ffd3aa",
     "semantic_hash": ""
   },
   "firefox-extension/managed.js": {

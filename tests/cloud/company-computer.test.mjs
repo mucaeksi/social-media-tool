@@ -7,6 +7,7 @@ import { createD1Media } from "../../worker/d1-media.mjs";
 import { objectKey } from "../../worker/media.mjs";
 import { Miniflare } from "miniflare";
 import { tokenDigest } from "../../shared/passwords.mjs";
+import { LOCAL_MODEL } from "../../shared/local-ai.mjs";
 
 let mf, db, device, agent, manualForwarded;
 const base = "https://studio.example",
@@ -383,7 +384,7 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
       ok: true,
       status: {
         phase: "ready",
-        model: "qwen3.5:4b",
+        model: LOCAL_MODEL,
         busy: false,
         progress: null,
         code: null,

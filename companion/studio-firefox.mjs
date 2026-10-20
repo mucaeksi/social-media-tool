@@ -10,11 +10,11 @@ async function powershell(script, env) {
     const child = spawn(join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
       ["-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { windowsHide: true, stdio: ["ignore", "pipe", "ignore"], env: { ...process.env, ...env } });
     let output = ""; child.stdout.on("data", (b) => { output = (output + b).slice(-2000); });
-    child.once("error", reject); child.once("exit", (code) => code === 0 ? resolve(output.trim()) : reject(new Error("Mozilla imza doğrulaması veya süreç kontrolü tamamlanamadı.")));
+    child.once("error", reject); child.once("exit", (code) => code === 0 ? resolve(output.trim()) : reject(new Error("Mozilla imza doğrulaması veya süreç kontrolü tamamlanamadı." + (output.trim() ? " " + output.trim() : ""))));
   });
 }
 export async function verifyMozillaSignature(path) {
-  await powershell('$ErrorActionPreference="Stop"; $s=Get-AuthenticodeSignature -LiteralPath $env:STUDIO_FIREFOX_FILE; if($s.Status -ne "Valid" -or $s.SignerCertificate.Subject -notmatch "(?:^|,\\s*)O=Mozilla Corporation(?:,|$)"){exit 1}', { STUDIO_FIREFOX_FILE: path });
+  await powershell('$ErrorActionPreference="Stop"; $s=Get-AuthenticodeSignature -LiteralPath $env:STUDIO_FIREFOX_FILE; if($s.Status -ne "Valid" -or $s.SignerCertificate.Subject -notmatch "(?:^|,\\s*)O=Mozilla Corporation(?:,|$)"){Write-Output ("İmza durumu: "+$s.Status+"; yayıncı: "+$s.SignerCertificate.Subject); exit 1}', { STUDIO_FIREFOX_FILE: path });
 }
 export async function downloadFirefoxInstaller(path, fetcher = fetch) {
   let url = downloadURL;
