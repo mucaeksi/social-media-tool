@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/cloudflare.yml": {
-    "mtime": 1792482211.2715814,
-    "seen": 1792482240.785834,
-    "ast_hash": "f3ba7e0e4ec1b2fc7f995eff57399290",
+    "mtime": 1792483222.1543837,
+    "seen": 1792483227.1617532,
+    "ast_hash": "4b647726ceefec2104e0d38dc15b89c3",
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
@@ -552,9 +552,9 @@
     "semantic_hash": ""
   },
   "companion/package.json": {
-    "mtime": 1792481150.5870337,
-    "seen": 1792481406.933194,
-    "ast_hash": "2ff6ea953d7f193b322256fd396f03d1",
+    "mtime": 1792483223.481389,
+    "seen": 1792483227.158432,
+    "ast_hash": "e372f0cdf990a610ea50ade8596a0835",
     "semantic_hash": ""
   },
   "companion/start.mjs": {
@@ -564,9 +564,9 @@
     "semantic_hash": ""
   },
   "scripts/build-companion.mjs": {
-    "mtime": 1792471950.3894734,
-    "seen": 1792473384.1757717,
-    "ast_hash": "2083e9195c7ee5a9be366028cb94706d",
+    "mtime": 1792483221.6383882,
+    "seen": 1792483227.1586552,
+    "ast_hash": "6f18bf3b31098d8da68c37aee76f9e92",
     "semantic_hash": ""
   },
   "scripts/setup-firefox.sh": {
@@ -618,9 +618,9 @@
     "semantic_hash": ""
   },
   "docs/SIRKET_BILGISAYARI.md": {
-    "mtime": 1792481691.369523,
-    "seen": 1792481695.1441362,
-    "ast_hash": "4c8947627f1b038c663671e97bd4bb6e",
+    "mtime": 1792483223.274374,
+    "seen": 1792483227.162113,
+    "ast_hash": "e0f8fd9c1b3282468178a7e04a3a4d0c",
     "semantic_hash": ""
   },
   "companion/launch.mjs": {
@@ -873,6 +873,12 @@
     "mtime": 1792482523.0036685,
     "seen": 1792482531.7838402,
     "ast_hash": "6a6fc858b518978a0d2710266ba0cbb1",
+    "semantic_hash": ""
+  },
+  "tests/companion/launcher.test.mjs": {
+    "mtime": 1792483222.6343796,
+    "seen": 1792483227.1606877,
+    "ast_hash": "7c7a630cc75c13a4ca2cd9227d366a16",
     "semantic_hash": ""
   }
 }

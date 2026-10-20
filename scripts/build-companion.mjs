@@ -13,7 +13,17 @@ import {
 } from "../companion/release.mjs";
 const contents = new Map(
   await Promise.all(
-    releaseFiles.map(async (path) => [path, await readFile(path)]),
+    releaseFiles.map(async (path) => {
+      const bytes = await readFile(path);
+      // Linux builds must ship the same Windows batch bytes as Windows builds.
+      // Normalize before hashing so the updater verifies the packaged bytes.
+      return [
+        path,
+        path.endsWith(".cmd")
+          ? Buffer.from(bytes.toString("utf8").replace(/\r\n|\r|\n/g, "\r\n"))
+          : bytes,
+      ];
+    }),
   ),
 );
 const version = sourceVersion(contents);
