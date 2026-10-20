@@ -27,3 +27,9 @@ test("Firefox indirmesi yabancı yönlendirmeyi reddeder; yalnız özel profil v
   assert.match(await readFile(join(profile, "extensions/firefox@sosyal-studio.local/managed.js"), "utf8"), /true/);
   assert.equal(await readFile(join(profile, "cookies.sqlite"), "utf8"), "giriş korunur");
 });
+test("Firefox indirme ilerlemesi gerçek yazılan baytları bildirir; kurucu doğrulanmadan çalıştırılmaz", async (t) => {
+  const d = await root(t), bytes = Buffer.alloc(150000, 37), progress = [];
+  await downloadFirefoxInstaller(join(d, "test.exe"), async () => new Response(bytes, { headers: { "content-length": String(bytes.length) } }), (value) => progress.push(value));
+  assert.deepEqual(await readFile(join(d, "test.exe")), bytes);
+  assert.equal(progress.at(-1).bytes, bytes.length); assert.equal(progress.at(-1).total, bytes.length);
+});

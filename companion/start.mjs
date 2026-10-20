@@ -293,8 +293,22 @@ try {
     throw new Error("Node.js 24 veya üzerini kurun.");
   let executablePath, studioProfile;
   if (process.platform === "win32") {
+    process.send?.({ type: "initializing", stage: "firefox" });
     console.log("Firefox Developer Edition aynı BAT klasörüne otomatik hazırlanıyor; Mozilla'nın Windows imzası doğrulanır.");
-    executablePath = await ensureStudioFirefox(directory);
+    let lastStage, lastProgress = 0;
+    executablePath = await ensureStudioFirefox(directory, { progress: (value) => {
+      if (value.stage === "download" && value.bytes) {
+        if (Date.now() - lastProgress >= 2000 || value.bytes === value.total) {
+          const mb = (bytes) => (bytes / 1024 ** 2).toFixed(1);
+          console.log(`Firefox indiriliyor: ${mb(value.bytes)}${value.total ? " / " + mb(value.total) : ""} MB`);
+          lastProgress = Date.now();
+        }
+      } else if (value.stage !== lastStage) {
+        const labels = { download: "Firefox kurucusu Mozilla'dan indiriliyor; ilk indirme birkaç dakika sürebilir.", "verify-installer": "İndirilen Firefox kurucusunun Mozilla imzası doğrulanıyor.", install: "Firefox aynı klasöre kuruluyor; Windows izin penceresi açılırsa kurulum için onaylayın.", "verify-installed": "Kurulu Firefox'un Mozilla imzası kontrol ediliyor." };
+        if (labels[value.stage]) console.log(labels[value.stage]);
+      }
+      lastStage = value.stage;
+    } });
     studioProfile = await prepareStudioFirefoxProfile(directory);
   } else executablePath = await firefoxPath();
   try {

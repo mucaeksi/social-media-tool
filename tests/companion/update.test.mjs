@@ -263,6 +263,7 @@ test("güncelleme açık hesap bitene kadar bekler, güvenli kapanıştan sonra 
     updater: f.updater,
     spawnApp: () => child,
     ensureDependencies: async () => {},
+    checkBeforeStart: false,
     retryInterval: 10,
     log: () => {},
   });
@@ -294,6 +295,38 @@ test("yeni uygulama başlayamazsa önceki kod seçilir ve bozuk sürüm engellen
   assert.equal(await running, 75);
   assert.equal((await f.updater.state()).version, null);
   assert.equal((await f.updater.state()).failedVersion, manifest.version);
+});
+
+test("İlk Firefox kurulumu normal başlangıç süresini aşabilir; hazır olmadan yeni sürüm onaylanmaz", async (t) => {
+  const f = await fixture(t), child = appFixture(); let spawned = false, confirmed = false;
+  f.updater.state = async () => ({ pending: true });
+  f.updater.prepare = async () => null;
+  f.updater.confirm = async () => { confirmed = true; };
+  const running = supervise({ root: await supervisorRoot(f), updater: f.updater, spawnApp: () => { spawned = true; return child; }, ensureDependencies: async () => {}, readyTimeout: 100, firefoxSetupTimeout: 2000, log: () => {} });
+  await until(() => spawned);
+  child.emit("message", { type: "initializing", stage: "firefox" });
+  await pause(150);
+  assert.equal(confirmed, false); assert.equal(child.listenerCount("exit"), 1);
+  child.emit("message", { type: "ready" }); await until(() => confirmed);
+  child.emit("exit", 0); assert.equal(await running, 0);
+});
+
+test("Kurulum süresi yine sınırlıdır; tekrarlanan ilerleme mesajı süreyi uzatmaz ve zaman aşımı başarı sayılmaz", async (t) => {
+  const f = await fixture(t), child = appFixture(), logs = []; let spawned = false;
+  f.updater.prepare = async () => null;
+  const running = supervise({ root: await supervisorRoot(f), updater: f.updater, spawnApp: () => { spawned = true; return child; }, ensureDependencies: async () => {}, checkBeforeStart: false, readyTimeout: 100, firefoxSetupTimeout: 100, log: (s) => logs.push(s) });
+  await until(() => spawned);
+  child.emit("message", { type: "initializing", stage: "firefox" });
+  const progress = setInterval(() => child.emit("message", { type: "initializing", stage: "firefox" }), 10);
+  try { assert.equal(await running, 1); } finally { clearInterval(progress); }
+  assert.ok(logs.some((s) => s.includes("Firefox ilk kurulumu")));
+});
+
+test("Başlangıç güncellemesi Firefox açılmadan hazırlanır; bozuk ilk kurulum yeni patch kontrolünü engellemez", async (t) => {
+  const f = await fixture(t);
+  const code = await supervise({ root: await supervisorRoot(f), updater: f.updater, spawnApp: () => assert.fail("Eski uygulama başlatılmamalı"), ensureDependencies: async () => {}, log: () => {} });
+  assert.equal(code, 75); assert.equal((await f.updater.state()).version, manifest.version);
+  assert.equal((await f.updater.state()).pending, true);
 });
 
 test("çevrimdışı güncelleme kontrolünde uygulama çalışır, normal kapanış güncelleme tetiklemez", async (t) => {
@@ -464,7 +497,7 @@ test(
         }
       \` };
       if (url.endsWith("/companion/local-ai.mjs")) return {format:"module", shortCircuit:true, source: "export class LocalAI { constructor(){this.busy=false;} setup(options){if(options.automatic)process.send({type:'fixture-auto-setup'});} async close(){process.send({type:'fixture-ai-closed'});} async execute(){this.busy=true;await new Promise(r=>setTimeout(r,100));this.busy=false;return {ok:true,answer:'fixture',posts:[]};} }"};
-      if (url.endsWith("/companion/studio-firefox.mjs")) return {format:"module",shortCircuit:true,source:"export async function ensureStudioFirefox(){return process.execPath} export async function prepareStudioFirefoxProfile(){return null} export async function openStudioFirefox(){}"};
+      if (url.endsWith("/companion/studio-firefox.mjs")) return {format:"module",shortCircuit:true,source:"export async function ensureStudioFirefox(){process.send({type:'fixture-firefox-setup-start'});return process.execPath} export async function prepareStudioFirefoxProfile(){return null} export async function openStudioFirefox(){}"};
       if (url.endsWith("/companion/research.mjs")) return {format:"module", shortCircuit:true, source: "export class WebsiteResearch { async close() {} }"};
       return next(url, context);
     }});
@@ -499,8 +532,11 @@ test(
     const messages = [];
     child.on("message", (m) => messages.push(m));
     await until(() => messages.some((m) => m.type === "ready"));
-    if (process.platform === "win32")
+    if (process.platform === "win32") {
       assert.ok(messages.some((m) => m.type === "fixture-auto-setup"), "Windows açılışında AI kurulumu kendiliğinden başlar");
+      const init = messages.findIndex((m) => m.type === "initializing" && m.stage === "firefox");
+      assert.ok(init >= 0 && init < messages.findIndex((m) => m.type === "fixture-firefox-setup-start"), "Uzun kurulum bildirimi Firefox indirmesi başlamadan gönderilir");
+    }
     child.send({
       type: "fixture-command",
       id: "open",

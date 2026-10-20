@@ -315,9 +315,11 @@ export function CompanyAccounts({
               <li>
                 <strong>Windows paketini indirin</strong>
                 <p>
-                  Node.js 24 veya üzeri ile Mozilla Firefox kurulu olmalı. ZIP'i
+                  Node.js 24 veya üzeri kurulu olmalı. ZIP'i
                   kalıcı bir klasöre çıkarıp{" "}
                   <b>companion → Kur-ve-Baslat.cmd</b> dosyasını çalıştırın.
+                  Firefox Developer Edition ve eklenti aynı klasöre otomatik
+                  kurulur; indirme ilerlemesi yardımcı penceresinde görünür.
                   Yeni sürümler otomatik alınır; açık hesap ekranlarını
                   kapatınca uygulanır. Giriş profilleri korunur.
                 </p>

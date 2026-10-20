@@ -21,7 +21,7 @@ async function powershell(script, env) {
 export async function verifyMozillaSignature(path) {
   await powershell('$ErrorActionPreference="Stop"; $s=Get-AuthenticodeSignature -LiteralPath $env:STUDIO_FIREFOX_FILE; if($s.Status -ne "Valid" -or $s.SignerCertificate.Subject -notmatch "(?:^|,\\s*)O=Mozilla Corporation(?:,|$)"){Write-Output ("İmza durumu: "+$s.Status+"; yayıncı: "+$s.SignerCertificate.Subject); exit 1}', { STUDIO_FIREFOX_FILE: path });
 }
-export async function downloadFirefoxInstaller(path, fetcher = fetch) {
+export async function downloadFirefoxInstaller(path, fetcher = fetch, progress = () => {}) {
   let url = downloadURL;
   for (let i = 0; i < 6; i++) {
     const u = new URL(url);
@@ -33,28 +33,31 @@ export async function downloadFirefoxInstaller(path, fetcher = fetch) {
     }
     if (!response.ok || !response.body) throw new Error("Firefox indirilemedi. İnternet bağlantısını kontrol edin.");
     const { open } = await import("node:fs/promises"), file = await open(path, "w", 0o600);
+    const total = Number(response.headers.get("content-length")) || null;
     let size = 0;
-    try { for await (const bytes of response.body) { size += bytes.length; if (size > 250_000_000) throw new Error("Firefox kurucusu boyut sınırını aştı."); await file.writeFile(bytes); } }
+    try { for await (const bytes of response.body) { size += bytes.length; if (size > 250_000_000) throw new Error("Firefox kurucusu boyut sınırını aştı."); await file.writeFile(bytes); progress({ stage: "download", bytes: size, total }); } }
     finally { await file.close(); }
     if (size < 100000) throw new Error("Firefox kurucusu eksik.");
     return;
   }
   throw new Error("Mozilla indirme yönlendirmesi tamamlanamadı.");
 }
-export async function ensureStudioFirefox(directory, { download = downloadFirefoxInstaller, verify = verifyMozillaSignature, runInstaller } = {}) {
+export async function ensureStudioFirefox(directory, { download = downloadFirefoxInstaller, verify = verifyMozillaSignature, runInstaller, progress = () => {} } = {}) {
   const folder = join(directory, "FirefoxDeveloper"), executablePath = join(folder, "firefox.exe"), marker = join(folder, ".sosyal-studio.json");
   await mkdir(directory, { recursive: true });
-  try { await access(executablePath); await access(marker); await verify(executablePath); return executablePath; } catch { /* First install or repair. */ }
+  try { await access(executablePath); await access(marker); progress({ stage: "verify-installed" }); await verify(executablePath); return executablePath; } catch { /* First install or repair. */ }
   const installer = join(directory, "firefox-developer-setup.exe");
   try {
-    await download(installer); await verify(installer);
+    progress({ stage: "download" }); await download(installer, undefined, progress);
+    progress({ stage: "verify-installer" }); await verify(installer);
     const args = ["/S", `/InstallDirectoryPath=${folder}`, "/DesktopShortcut=false", "/TaskbarShortcut=false", "/StartMenuShortcuts=false", "/MaintenanceService=false", "/PreventRebootRequired=true"];
+    progress({ stage: "install" });
     if (runInstaller) await runInstaller(installer, args);
     else await new Promise((resolve, reject) => {
       const child = spawn(installer, args, { windowsHide: true, stdio: "ignore" });
       child.once("error", reject); child.once("exit", (code) => code === 0 ? resolve() : reject(new Error("Firefox otomatik kurulumu tamamlanamadı.")));
     });
-    await access(executablePath); await verify(executablePath);
+    progress({ stage: "verify-installed" }); await access(executablePath); await verify(executablePath);
     await writeFile(marker, JSON.stringify({ managed: true, edition: "developer", source: downloadURL }));
     return executablePath;
   } finally { await rm(installer, { force: true }); }

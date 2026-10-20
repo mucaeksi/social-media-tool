@@ -12,6 +12,8 @@ export async function supervise({
   interval = 600_000,
   retryInterval = 30_000,
   readyTimeout = 30_000,
+  firefoxSetupTimeout = 30 * 60_000,
+  checkBeforeStart = true,
   log = console.log,
 }) {
   await ensureDependencies(root);
@@ -19,6 +21,21 @@ export async function supervise({
     await readFile(join(root, "companion/release.json"), "utf8"),
   );
   const state = await updater.state();
+  // A failed Firefox setup must not prevent this process from finding a repair
+  // on the next launch. No app/profile owner exists yet, so activation is safe.
+  if (checkBeforeStart && !state.pending) {
+    log("Başlangıçtan önce güncelleme kontrol ediliyor.");
+    try {
+      const version = await updater.prepare(release.version);
+      if (version) {
+        await updater.activate(version);
+        log("Güncel yardımcı hazır; kurulum başlamadan yeni sürüme geçiliyor.");
+        return 75;
+      }
+    } catch {
+      log("Güncelleme kontrolü tamamlanamadı; mevcut sürümle devam ediliyor. Sonra tekrar denenecek.");
+    }
+  }
   log(
     `Sosyal Studio · sürüm ${release.version.slice(0, 12)} · otomatik güncelleme etkin`,
   );
@@ -35,6 +52,7 @@ export async function supervise({
     updateTimer,
     retryTimer,
     healthTimer;
+  let initializing = false, startupTimedOut = false;
   const askToUpdate = () => {
     if (candidate && child.connected && !stopping)
       child.send({ type: "prepare-update" });
@@ -74,13 +92,20 @@ export async function supervise({
   process.on("message", parentMessage);
   try {
     return await new Promise((resolve, reject) => {
-      healthTimer = setTimeout(() => {
-        log("Yardımcı başlangıcı tamamlanamadı.");
+      const timeout = () => {
+        startupTimedOut = true;
+        log(initializing ? "Firefox ilk kurulumu 30 dakika içinde tamamlanamadı. İnternet bağlantısını kontrol edip yeniden başlatın." : "Yardımcı başlangıcı tamamlanamadı; başlangıç süresi doldu.");
         stop();
-      }, readyTimeout);
+      };
+      healthTimer = setTimeout(timeout, readyTimeout);
       child.on("message", async (message) => {
+        if (message?.type === "initializing" && message.stage === "firefox" && !initializing && !ready && !stopping) {
+          initializing = true;
+          clearTimeout(healthTimer);
+          healthTimer = setTimeout(timeout, firefoxSetupTimeout);
+        }
         if (message?.type === "pairing") clearTimeout(healthTimer);
-        if (message?.type === "ready" && !ready) {
+        if (message?.type === "ready" && !ready && !stopping) {
           ready = true;
           clearTimeout(healthTimer);
           try {
@@ -113,7 +138,7 @@ export async function supervise({
             await updater.activate(candidate);
             log("Güncelleme uygulanıyor; yardımcı yeniden bağlanacak.");
             resolve(75);
-          } else resolve(code ?? 1);
+          } else resolve(startupTimedOut ? 1 : (code ?? 1));
         } catch (error) {
           reject(error);
         }

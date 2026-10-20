@@ -1,3 +1,7 @@
+# 1.7.1: ilk Firefox kurulumunun yarıda kesilmesi düzeltildi
+
+Firefox ilk kurulumunun 30 saniyelik normal başlangıç denetimiyle kesilmesi giderildi. Yardımcı indirme başlamadan kurulum aşamasını denetleyiciye bildirir; bu aşamanın ayrı, en fazla 30 dakikalık süresi vardır. İndirilen MB, Mozilla imza kontrolü ve kurulum aşamaları pencerede görünür. Tekrarlanan ilerleme bildirimi üst süreyi uzatmaz. Zaman aşımı başarı olarak dönmez; henüz hazır olmayan yeni sürüm onaylanmaz. Sonraki açılışta güncelleme kontrolü Firefox kurulumu başlamadan yapılır; başarısız bir kurulum yeni düzeltmenin bulunmasını engellemez.
+
 # 1.7 güncellemesi: gece araştırması ve yerel hafıza
 
 AI asistanında Yerel AI ekranı açılınca seçili şirketin gece planı eşitlenir. Yardımcı ve bilgisayar açıkken KKTC saatiyle 00.00–07.00 arasında resmî platform rehberleri ve onaylı şirket kaynakları incelenir. Model ağırlıkları eğitilmez; kaynaklı çalışma notları `ai/knowledge.sqlite` içinde inceleme bekler. Sabah notları kontrol edip kullanıma açabilirsiniz. Panel sekmesi gece açık kalmak zorunda değildir; yedi gün eşitlenmeyen plan durur. Gecede tüm şirketler için toplam 20 sayfa denemesi vardır. [Kullanım ve sınırlar](https://github.com/mucaeksi/social-media-tool/blob/main/docs/GECE_OGRENMESI.md).

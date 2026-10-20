@@ -1,20 +1,22 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { createServer } from "node:http";
+import { fork } from "node:child_process";
 import puppeteer from "puppeteer-core";
 import { extensionFiles } from "../../scripts/build-firefox-extension.mjs";
 import { prepareFirefoxExtension } from "../../companion/firefox-extension.mjs";
-import { prepareStudioFirefoxProfile, ensureStudioFirefox } from "../../companion/studio-firefox.mjs";
+import { prepareStudioFirefoxProfile } from "../../companion/studio-firefox.mjs";
+import { supervise } from "../../companion/supervisor.mjs";
 
 const executablePath = process.env.FIREFOX_EXTENSION_EXECUTABLE || "/workspace/.tools/firefox/usr/lib/firefox-esr/firefox-esr";
-test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve şirket/kişisel gönderi ayrımı", { timeout: 240000 }, async () => {
-  const directory = await mkdtemp(join(tmpdir(), "studio-extension-native-"));
+test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve şirket/kişisel gönderi ayrımı", { timeout: 300000 }, async () => {
+  const directory = await mkdtemp(join(tmpdir(), "studio-extension-Türkçe kurulum-"));
   const extensionId = "firefox@sosyal-studio.local", uuid = "baf10523-2fb7-4c87-a821-39ced556aba0";
   const companyId = crypto.randomUUID(), accountId = crypto.randomUUID(), secondAccountId = crypto.randomUUID();
-  let user = { id: "fixture-admin", role: "admin" }, origin, browser, stage = "kurulum", popup;
+  let user = { id: "fixture-admin", role: "admin" }, origin, browser, stage = "kurulum", popup, setupChild;
   const server = createServer((request, response) => {
     response.setHeader("Content-Type", "text/html; charset=utf-8");
     if (request.url.startsWith("/api/auth/me")) response.end(JSON.stringify({ user }));
@@ -31,7 +33,25 @@ test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve 
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   origin = `http://127.0.0.1:${server.address().port}`;
   try {
-    const managedExecutable = process.platform === "win32" ? await ensureStudioFirefox(directory) : executablePath;
+    let managedExecutable = executablePath;
+    if (process.platform === "win32") {
+      // Exercise the actual supervisor + signed Mozilla installer chain. A
+      // deliberately slow first setup must outlive the normal ready deadline.
+      await mkdir(join(directory, "companion"));
+      await writeFile(join(directory, "companion/release.json"), JSON.stringify({ version: "a".repeat(64) }));
+      const setupPath = join(directory, "first-setup.mjs");
+      await writeFile(setupPath, `import { ensureStudioFirefox } from ${JSON.stringify(new URL("../../companion/studio-firefox.mjs", import.meta.url).href)};
+        process.on('message', m => { if (m.type === 'stop') process.exit(1); });
+        process.send({type:'initializing',stage:'firefox'});
+        await new Promise(r => setTimeout(r,1500));
+        await ensureStudioFirefox(${JSON.stringify(directory)});
+        process.send({type:'ready'}, () => process.disconnect());`);
+      let confirmed = false;
+      const result = await supervise({ root: directory, updater: { state: async () => ({ pending: true }), confirm: async () => { confirmed = true; }, prepare: async () => null, rollback: async () => assert.fail("Geçerli ilk kurulum geri alınmamalı") }, ensureDependencies: async () => {}, readyTimeout: 1000, firefoxSetupTimeout: 240000,
+        spawnApp: () => (setupChild = fork(setupPath, [], { execArgv: [], stdio: ["ignore", "inherit", "inherit", "ipc"] })), log: () => {} });
+      assert.equal(result, 0); assert.equal(confirmed, true);
+      managedExecutable = join(directory, "FirefoxDeveloper/firefox.exe");
+    }
     for (const name of extensionFiles) {
       let text = await readFile(resolve("firefox-extension", name), "utf8");
       // Test-only copied extension permits this ephemeral fixture origin. The
@@ -162,6 +182,7 @@ test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve 
     error.message += ` [${stage}; test penceresi: ${state || "yok"}; ${error.stack?.split("\n").filter((s) => s.includes("firefox-extension.test.mjs")).join(" ") || ""}]`;
     throw error;
   } finally {
+    if (setupChild && setupChild.exitCode === null) setupChild.kill();
     await browser?.close(); server.closeAllConnections(); await new Promise((r) => server.close(r));
     await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   }

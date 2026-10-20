@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792501723.5322862,
-    "seen": 1792501810.4957857,
-    "ast_hash": "9e3ecadef9d6d8daccfc3c1644e00426",
+    "mtime": 1792503014.8870106,
+    "seen": 1792503072.4592915,
+    "ast_hash": "3e0bd1c54c0b713ca31c5d9652476ac5",
     "semantic_hash": ""
   },
   "README.md": {
@@ -552,15 +552,15 @@
     "semantic_hash": ""
   },
   "companion/package.json": {
-    "mtime": 1792501721.7362993,
-    "seen": 1792501810.4926934,
-    "ast_hash": "a493a438ebcb382e4cc43496e7d72d76",
+    "mtime": 1792503012.791026,
+    "seen": 1792503072.4558141,
+    "ast_hash": "b6aa8845dc030ca1875e17986b825a56",
     "semantic_hash": ""
   },
   "companion/start.mjs": {
-    "mtime": 1792501201.524097,
-    "seen": 1792501321.9904947,
-    "ast_hash": "50aec93e26a2d2701d4615d1b2527313",
+    "mtime": 1792502832.8763323,
+    "seen": 1792503072.455872,
+    "ast_hash": "7820adc6ae78f4baa079758c95b18318",
     "semantic_hash": ""
   },
   "scripts/build-companion.mjs": {
@@ -582,9 +582,9 @@
     "semantic_hash": ""
   },
   "src/CompanyAccounts.tsx": {
-    "mtime": 1792484767.106638,
-    "seen": 1792484772.9528332,
-    "ast_hash": "2c61dce132b40019124899bcecf99ca6",
+    "mtime": 1792503013.8270185,
+    "seen": 1792503072.457088,
+    "ast_hash": "834436e1a53f5f116cf7864474cbce83",
     "semantic_hash": ""
   },
   "tests/browser/company-computer.spec.mjs": {
@@ -618,9 +618,9 @@
     "semantic_hash": ""
   },
   "docs/SIRKET_BILGISAYARI.md": {
-    "mtime": 1792501722.99229,
-    "seen": 1792501810.4961092,
-    "ast_hash": "38b16d7ccd43a3a7e6c0f3fd087a4606",
+    "mtime": 1792503014.3710144,
+    "seen": 1792503072.459475,
+    "ast_hash": "ff23724e589560ed718773e9b25e57c4",
     "semantic_hash": ""
   },
   "companion/launch.mjs": {
@@ -642,9 +642,9 @@
     "semantic_hash": ""
   },
   "companion/supervisor.mjs": {
-    "mtime": 1792486598.0249512,
-    "seen": 1792486976.6131337,
-    "ast_hash": "9a0b0de0a21b914eb3dfa764370bb68e",
+    "mtime": 1792502831.8883395,
+    "seen": 1792503072.4558759,
+    "ast_hash": "1c9cedae7e7ecca199a0eb759685626b",
     "semantic_hash": ""
   },
   "companion/updater.mjs": {
@@ -654,9 +654,9 @@
     "semantic_hash": ""
   },
   "tests/companion/update.test.mjs": {
-    "mtime": 1792499616.6917822,
-    "seen": 1792499958.6049147,
-    "ast_hash": "d6c2a39adf380af33d0a0aeae952ee6e",
+    "mtime": 1792503011.8390331,
+    "seen": 1792503072.458526,
+    "ast_hash": "71a362fc6fec4df190efa06dd02f3fbb",
     "semantic_hash": ""
   },
   "companion/local-ai.mjs": {
@@ -996,9 +996,9 @@
     "semantic_hash": ""
   },
   "tests/companion/firefox-extension.test.mjs": {
-    "mtime": 1792501318.5072424,
-    "seen": 1792501321.992879,
-    "ast_hash": "344989aec7393cbf39ab91163562ecfc",
+    "mtime": 1792503068.4266207,
+    "seen": 1792503072.4583693,
+    "ast_hash": "180c9fc75e18bbba88f1aee02dc8d706",
     "semantic_hash": ""
   },
   "tests/firefox-extension.test.mjs": {
@@ -1020,8 +1020,8 @@
     "semantic_hash": ""
   },
   "companion/extension-sources.json": {
-    "mtime": 1792502078.4738004,
-    "seen": 1792502104.7116525,
+    "mtime": 1792503016.0430021,
+    "seen": 1792503072.455425,
     "ast_hash": "df2c720e47746f9802867eeebe61b69b",
     "semantic_hash": ""
   },
@@ -1032,9 +1032,9 @@
     "semantic_hash": ""
   },
   "companion/studio-firefox.mjs": {
-    "mtime": 1792500759.9752328,
-    "seen": 1792500765.1476867,
-    "ast_hash": "ee4ba7a91fa6a14f076f31e0d6ef57c0",
+    "mtime": 1792502832.4003358,
+    "seen": 1792503072.455874,
+    "ast_hash": "6d89c57bf51e91e726521ffc230ddbc9",
     "semantic_hash": ""
   },
   "firefox-extension/managed.js": {
@@ -1044,9 +1044,9 @@
     "semantic_hash": ""
   },
   "tests/companion/studio-firefox.test.mjs": {
-    "mtime": 1792499662.2914493,
-    "seen": 1792499958.6049135,
-    "ast_hash": "7269a475c954ebad123ca41a7bdc100b",
+    "mtime": 1792502945.5595183,
+    "seen": 1792503072.458525,
+    "ast_hash": "01b51552d5b28882fbe14b708d9f64a7",
     "semantic_hash": ""
   },
   "docs/YEREL_MODEL_SECIMI.md": {
