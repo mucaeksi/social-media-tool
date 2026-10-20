@@ -261,7 +261,8 @@ export class CompanyComputer {
         await this.ctx.storage.put("lease", lease);
       }
       try {
-        const result = await this.rpc(socket, { command, account });
+        const result = await this.rpc(socket, { command, account },
+          command.action === "workspace" ? { timeout: 90000 } : undefined);
         if (command.action === "close") await this.ctx.storage.delete("lease");
         return Response.json({
           ...result,

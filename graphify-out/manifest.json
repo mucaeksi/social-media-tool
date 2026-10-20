@@ -1,8 +1,8 @@
 {
   "package.json": {
-    "mtime": 1792478689.6565905,
-    "seen": 1792478755.2931457,
-    "ast_hash": "2910f9d9341be0579fcbfcf55a6ae724",
+    "mtime": 1792482211.488615,
+    "seen": 1792482240.7830555,
+    "ast_hash": "1f1252dda1734e9f12c85035c0a69ecd",
     "semantic_hash": ""
   },
   "scripts/dev.mjs": {
@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792481150.5873487,
-    "seen": 1792481406.935759,
-    "ast_hash": "8663db5aa46d5d12640864392c3958c7",
+    "mtime": 1792482211.4933288,
+    "seen": 1792482240.7858567,
+    "ast_hash": "1a525cfaed6aa955670ff5a47269ee0d",
     "semantic_hash": ""
   },
   "README.md": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/cloudflare.yml": {
-    "mtime": 1792471950.3767238,
-    "seen": 1792473384.1758523,
-    "ast_hash": "b9494928f938e9933c2c891acb20e91a",
+    "mtime": 1792482211.2715814,
+    "seen": 1792482240.785834,
+    "ast_hash": "f3ba7e0e4ec1b2fc7f995eff57399290",
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
@@ -546,9 +546,9 @@
     "semantic_hash": ""
   },
   "companion/browser.mjs": {
-    "mtime": 1792481798.892913,
-    "seen": 1792481920.3673544,
-    "ast_hash": "e1cb46400e6606697f46562e8d7bc385",
+    "mtime": 1792482209.7419841,
+    "seen": 1792482240.7827857,
+    "ast_hash": "57b857c019e15be8f9a89fb5d02ac252",
     "semantic_hash": ""
   },
   "companion/package.json": {
@@ -612,9 +612,9 @@
     "semantic_hash": ""
   },
   "worker/computer-relay.mjs": {
-    "mtime": 1792481257.3731787,
-    "seen": 1792481406.935421,
-    "ast_hash": "17e51a3072bcd486458094f6eb2163d1",
+    "mtime": 1792482210.2619803,
+    "seen": 1792482240.7851064,
+    "ast_hash": "2402a750e11e24834e42be735e18d77e",
     "semantic_hash": ""
   },
   "docs/SIRKET_BILGISAYARI.md": {
@@ -867,6 +867,12 @@
     "mtime": 1792481889.1882834,
     "seen": 1792481920.368874,
     "ast_hash": "acb064e5cacdabd2ee07ca9b3284ba3f",
+    "semantic_hash": ""
+  },
+  "scripts/install-test-firefox.mjs": {
+    "mtime": 1792482210.7459767,
+    "seen": 1792482240.7834857,
+    "ast_hash": "bd85f0711b5ab66392513442a809f00f",
     "semantic_hash": ""
   }
 }

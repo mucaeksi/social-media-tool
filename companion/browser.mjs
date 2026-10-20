@@ -32,7 +32,6 @@ export class ProfileBrowsers {
       browser,
     });
     this.opened = new Map();
-    this.tabQueues = new WeakMap();
     this.queue = Promise.resolve();
   }
   execute(account, value) {
@@ -332,30 +331,6 @@ export class ProfileBrowsers {
     return domainMatches(new URL(value).hostname, [new URL(config.home).hostname.replace(/^www\./, "")]);
   }
   newTab(browser) {
-    const run = (this.tabQueues.get(browser) || Promise.resolve()).then(async () => {
-      const source = (await browser.pages())[0];
-      if (!source || this.browser !== "firefox") return browser.newPage();
-      const previous = new Set(browser.targets());
-      // Firefox's normal link action creates a tab in this window. Some Firefox
-      // builds cannot complete BiDi browsingContext.create. The code and blank
-      // destination are fixed locally; no script or file path arrives remotely.
-      const [target] = await Promise.all([
-        browser.waitForTarget((t) => t.type() === "page" && !previous.has(t), { timeout: 8000 }),
-        source.evaluate(() => {
-          const link = document.createElement("a");
-          link.href = "about:blank";
-          link.target = "_blank";
-          link.rel = "noopener";
-          document.documentElement.append(link);
-          link.click();
-          link.remove();
-        }),
-      ]);
-      const page = await target.page();
-      if (!page) throw new Error("Firefox sekmesi açılamadı.");
-      return page;
-    });
-    this.tabQueues.set(browser, run.catch(() => {}));
-    return run;
+    return browser.newPage({ type: "tab", background: true });
   }
 }
