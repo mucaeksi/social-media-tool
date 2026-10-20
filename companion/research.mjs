@@ -252,7 +252,6 @@ export class WebsiteResearch {
         defaultViewport: { width: 1280, height: 800 },
         protocolTimeout: 12000,
         extraPrefsFirefox: {
-          "javascript.enabled": input.mode === "firefox",
           "media.peerconnection.enabled": false,
           "network.prefetch-next": false,
           "network.dns.disablePrefetch": true,
@@ -315,7 +314,13 @@ export class WebsiteResearch {
         if (input.mode === "static") {
           const source = await this.readHTML(url, input.hosts);
           finalUrl = source.url;
-          await page.setContent(source.html, {
+          // Disable site scripts before parsing any untrusted markup. Disabling
+          // Firefox's global JS preference also breaks BiDi page creation in
+          // newer Firefox builds, so keep automation alive behind a strict CSP.
+          const isolatedHTML =
+            '<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'none\'; object-src \'none\'; frame-src \'none\'; base-uri \'none\'; form-action \'none\'; style-src \'unsafe-inline\'">' +
+            source.html;
+          await page.setContent(isolatedHTML, {
             waitUntil: "domcontentloaded",
             timeout: 12000,
           });
