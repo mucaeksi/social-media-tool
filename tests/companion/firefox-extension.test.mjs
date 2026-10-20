@@ -71,9 +71,9 @@ test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve 
     const popup = await browser.newPage();
     popup.on("pageerror", (e) => console.error("Popup fixture:", e.message));
     // Firefox BiDi does not emit load events consistently for extension pages.
-    // WebDriver navigation is required: recent Firefox rejects web-page script
-    // navigation into moz-extension pages even for web-accessible resources.
-    await popup.goto(`moz-extension://${uuid}/popup.html`, { waitUntil: "domcontentloaded", timeout: 5000 }).catch((e) => { if (e.name !== "TimeoutError") throw e; });
+    // BiDi forbids navigating to extension URLs in current Developer Edition.
+    // The copied test extension explicitly makes this popup web-accessible.
+    await popup.evaluate((url) => { location.href = url; }, `moz-extension://${uuid}/popup.html`);
     await popup.waitForFunction(() => document.querySelector("#status").textContent.length > 0);
     assert.equal((await rpc("status")).version, "1.1.0");
     assert.equal((await rpc("read", { companyId, accountId })).ok, false);
