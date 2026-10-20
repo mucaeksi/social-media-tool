@@ -726,9 +726,9 @@
     "semantic_hash": ""
   },
   "companion/research.mjs": {
-    "mtime": 1792478921.082804,
-    "seen": 1792478925.6459413,
-    "ast_hash": "080b4f490801ee54b29b0947eeb10e54",
+    "mtime": 1792479079.8256202,
+    "seen": 1792479084.565805,
+    "ast_hash": "4dd2560fde813a13e86e9a649fef0d21",
     "semantic_hash": ""
   },
   "shared/quality-cases.mjs": {

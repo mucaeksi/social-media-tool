@@ -278,7 +278,9 @@ export class WebsiteResearch {
       deadline = setTimeout(() => {
         void browser?.close().catch(() => {});
       }, 150000);
-      const page = await browser.newPage();
+      // Firefox starts with an empty tab. Reuse it as the account browser does;
+      // some Firefox/BiDi builds cannot create a second browsing context here.
+      const page = (await browser.pages())[0] || (await browser.newPage());
       await page.setRequestInterception(true);
       page.on("request", (r) => {
         let permitted = false;
