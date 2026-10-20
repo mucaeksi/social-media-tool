@@ -7,13 +7,15 @@ import {
 } from "../shared/passwords.mjs";
 
 export const SESSION_SECONDS = 8 * 60 * 60;
-const userColumns = "u.id,u.username,u.email,u.name,u.role,u.created_at";
+const userColumns =
+  "u.id,u.username,u.email,u.name,u.role,u.created_at,u.enabled";
 const publicUser = (row) => ({
   id: row.id,
   username: row.username,
   email: row.email,
   name: row.name,
   role: row.role,
+  enabled: Boolean(row.enabled),
   createdAt: row.created_at,
 });
 const cookieName = (request) =>

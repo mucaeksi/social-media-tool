@@ -12,6 +12,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { api } from "./api.ts";
+import { BrowserTools } from "./BrowserTools.tsx";
+import type { PageRead, BrowserTab } from "./BrowserTools.tsx";
 import { Modal } from "./Modal.tsx";
 import type {
   AuthUser,
@@ -42,6 +44,8 @@ type ComputerStatus = {
   dailyCommands: number;
 };
 type Screen = {
+  page?: PageRead;
+  tabs?: BrowserTab[];
   accountId: string;
   viewId: string;
   frame: string;
@@ -171,8 +175,13 @@ export function CompanyAccounts({
       )
         .then((next) => {
           if (valid && live.current?.viewId === target.viewId) {
-            live.current = next;
-            setScreen(next);
+            const merged = {
+              ...next,
+              page: live.current?.page,
+              tabs: live.current?.tabs,
+            };
+            live.current = merged;
+            setScreen(merged);
           }
         })
         .catch((e: Error) => {
@@ -671,6 +680,18 @@ export function CompanyAccounts({
                 )}
               </button>
             </form>
+            {company && (
+              <BrowserTools
+                key={screen.viewId}
+                accountId={screen.accountId}
+                companyId={company.id}
+                viewId={screen.viewId}
+                page={screen.page}
+                tabs={screen.tabs}
+                busy={busy}
+                command={control}
+              />
+            )}
             <div className="computer-keys">
               {[
                 ["Tab", "Sonraki alan"],

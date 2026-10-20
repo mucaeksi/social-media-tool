@@ -66,8 +66,11 @@ before(async () => {
     "0001_studio.sql",
     "0002_d1_media.sql",
     "0003_r2_budget.sql",
+    "0004_users.sql",
+    "0005_social_accounts.sql",
     "0006_social_ai.sql",
     "0007_ai_images.sql",
+    "0012_expert_workspace.sql",
   ])
     for (const sql of (await readFile(`migrations/${name}`, "utf8"))
       .split(";")
@@ -176,7 +179,7 @@ test("Görsel özel depodan okunur; iki modelin bütçesi önceden ayrılır ve 
     await call(`/api/ai/workspace?companyId=${companies[0]}`)
   ).json();
   assert.equal(workspace.turns[0].mediaId, media.id);
-  assert.equal(workspace.turns[0].expertVersion, "gorsel-ozet-v1");
+  assert.equal(workspace.turns[0].expertVersion, "kktc-kaynakli-v2");
   await db.prepare("DELETE FROM media WHERE id=?").bind(media.id).run();
   assert.equal(
     (await (await call(`/api/ai/workspace?companyId=${companies[0]}`)).json())

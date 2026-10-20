@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { transferMedia } from "./media-transfer.mjs";
 import { randomToken, tokenDigest } from "../shared/passwords.mjs";
 import {
   computerCommand,
@@ -152,6 +153,9 @@ export function registerCompanyComputer(app) {
   app.post("/api/computer/accounts/:id/command", async (c) => {
     const input = await c.req.json(),
       command = computerCommand(input);
+    if (["prepare", "publish"].includes(command.action))
+      throw computerError(400, "Bu işlem yayın kuyruğundan başlatılmalıdır.");
+    delete command.media;
     const viewId =
       command.action === "open" ? undefined : z.uuid().parse(input.viewId);
     const row = await c.env.DB.prepare(
@@ -160,6 +164,12 @@ export function registerCompanyComputer(app) {
       .bind(z.uuid().parse(c.req.param("id")))
       .first();
     if (!row) throw computerError(404, "Sosyal hesap bulunamadı.");
+    if (command.action === "upload")
+      command.media = await transferMedia(
+        c,
+        { companyId: row.company_id, platform: row.platform },
+        z.uuid().parse(command.mediaId),
+      );
     const device = await c.env.DB.prepare(
       "SELECT d.id FROM company_computers d JOIN users u ON u.id=d.created_by WHERE d.revoked_at IS NULL AND u.role='admin' AND u.enabled=1 LIMIT 1",
     ).first();

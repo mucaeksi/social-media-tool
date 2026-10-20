@@ -1,5 +1,7 @@
 # Windows ve Firefox ile kalıcı sosyal hesap girişleri
 
+**Yardımcı 1.3 yaması:** Aynı kurulumun otomatik güncellemesine KKTC kaynak araştırması, Firefox görevleri, AI ara kayıt/devam ve Facebook yayın pilotu eklendi. İlk kurulum adımları aşağıda; güncel özellikler ve gerçek hesapta doğrulanmamış kapsam [KKTC uzman web rehberindedir](https://github.com/mucaeksi/social-media-tool/blob/main/docs/KKTC_UZMAN_KULLANIM.md). Eski sürümün “otomatik yayın yok” notları yeni pilotu kapsamaz; diğer platformların otomatik yayını ve gerçek hesap kontrolü hâlâ tamamlanmış sayılmaz.
+
 Panel, şirket kayıtları, taslaklar ve AI verileri Cloudflare'de; kaynak kod GitHub'da kalır. Kullanıcının onayıyla sosyal hesap tarayıcıları artık **Windows 10/11 şirket bilgisayarında Mozilla Firefox** ile çalışır. Chrome'un kişisel/iş profilleri kullanılmaz. Eklenti, ücretli tarayıcı servisi, API kredisi veya modemden port açma gerekmez. Bilgisayarın elektrik/internet maliyeti vardır.
 
 ## İlk kurulum

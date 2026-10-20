@@ -1,22 +1,24 @@
 # Sosyal Studio
 
+**20 Ekim yaması:** [KKTC uzman çalışma alanı kullanımı](docs/KKTC_UZMAN_KULLANIM.md). KKTC profili, kanıtlı site araştırması, şirket bazında editör erişimi, Firefox görevleri, yerel AI ara kayıt/devam, kalite defteri, yedek ve Facebook yayın pilotu mevcut programa eklendi. Gerçek hesap/Windows/model kontrolü kullanıcı bilgisayarında yapılmalıdır; dokuz platform için otomatik yayın doğrulanmış değildir.
+
 Birden fazla şirketin sosyal medya içeriklerini hazırlamak için tamamen Türkçe bir panel. Facebook, Instagram, X / Twitter, Threads, Pinterest, YouTube, TikTok, LinkedIn ve Tumblr için metin ve görsel hazırlama alanları içerir.
 
-[20 Ekim 2026 geliştirme incelemesi: KKTC uzmanlığı, kaynaklı web araştırması ve Firefox görevleri](docs/KKTC_GELISTIRME_INCELEMESI.md). Mevcut Firefox yardımcısı ve yerel AI ayrı çalışır; web sitelerini otomatik okuyup AI hafızasına aktarma ve AI ile tarayıcı görevleri henüz uygulanmadı. [Windows Firefox ve küçük yerel model kurulumu](docs/SIRKET_BILGISAYARI.md).
+[Geliştirme öncesi KKTC incelemesi](docs/KKTC_GELISTIRME_INCELEMESI.md) · [Windows Firefox ve küçük yerel model kurulumu](docs/SIRKET_BILGISAYARI.md). Güncel uygulanan kapsam yukarıdaki yama rehberindedir.
 
-**İçerik hazırlama ve deneysel sosyal hesap tarayıcısı.** Canlı Cloudflare sürümünde yönetici, şirketlere ayrı hesaplar ekleyip platformun kendi ekranında giriş yapabilir; oturumlar şifreli saklanır. Hazırlanan metin açık gönderi alanına aktarılabilir. Toplu otomatik yayınlama, görseli uzak forma yükleme ve zamanlama henüz yoktur. [Hesap girişi ve doğrulanan kapsam](docs/HESAP_GIRISI.md).
+**İçerik hazırlama ve Firefox hesap yardımcısı.** Yönetici şirketlere ayrı hesaplar ekleyip Windows'taki kalıcı Firefox profilleriyle giriş yapabilir. Sayfa okuma, alan seçimi, metin ve 600 KB'a kadar JPEG aktarımı vardır. Facebook için onaylı zamanlama/yayın pilotu eklendi; diğer platformların otomatik yayın adaptörleri ve gerçek hesap kontrolü tamamlanmış sayılmaz. Eski Cloudflare Browser Run seçeneği ayrı, deneysel ve şifreli çerez deposuyla korunur. [Hesap girişi](docs/HESAP_GIRISI.md).
 
 [Sekiz platformun resmi API ve web girişi koşulları](docs/PLATFORM_BAGLANTILARI.md) panelde hesap kartlarına da eklendi. Facebook, Instagram, Threads, Pinterest ve Google/YouTube giriş alanları açıldı; gerçek hesap girişi denenmedi. X erişimi reddedildi, TikTok ve LinkedIn giriş alanları doğrulanamadı. Resmi API bağlantısı henüz etkin değildir.
 
-**Entegre AI asistanı:** Cloudflare Workers AI üzerindeki Gemma 4 modeli şirket hafızasıyla Türkçe fikir/strateji yanıtları ve sekiz platforma ayrı içerik hazırlar. Yönetici marka bilgileri ve onaylı örnekler ekler; kullanıcı sonucu kontrol edip stüdyoya aktarır. Model ağırlıkları eğitilmez. Sağlayıcının günlük 10.000 Neuron ücretsiz kotası içinde uygulama 9.000 Neuron güvenli rezervasyon bütçesi kullanır; ücretli plan açılmaz. [Kullanım ve sınırlar](docs/AI_YOL_HARITASI.md).
+**Entegre AI asistanı:** Cloudflare Gemma 4 veya şirket bilgisayarında Qwen3.5:4b, şirket hafızası ve onaylı kaynaklarla içerik hazırlar. Yönetici marka bilgileri ve onaylı örnekler ekler; kullanıcı sonucu kontrol edip stüdyoya aktarır. Model ağırlıkları eğitilmez. Bulut modelinde sağlayıcının günlük 10.000 Neuron ücretsiz kotası içinde uygulama 9.000 Neuron rezervasyon bütçesi kullanır; yerel model bu kotayı harcamaz. [Kullanım ve sınırlar](docs/AI_YOL_HARITASI.md).
 
-**Görsel + kısa özet:** Fotoğrafı asistan ekranında yükleyin. Cloudflare Gemma 4 görseli inceler; Gemma 4, sosyal medya uzmanı çalışma rehberi ve şirket hafızasıyla her platforma ayrı metin/etiket/görsel açıklaması üretir. Metin ve görsel birlikte stüdyoya aktarılır. Gerçek yayın bağlantıları henüz kurulmadığından otomatik paylaşım yapılmaz.
+**Görsel + kısa özet:** Seçilen model görseli inceler; uzman rehberi, şirket hafızası ve kaynaklarla platformlara ayrı metin/etiket/görsel açıklaması üretir. Metin ve görsel birlikte stüdyoya aktarılır. AI üretimi kendiliğinden paylaşım yapmaz; yayın kuyruğunda ayrıca açık onay gerekir.
 
 ## Cloudflare üzerinde yayın
 
 Kaynaklar GitHub `main` dalındadır. Her kaynak güncellemesi `.github/workflows/cloudflare.yml` ile test edilip Cloudflare Workers'a dağıtılır. Üretim veritabanı Cloudflare D1, görsel deposu R2 (henüz etkin değilse D1), giriş doğrulaması D1 üzerinde kullanıcı adı/şifre ve güvenli oturum çerezleriyle yapılır. GitHub Actions mevcut `CLOUDFLARE_API` repository secret'ını kullanır; tarayıcıya veya koda secret yazılmaz.
 
-Herkese açık kayıt yoktur; hesapları yönetici oluşturur. Yönetici ve editör rolleri vardır; kullanıcı yönetimi yalnızca yöneticilere açıktır. Kullanıcılar aynı şirket/taslak alanını paylaşır; şirket bazında kullanıcı yetkileri henüz yoktur. Uygulama en fazla 50 kullanıcıya izin verir. Zero Trust Free planı ayrıca dağıtımda doğrulanır; panel artık Access e-posta kodu veya Access koltuğu kullanmaz. Ücretli plana otomatik geçilmez. Dağıtım sonucu ve doğrulanmış canlı adres `deployment/cloudflare.json` dosyasında tutulur; başarı yalnızca canlı kontrol geçince kaydedilir.
+Herkese açık kayıt yoktur; hesapları yönetici oluşturur. Yönetici bütün şirketleri, editör yalnız atanan şirketleri görür. Kullanıcı/şirket izinleri, şifre güncelleme ve oturum kapatma ekranları vardır. Uygulama en fazla 50 kullanıcıya izin verir. Zero Trust Free planı dağıtımda doğrulanır; panel Access koltuğu tüketmez. Ücretli plana geçilmez. Dağıtım sonucu ve doğrulanmış adres `deployment/cloudflare.json` dosyasındadır; başarı yalnız canlı kontrol geçince kaydedilir.
 
 R2 için kodda 10 GB depolama, UTC ayında 1 milyon Class A ve 10 milyon Class B sınırı bulunur. Bu sayaçlar uygulamanın veri işlemlerini kapsar; hesap genelinde fatura limiti değildir.
 

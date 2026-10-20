@@ -103,6 +103,7 @@ export async function provisionCloudflare() {
       { tag: "company-computer-v1", new_sqlite_classes: ["CompanyComputer"] },
     ],
     workers_dev: true,
+    triggers: { crons: ["* * * * *"] },
     preview_urls: false,
     assets: {
       directory: "../dist",

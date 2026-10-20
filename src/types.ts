@@ -25,6 +25,22 @@ export type Platform = {
   requirement: string;
 };
 export type CompanyInput = {
+  regional?: Partial<
+    Record<
+      | "sector"
+      | "districts"
+      | "segments"
+      | "languages"
+      | "delivery"
+      | "currency"
+      | "contact"
+      | "hours"
+      | "goal"
+      | "restrictions"
+      | "timezone",
+      string
+    >
+  >;
   name: string;
   handle: string;
   website: string;
@@ -48,6 +64,7 @@ export type Media = {
   height: number;
 };
 export type DraftInput = {
+  sourceRefs?: SourceRef[];
   companyId: string;
   name: string;
   text: string;
@@ -62,10 +79,19 @@ export type Draft = DraftInput & {
   updatedAt: string;
 };
 export type AuthUser = {
+  enabled?: boolean;
   id: string;
   username: string;
   email: string;
   name: string;
   role: "admin" | "editor";
   local?: boolean;
+};
+export type SourceRef = {
+  sourceId: string;
+  factId: string;
+  field: string;
+  value: string;
+  url: string;
+  validUntil: string;
 };

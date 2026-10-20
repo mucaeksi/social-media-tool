@@ -96,7 +96,11 @@ before(async () => {
   const migration =
     (await readFile("migrations/0001_studio.sql", "utf8")) +
     (await readFile("migrations/0002_d1_media.sql", "utf8")) +
-    (await readFile("migrations/0003_r2_budget.sql", "utf8"));
+    (await readFile("migrations/0003_r2_budget.sql", "utf8")) +
+    (await readFile("migrations/0004_users.sql", "utf8")) +
+    (await readFile("migrations/0005_social_accounts.sql", "utf8")) +
+    (await readFile("migrations/0006_social_ai.sql", "utf8")) +
+    (await readFile("migrations/0012_expert_workspace.sql", "utf8"));
   for (const statement of migration
     .split(";")
     .map((part) => part.trim())

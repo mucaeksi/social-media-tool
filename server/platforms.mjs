@@ -1,3 +1,4 @@
+import { KKTC_RULES } from "../shared/regional-expert.mjs";
 export const platforms = [
   {
     id: "instagram",
@@ -186,6 +187,8 @@ export function createPrompt({
   visualContext = false,
 }) {
   const editorialGuidance =
+    KKTC_RULES +
+    "\n" +
     "Editör kontrolü: Her gönderi tek bir ana fikre odaklansın. İlk cümle somut faydayı veya haberi anlatsın. Şirketin hedef kitlesini ve anlatım dilini koru. Okuyucunun aradığı terimleri başlık ve açıklamada doğal kullan. Aynı metni platformlar arasında tekrar etme; ana fikri platforma göre yeniden anlat. Anahtar kelime yığma, klişe açılış, yapay etkileşim tuzağı ve uydurma istatistik kullanma. Kaynakta olmayan başarı, müşteri görüşü veya teklif ekleme. Metni bitirmeden önce açıklık, tutarlı marka dili, kanıtlanabilir iddialar, doğru Türkçe ve somut çağrı açısından kontrol et.";
   const brief = {
     company: {
@@ -194,6 +197,8 @@ export function createPrompt({
       tone: company.tone,
       audience: company.audience,
       keywords: company.keywords,
+      regional: company.regional,
+      sourceRefs: company.sourceRefs,
     },
     source: text,
     imageAttachedToPanel: hasMedia,

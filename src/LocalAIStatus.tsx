@@ -3,6 +3,7 @@ import { Download, RefreshCw } from "lucide-react";
 import { api } from "./api.ts";
 
 type Status = {
+  stage?: string | null;
   model: string;
   phase: string;
   progress: number | null;
@@ -97,6 +98,22 @@ export function LocalAIStatus({
           max={1}
           aria-label="Model indirme ilerlemesi"
         />
+      )}
+      {status?.stage && <p role="status">{status.stage}</p>}
+      {status?.phase === "generating" && (
+        <button
+          className="secondary"
+          disabled={pending}
+          onClick={() => {
+            setPending(true);
+            void api<Status>("/api/computer/ai/cancel", { method: "POST" })
+              .then(setStatus)
+              .catch((e) => setError(e.message))
+              .finally(() => setPending(false));
+          }}
+        >
+          Üretimi iptal et
+        </button>
       )}
       {status?.phase === "error" && (
         <p role="alert">

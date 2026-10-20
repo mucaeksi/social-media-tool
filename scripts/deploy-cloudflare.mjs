@@ -74,6 +74,10 @@ try {
     companyComputer:
       "Windows Firefox — otomatik güncelleme, kalıcı profiller ve Qwen3.5-4B yerel AI bağlantısı; gerçek kullanıcı/model kontrolü bilgisayarda yapılmalı",
     ai: "Cloudflare Workers AI — görsel + özet, platform metinleri ve şirket hafızası",
+    knowledge:
+      "KKTC profili, kanıtlı kaynak onayı, şirket erişimleri ve kalite defteri",
+    publishing:
+      "Facebook Firefox pilotu — onaylı kuyruk ve kalıcı bağlantı doğrulaması; gerçek sosyal hesapta henüz doğrulanmadı",
   };
   if (process.env.GITHUB_STEP_SUMMARY)
     await appendFile(

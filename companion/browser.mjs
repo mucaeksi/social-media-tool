@@ -7,6 +7,8 @@ import {
   domainMatches,
 } from "../worker/browser-state.mjs";
 import { computerCommand } from "../shared/computer-protocol.mjs";
+import { browserTool } from "./browser-tools.mjs";
+import { facebookPublish } from "./facebook-publisher.mjs";
 
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -130,10 +132,48 @@ export class ProfileBrowsers {
     }
     const pages = await entry.browser.pages();
     let page =
+      (entry.selectedPage &&
+      pages.includes(entry.selectedPage) &&
+      this.allowed(entry.selectedPage.url(), config)
+        ? entry.selectedPage
+        : null) ||
       pages.find((p) => this.allowed(p.url(), config)) ||
       pages[0] ||
       (await entry.browser.newPage());
     await page.setViewport({ width: 1280, height: 800 });
+    let extra = {};
+    if (["prepare", "publish"].includes(command.action))
+      extra = await facebookPublish({
+        entry,
+        page,
+        command,
+        account,
+        testing: this.testing,
+      });
+    if (
+      [
+        "read",
+        "navigate",
+        "back",
+        "forward",
+        "reload",
+        "tabs",
+        "tab",
+        "fill",
+        "activate",
+        "upload",
+      ].includes(command.action)
+    ) {
+      const result = await browserTool({
+        entry,
+        page,
+        command,
+        account,
+        allowed: (url) => this.allowed(url, config),
+      });
+      page = result.page;
+      extra = result.extra;
+    }
     // A dedicated app profile only. Its debugging transport stays on this computer;
     // no public debugging port, arbitrary URL, script or local file is exposed.
     if (
@@ -193,6 +233,14 @@ export class ProfileBrowsers {
     }
     if (!this.allowed(page.url(), config))
       throw new Error("Sosyal ağ dışındaki ekran iletilemez.");
+    if (command.noFrame)
+      return {
+        ...extra,
+        noFrame: true,
+        profilePresent: true,
+        loginVerified: false,
+        authDetected: await this.authHint(entry.browser, config),
+      };
     const frame = await page.screenshot({
       type: "jpeg",
       quality: 55,
@@ -202,6 +250,7 @@ export class ProfileBrowsers {
     if (frame.length > 800000)
       throw new Error("Ekran görüntüsü sınırı aşıldı.");
     return {
+      ...extra,
       frame,
       width: 1280,
       height: 800,
@@ -229,6 +278,9 @@ export class ProfileBrowsers {
           (this.testing &&
             u.protocol === "http:" &&
             u.hostname === "127.0.0.1")) &&
+        !u.username &&
+        !u.password &&
+        (this.testing || !u.port || u.port === "443") &&
         domainMatches(u.hostname, config.roots)
       );
     } catch {

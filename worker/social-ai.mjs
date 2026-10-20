@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { evidenceFor } from "./knowledge.mjs";
 import { bodyLimit } from "hono/body-limit";
 import { postSchema, selectedSchema } from "../shared/schemas.mjs";
 import { createPrompt } from "../server/platforms.mjs";
@@ -71,6 +72,7 @@ const turnView = (r) => ({
   expertVersion: r.expert_version ?? null,
   engine: r.engine ?? "cloudflare",
   model: r.model ?? AI_MODEL,
+  sourceRefs: r.evidence ? JSON.parse(r.evidence) : [],
 });
 async function company(c, id) {
   const result = await c.get("store").company(id);
@@ -91,7 +93,7 @@ async function turns(db, companyId, userId) {
   return (
     await db
       .prepare(
-        "SELECT * FROM ai_turns WHERE company_id=? AND user_id=? ORDER BY created_at DESC,id DESC LIMIT 20",
+        "SELECT t.*,e.data AS evidence FROM ai_turns t LEFT JOIN ai_evidence e ON e.turn_id=t.id WHERE t.company_id=? AND t.user_id=? ORDER BY t.created_at DESC,t.id DESC LIMIT 20",
       )
       .bind(companyId, userId)
       .all()
@@ -180,7 +182,16 @@ export function aiMessages({
 }) {
   const { name, handle, website, tone, audience, keywords } = profile;
   const context = JSON.stringify({
-    company: { name, handle, website, tone, audience, keywords },
+    company: {
+      name,
+      handle,
+      website,
+      tone,
+      audience,
+      keywords,
+      regional: profile.regional,
+      sourceRefs: profile.sourceRefs,
+    },
     memory: entries.map(({ kind, title, body }) => ({ kind, title, body })),
   });
   return [
@@ -433,6 +444,11 @@ export function registerSocialAI(app) {
       fail(400, "İçerik için platform seçin.");
     const profile = await company(c, input.companyId),
       userId = c.get("identity").id;
+    profile.sourceRefs = await evidenceFor(
+      c.env.DB,
+      input.companyId,
+      input.question,
+    );
     const attachedMedia = input.mediaId
       ? await c.get("store").media(input.mediaId)
       : null;
@@ -588,8 +604,12 @@ export function registerSocialAI(app) {
         "DELETE FROM ai_turns WHERE company_id=? AND user_id=? AND id NOT IN (SELECT id FROM ai_turns WHERE company_id=? AND user_id=? ORDER BY created_at DESC,id DESC LIMIT 20)",
       ).bind(input.companyId, userId, input.companyId, userId),
     ]);
+    await c.env.DB.prepare("INSERT INTO ai_evidence(turn_id,data) VALUES(?,?)")
+      .bind(id, JSON.stringify(profile.sourceRefs))
+      .run();
     return c.json({
       id,
+      sourceRefs: profile.sourceRefs,
       companyId: input.companyId,
       question: input.question,
       answer,

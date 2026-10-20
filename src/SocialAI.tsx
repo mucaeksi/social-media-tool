@@ -12,6 +12,7 @@ import {
   ImagePlus,
 } from "lucide-react";
 import { LocalAIStatus } from "./LocalAIStatus.tsx";
+import { LocalAIJobs } from "./LocalAIJobs.tsx";
 import { api } from "./api.ts";
 import type {
   AuthUser,
@@ -20,6 +21,7 @@ import type {
   PlatformId,
   Post,
   Media,
+  SourceRef,
 } from "./types.ts";
 import { prepareCloudMedia } from "./prepareMedia.ts";
 
@@ -32,6 +34,7 @@ type Memory = {
   createdAt: string;
 };
 export type AITurn = {
+  sourceRefs?: SourceRef[];
   id: string;
   companyId: string;
   question: string;
@@ -296,6 +299,15 @@ export function SocialAI({
         </label>
       )}
       {engine === "local" && <LocalAIStatus onReady={setLocalReady} />}
+      {engine === "local" && (
+        <LocalAIJobs
+          key={company.id}
+          companyId={company.id}
+          onComplete={(turn) =>
+            setTurns((s) => [...s.filter((r) => r.id !== turn.id), turn])
+          }
+        />
+      )}
       {usage && engine === "cloudflare" && (
         <div className="ai-budget" aria-label="AI kullanım bütçesi">
           <div>
@@ -397,6 +409,19 @@ export function SocialAI({
                       {date(turn.createdAt)}
                     </time>
                     <p>{turn.answer}</p>
+                    {Boolean(turn.sourceRefs?.length) && (
+                      <details>
+                        <summary>Başvurulan onaylı kaynaklar</summary>
+                        {turn.sourceRefs?.map((r) => (
+                          <p key={r.factId}>
+                            <a href={r.url} target="_blank" rel="noreferrer">
+                              {r.field}
+                            </a>
+                            : {r.value} · Geçerli: {date(r.validUntil)}
+                          </p>
+                        ))}
+                      </details>
+                    )}
                     {turn.imageObservation && (
                       <details className="ai-image-observation">
                         <summary>Görsel inceleme notu</summary>

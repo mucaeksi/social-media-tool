@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import { LOCAL_MODEL, LOCAL_EXPERT_VERSION } from "../shared/local-ai.mjs";
+import { SOCIAL_EXPERT_VERSION } from "../shared/social-expert.mjs";
 import {
   manifestPath,
   archivePath,
@@ -16,7 +17,7 @@ import {
 import { platforms } from "../server/platforms.mjs";
 
 export async function smokeCloudflare(deployment, adminVerification) {
-  let probeId, companyId;
+  let probeId, companyId, editorCookie;
   let headers = { Origin: deployment.url };
   const http = async (route, options = {}) => {
     const response = await fetch(`${deployment.url}${route}`, {
@@ -57,7 +58,8 @@ export async function smokeCloudflare(deployment, adminVerification) {
           result.localAI?.model === LOCAL_MODEL &&
           result.localAI?.expertVersion === LOCAL_EXPERT_VERSION &&
           result.ai === "cloudflare" &&
-          result.aiExpertVersion === "gorsel-ozet-v1" &&
+          result.aiExpertVersion === SOCIAL_EXPERT_VERSION &&
+          result.publicationQueue === true &&
           result.storage === deployment.mediaStorage
         ) {
           ready = true;
@@ -185,7 +187,12 @@ export async function smokeCloudflare(deployment, adminVerification) {
       );
       if (localSetup.status !== 403)
         throw new Error("Editör yerel model kurulumunu başlatabiliyor.");
-    } else {
+      editorCookie = headers.Cookie;
+      const accessible = await (await http("/api/companies")).json();
+      if (accessible.length !== 0)
+        throw new Error("Yeni editör atanmamış şirketleri görebiliyor.");
+    }
+    {
       const [admin] = await databaseQuery(
         deployment,
         "SELECT id FROM users WHERE role='admin' AND enabled=1 LIMIT 1",
@@ -233,7 +240,8 @@ export async function smokeCloudflare(deployment, adminVerification) {
     const aiStatus = await (await http("/api/ai/status")).json();
     if (!aiStatus.enabled || aiStatus.limits?.dailyNeurons !== 9000)
       throw new Error("Canlı AI binding veya ücretsiz bütçe doğrulanamadı.");
-    if (configs.length !== platforms.length) throw new Error("Canlı platform listesi eksik.");
+    if (configs.length !== platforms.length)
+      throw new Error("Canlı platform listesi eksik.");
     const company = await (
       await http("/api/companies", {
         method: "POST",
@@ -242,6 +250,30 @@ export async function smokeCloudflare(deployment, adminVerification) {
       })
     ).json();
     companyId = company.id;
+    const [knowledge, quality, jobs, storage] = await Promise.all([
+      http(`/api/knowledge?companyId=${companyId}`).then((r) => r.json()),
+      http(`/api/quality?companyId=${companyId}`).then((r) => r.json()),
+      http(`/api/publications?companyId=${companyId}`).then((r) => r.json()),
+      http("/api/workspace/storage").then((r) => r.json()),
+    ]);
+    if (
+      knowledge.sources.length ||
+      knowledge.facts.length ||
+      quality.cases.length !== 30 ||
+      jobs.length ||
+      storage.freeDatabaseLimit !== 500000000
+    )
+      throw new Error(
+        "KKTC çalışma alanı şeması ve kaynak/kalite/takvim uçları doğrulanamadı.",
+      );
+    if (editorCookie) {
+      const denied = await fetch(
+        `${deployment.url}/api/knowledge?companyId=${companyId}`,
+        { headers: { ...headers, Cookie: editorCookie } },
+      );
+      if (denied.status !== 404)
+        throw new Error("Şirket bazında editör erişimi kapalı değil.");
+    }
     const form = new FormData();
     const original = await sharp({
       create: { width: 320, height: 240, channels: 3, background: "#326f61" },
@@ -305,6 +337,13 @@ export async function smokeCloudflare(deployment, adminVerification) {
       woodMoodProfiles,
       expectedWoodMoodProfiles: 9,
       socialLoginsVerified: false,
+      expertWorkspace: {
+        knowledgeSchemaReady: true,
+        qualityCases: quality.cases.length,
+        publicationQueueReady: true,
+        companyScopesVerified: Boolean(editorCookie),
+        databaseBytes: storage.bytes,
+      },
     };
   } finally {
     let cleanupError;

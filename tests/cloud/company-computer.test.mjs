@@ -58,6 +58,7 @@ before(async () => {
     "0008_social_profiles.sql",
     "0010_company_computer.sql",
     "0011_local_ai.sql",
+    "0012_expert_workspace.sql",
   ])
     for (const sql of (await readFile(`migrations/${name}`, "utf8"))
       .split(";")

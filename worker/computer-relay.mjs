@@ -1,4 +1,10 @@
-import { validLocalResult, LOCAL_AI_LIMITS } from "../shared/local-ai.mjs";
+import {
+  validLocalResult,
+  LOCAL_AI_LIMITS,
+  localPost,
+} from "../shared/local-ai.mjs";
+import { validResearchResult } from "../shared/research-protocol.mjs";
+import { scheduledPublications } from "./publications.mjs";
 import {
   COMPUTER_LIMITS,
   computerError,
@@ -14,6 +20,7 @@ export class CompanyComputer {
     this.pending = new Map();
     this.queue = Promise.resolve();
     this.aiQueue = Promise.resolve();
+    this.researchQueue = Promise.resolve();
   }
   async fetch(request) {
     if (request.headers.get("upgrade") === "websocket") {
@@ -37,11 +44,63 @@ export class CompanyComputer {
       });
     }
     const input = await request.clone().json();
+    if (input.action === "wake-publications") {
+      await this.runPublications();
+      return Response.json({ ok: true });
+    }
     // Long local inference must never hold the browser/lease command queue.
     if (input.action === "local-ai") return this.localAI(input);
+    if (input.action === "research") return this.research(input);
     const run = this.queue.then(() => this.command(request));
     this.queue = run.catch(() => {});
     return run;
+  }
+  async research(input) {
+    const run = this.researchQueue.then(async () => {
+      const socket = this.ctx
+        .getWebSockets(input.deviceId)
+        .find(
+          (s) =>
+            s.readyState === 1 &&
+            Date.now() - s.deserializeAttachment().seenAt < 90000,
+        );
+      if (!socket) throw computerError(503, "Şirket bilgisayarı çevrimdışı.");
+      if (!socket.deserializeAttachment().research)
+        throw computerError(
+          409,
+          "Web araştırması için yardımcı güncellemesini bekleyin; açık hesap ekranlarını kapatın.",
+        );
+      const day = new Date().toISOString().slice(0, 10),
+        budget = await this.ctx.storage.get("research-budget");
+      const count = budget?.day === day ? budget.count : 0;
+      if (count >= 20)
+        throw computerError(429, "Günlük 20 site araştırması sınırı doldu.");
+      await this.ctx.storage.put("research-budget", { day, count: count + 1 });
+      const result = await this.rpc(
+        socket,
+        { input: input.input },
+        {
+          type: "research-command",
+          timeout: 200000,
+          validate: validResearchResult,
+        },
+      );
+      if (!result.ok)
+        throw computerError(
+          502,
+          "Site okunamadı. HTTPS adreslerini, site erişim koşullarını ve bilgisayardaki ağı kontrol edin; gerekirse Firefox modunu deneyin.",
+        );
+      return Response.json(result);
+    });
+    this.researchQueue = run.catch(() => {});
+    try {
+      return await run;
+    } catch (e) {
+      return Response.json(
+        { error: e.public ? e.message : "Web araştırması tamamlanamadı." },
+        { status: e.status || 502 },
+      );
+    }
   }
   async command(request) {
     try {
@@ -108,6 +167,32 @@ export class CompanyComputer {
           "Şirket bilgisayarı çevrimdışı. Bilgisayarda Sosyal Studio yardımcısını başlatın.",
         );
       const { command, account, userId } = input;
+      if (
+        (lease?.exclusiveJobId && lease.exclusiveJobId !== input.jobId) ||
+        (input.jobExclusive && lease)
+      )
+        throw computerError(
+          409,
+          "Hesap ekranı başka bir görevde. İşlem kontrolü ele geçirmedi.",
+        );
+      if (
+        ![
+          "open",
+          "screen",
+          "click",
+          "type",
+          "key",
+          "scroll",
+          "login",
+          "profile",
+          "close",
+        ].includes(command.action) &&
+        !socket.deserializeAttachment().tasks
+      )
+        throw computerError(
+          409,
+          "Bu işlem için yardımcı güncellemesi gerekli. Açık hesapları kapatıp güncellemeyi bekleyin.",
+        );
       if (lease && (lease.userId !== userId || lease.accountId !== account.id))
         throw computerError(
           409,
@@ -147,6 +232,7 @@ export class CompanyComputer {
           accountId: account.id,
           companyId: account.companyId,
           account,
+          exclusiveJobId: input.jobExclusive ? input.jobId : null,
           userId,
           viewId: crypto.randomUUID(),
           expiresAt: Date.now() + COMPUTER_LIMITS.leaseMs,
@@ -244,6 +330,45 @@ export class CompanyComputer {
           type: "ai-command",
           timeout: input.input.action === "generate" ? 280000 : 12000,
           validate: validLocalResult,
+          onProgress: input.input.jobId
+            ? async (progress) => {
+                if (
+                  !progress ||
+                  !Array.isArray(progress.posts) ||
+                  progress.posts.length > input.input.selected.length ||
+                  (progress.observation !== null &&
+                    (typeof progress.observation !== "string" ||
+                      progress.observation.length > 4000))
+                )
+                  return;
+                const posts = progress.posts.map((p) => {
+                  if (!input.input.selected.includes(p.platform))
+                    throw new Error();
+                  return localPost(
+                    JSON.stringify(p),
+                    p.platform,
+                    Boolean(input.input.image),
+                  );
+                });
+                if (new Set(posts.map((p) => p.platform)).size !== posts.length)
+                  return;
+                await this.env.DB.prepare(
+                  "UPDATE local_ai_jobs SET progress_json=?,updated_at=? WHERE id=? AND company_id=? AND user_id=? AND state='running' AND json_array_length(json_extract(progress_json,'$.posts'))<=?",
+                )
+                  .bind(
+                    JSON.stringify({
+                      posts,
+                      observation: progress.observation,
+                    }),
+                    new Date().toISOString(),
+                    input.input.jobId,
+                    input.input.companyId,
+                    input.userId,
+                    posts.length,
+                  )
+                  .run();
+              }
+            : undefined,
         },
       );
       return Response.json(result);
@@ -258,10 +383,32 @@ export class CompanyComputer {
       );
     }
   }
+  runPublications() {
+    if (this.publicationRun) return this.publicationRun;
+    // The cron Worker only wakes this object. Browser I/O and media handling
+    // stay within the existing DO, rather than the short Free cron CPU budget.
+    this.publicationRun = scheduledPublications(this.env, (payload) =>
+      this.fetch(
+        new Request("https://computer.internal/", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }),
+      ),
+    );
+    this.publicationRun = this.publicationRun.finally(() => {
+      this.publicationRun = null;
+    });
+    return this.publicationRun;
+  }
   rpc(
     socket,
     payload,
-    { type = "command", timeout = 25000, validate = validComputerResult } = {},
+    {
+      type = "command",
+      timeout = 25000,
+      validate = validComputerResult,
+      onProgress,
+    } = {},
   ) {
     const id = crypto.randomUUID();
     return new Promise((resolve, reject) => {
@@ -277,7 +424,9 @@ export class CompanyComputer {
       this.pending.set(id, {
         socket,
         validate,
-        resultType: type === "ai-command" ? "ai-result" : "result",
+        onProgress,
+        resultType:
+          type === "command" ? "result" : type.replace(/-command$/, "-result"),
         resolve: (value) => {
           clearTimeout(timer);
           resolve(value);
@@ -325,6 +474,12 @@ export class CompanyComputer {
         localAI:
           Array.isArray(value.capabilities) &&
           value.capabilities.includes("local-ai-v1"),
+        research:
+          Array.isArray(value.capabilities) &&
+          value.capabilities.includes("research-v1"),
+        tasks:
+          Array.isArray(value.capabilities) &&
+          value.capabilities.includes("browser-tasks-v1"),
       });
       return;
     }
@@ -334,6 +489,16 @@ export class CompanyComputer {
     }
     const pending = this.pending.get(value.id);
     if (!pending || pending.socket !== socket) return;
+    if (value.type === "ai-progress") {
+      if (pending.onProgress) {
+        pending.progressQueue = (pending.progressQueue || Promise.resolve())
+          .then(() => pending.onProgress(value.progress))
+          .catch(() => {});
+        await pending.progressQueue;
+      }
+      return;
+    }
+    await pending.progressQueue;
     this.pending.delete(value.id);
     if (value.type === pending.resultType && pending.validate(value.result))
       pending.resolve(value.result);

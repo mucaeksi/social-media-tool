@@ -17,6 +17,13 @@ import {
 } from "../server/platforms.mjs";
 import { createCloudStore } from "./store.mjs";
 import { authenticate } from "./auth.mjs";
+import { scopedStore, registerWorkspaceAccess } from "./workspace-access.mjs";
+import { registerKnowledge, evidenceFor } from "./knowledge.mjs";
+import {
+  registerWorkspaceOperations,
+  databaseUsage,
+} from "./workspace-operations.mjs";
+import { registerPublications } from "./publications.mjs";
 import { registerPasswordRoutes } from "./password-auth.mjs";
 import { createD1Media } from "./d1-media.mjs";
 import { createR2Media, R2_LIMITS, r2Usage } from "./r2-media.mjs";
@@ -123,6 +130,20 @@ app.use("*", async (c, next) => {
     );
   }
   c.set("identity", identity);
+  c.set("store", scopedStore(c.get("store"), c.env.DB, identity));
+  if (
+    ["POST", "PUT"].includes(c.req.method) &&
+    /^\/api\/(?:ai\/ask|computer\/ai\/ask|knowledge\/research|drafts(?:\/[^/]+)?|media|companies(?:\/[^/]+)?|quality|metrics|publications|workspace\/restore)$/.test(
+      c.req.path,
+    )
+  ) {
+    const usage = await databaseUsage(c.env.DB);
+    if (usage.bytes !== null && usage.bytes >= usage.textWarningAt)
+      fail(
+        429,
+        "D1 güvenli yazma eşiğine (400 MB) ulaştı. Eski kayıtları yedekleyip silin; ücretli plana geçilmedi.",
+      );
+  }
   await next();
 });
 app.use(
@@ -140,6 +161,10 @@ app.use(
   }),
 );
 registerPasswordRoutes(app);
+registerWorkspaceAccess(app);
+registerKnowledge(app);
+registerWorkspaceOperations(app);
+registerPublications(app);
 app.use(
   "/api/computer/enroll",
   bodyLimit({
@@ -160,6 +185,8 @@ app.get("/api/health", async (c) => {
     storage: storageMode(c),
     mediaProcessing: "browser",
     publishing: false,
+    publicationQueue: true,
+    publishingPilot: "facebook-browser-unverified",
     socialBrowser: Boolean(c.env.SOCIAL_BROWSER && c.env.BROWSER_STATE_KEY),
     companyComputer: Boolean(c.env.COMPANY_COMPUTER),
     localAI: c.env.COMPANY_COMPUTER
@@ -182,6 +209,8 @@ app.get("/api/storage/usage", async (c) =>
 );
 app.get("/api/companies", async (c) => c.json(await store(c).companies()));
 app.post("/api/companies", async (c) => {
+  if (c.get("identity")?.role === "editor")
+    fail(403, "Yeni şirketi yönetici oluşturmalıdır.");
   if ((await store(c).companies()).length >= 30)
     fail(400, "En fazla 30 şirket ekleyebilirsiniz.");
   return c.json(
@@ -199,6 +228,8 @@ app.put("/api/companies/:id", async (c) => {
   );
 });
 app.delete("/api/companies/:id", async (c) => {
+  if (c.get("identity")?.role === "editor")
+    fail(403, "Şirket silmek için yönetici yetkisi gerekli.");
   const id = c.req.param("id");
   await company(c, id);
   if (c.env.SOCIAL_BROWSER || c.env.COMPANY_COMPUTER) {
@@ -243,6 +274,7 @@ app.post("/api/prepare", async (c) => {
 app.post("/api/prompt", async (c) => {
   const brief = briefSchema.parse(await json(c));
   const profile = await company(c, brief.companyId);
+  profile.sourceRefs = await evidenceFor(c.env.DB, brief.companyId, brief.text);
   await media(c, brief.mediaId, brief.companyId);
   return c.json({
     prompt: createPrompt({
@@ -439,4 +471,8 @@ app.onError((error, c) => {
     500,
   );
 });
-export default app;
+export default {
+  fetch: app.fetch,
+  scheduled: (_controller, env, ctx) =>
+    ctx.waitUntil(computerBroker(env, { action: "wake-publications" })),
+};

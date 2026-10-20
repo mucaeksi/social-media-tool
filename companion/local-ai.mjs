@@ -165,6 +165,7 @@ export class LocalAI {
       progress: this.progress,
       code: this.failure,
       busy: this.busy,
+      stage: this.stage || null,
     };
   }
   async installRuntime() {
@@ -321,15 +322,24 @@ export class LocalAI {
       localFail("INVALID_OUTPUT");
     return text.trim();
   }
-  async execute(value) {
+  async execute(value, onProgress = () => {}) {
     const input = localInput(value);
+    if (input.action === "cancel") {
+      this.generationController?.abort();
+      return { ok: true, status: await this.status() };
+    }
     if (input.action === "status")
       return { ok: true, status: await this.status() };
     if (input.action === "setup") return { ok: true, status: this.setup() };
     if (this.busy) localFail("BUSY");
     this.busy = true;
     this.phase = "generating";
-    this.generationSignal = AbortSignal.timeout(240000);
+    this.generationController = new AbortController();
+    this.generationSignal = AbortSignal.any([
+      this.generationController.signal,
+      AbortSignal.timeout(240000),
+    ]);
+    this.stage = "Model doğrulanıyor";
     try {
       await this.startServer();
       const installed = await this.installedModel();
@@ -341,8 +351,11 @@ export class LocalAI {
       );
       if (saved?.model !== LOCAL_MODEL || saved.digest !== installed.digest)
         localFail("MODEL_MISSING");
-      let observation = null;
-      if (input.image)
+      let observation = input.resume?.observation || null;
+      this.stage = input.image
+        ? "Görsel inceleniyor"
+        : "Şirket bilgileri hazırlanıyor";
+      if (input.image && !observation)
         observation = await this.chat(
           [
             {
@@ -370,8 +383,11 @@ export class LocalAI {
           posts: [],
           observation,
         };
-      const posts = [];
+      const posts = [...(input.resume?.posts || [])];
+      onProgress({ posts: [...posts], observation });
       for (const platform of input.selected) {
+        if (posts.some((p) => p.platform === platform)) continue;
+        this.stage = `${platform}: ${posts.length + 1}/${input.selected.length} platform hazırlanıyor`;
         const p = localPlatforms[platform];
         const prompt = `Yalnızca ${platform} için bir gönderi hazırla. ${p.guide} Başlık en fazla 70, caption en fazla ${platform === "x" ? 210 : 450}, alt en fazla 180 karakter. hashtags ayrı dizide en fazla ${p.tags} adet. Görsel yoksa alt boş olsun. Geçerli JSON: {"title":"","caption":"","hashtags":[],"alt":""}. Daha önceki platformların açılışlarını tekrar etme: ${JSON.stringify(posts.map((p) => p.caption.slice(0, 180)))}. /no_think`;
         let post;
@@ -409,6 +425,7 @@ export class LocalAI {
           }
         }
         posts.push(post);
+        onProgress({ posts: [...posts], observation });
       }
       return {
         ok: true,
@@ -418,10 +435,15 @@ export class LocalAI {
         posts,
         observation,
       };
+    } catch (e) {
+      if (this.generationController?.signal.aborted) localFail("CANCELLED");
+      throw e;
     } finally {
       this.busy = false;
       this.phase = "unknown";
       this.generationSignal = null;
+      this.generationController = null;
+      this.stage = null;
     }
   }
 }

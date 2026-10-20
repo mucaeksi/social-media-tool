@@ -6,6 +6,7 @@ import { ProfileBrowsers } from "./browser.mjs";
 import { COMPUTER_LIMITS } from "../shared/computer-protocol.mjs";
 
 import { LocalAI } from "./local-ai.mjs";
+import { WebsiteResearch } from "./research.mjs";
 import { localErrors, LOCAL_AI_LIMITS } from "../shared/local-ai.mjs";
 import { production, directory } from "./locations.mjs";
 
@@ -13,6 +14,7 @@ const localAI = new LocalAI();
 const configPath = join(directory, "device.json");
 let socket,
   pool,
+  researcher,
   stopping = false,
   reconnect,
   heartbeat,
@@ -117,7 +119,10 @@ function connect(config) {
       "Panel bağlantısı kuruldu. Hesapları web panelinden açabilirsiniz. Bu pencere açık kalmalı.",
     );
     socket.send(
-      JSON.stringify({ type: "hello", capabilities: ["local-ai-v1"] }),
+      JSON.stringify({
+        type: "hello",
+        capabilities: ["local-ai-v1", "research-v1", "browser-tasks-v1"],
+      }),
     );
     heartbeat = setInterval(() => {
       if (Date.now() - lastPong > 75000) {
@@ -143,10 +148,38 @@ function connect(config) {
     }
     if (!message || typeof message !== "object" || Array.isArray(message))
       return;
+    if (message.type === "research-command") {
+      if (stopping || typeof message.id !== "string") return;
+      commandsInFlight++;
+      try {
+        const result = await researcher.execute(message.input);
+        if (socket.readyState === WebSocket.OPEN)
+          socket.send(
+            JSON.stringify({ type: "research-result", id: message.id, result }),
+          );
+      } catch {
+        if (socket.readyState === WebSocket.OPEN)
+          socket.send(
+            JSON.stringify({
+              type: "research-result",
+              id: message.id,
+              result: { ok: false, code: "RESEARCH_FAILED" },
+            }),
+          );
+      } finally {
+        commandsInFlight--;
+      }
+      return;
+    }
     if (message.type === "ai-command") {
       if (stopping || typeof message.id !== "string") return;
       try {
-        const result = await localAI.execute(message.input);
+        const result = await localAI.execute(message.input, (progress) => {
+          if (socket.readyState === WebSocket.OPEN)
+            socket.send(
+              JSON.stringify({ type: "ai-progress", id: message.id, progress }),
+            );
+        });
         if (socket.readyState === WebSocket.OPEN)
           socket.send(
             JSON.stringify({ type: "ai-result", id: message.id, result }),
@@ -221,6 +254,8 @@ async function stop(code = 0) {
   clearTimeout(reconnect);
   clearInterval(heartbeat);
   socket?.close();
+  localAI.generationController?.abort();
+  await researcher?.close();
   await pool?.queue;
   await pool?.closeAll();
   if (code === 75 && process.connected)
@@ -249,6 +284,7 @@ try {
   if (Number(process.versions.node.split(".")[0]) < 24)
     throw new Error("Node.js 24 veya üzerini kurun.");
   const executablePath = await firefoxPath();
+  researcher = new WebsiteResearch({ executablePath });
   const config = await configuration();
   pool = new ProfileBrowsers({
     directory: join(directory, "profiles"),

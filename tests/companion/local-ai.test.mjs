@@ -88,6 +88,63 @@ test("küçük model, yalnız loopback, sabit kaynak ve sınırlı GPU bağlamı
     "ready",
   );
 });
+test(
+  "yerel AI iptal isteği devam eden modeli durdurur ve mevcut içerik korunur",
+  { timeout: 10000 },
+  async (t) => {
+    let started;
+    const ready = new Promise((r) => {
+      started = r;
+    });
+    const f = await fixture(t, (url, _body, options) => {
+      if (url.endsWith("tags")) return Response.json({ models: [model] });
+      return new Promise((_resolve, reject) => {
+        options.signal.addEventListener(
+          "abort",
+          () => reject(new Error("fixture aborted")),
+          { once: true },
+        );
+        started();
+      });
+    });
+    const work = f.ai.execute(input);
+    await ready;
+    assert.equal((await f.ai.execute({ action: "status" })).status.busy, true);
+    await f.ai.execute({ action: "cancel" });
+    await assert.rejects(work, (e) => e.code === "CANCELLED");
+    assert.equal(f.ai.busy, false);
+  },
+);
+test("yerel AI devamında tamamlanmış platform tekrar üretilmez ve ilerleme isteğe bağlıdır", async (t) => {
+  let generated = 0;
+  const progress = [];
+  const f = await fixture(t, (url, body) => {
+    if (url.endsWith("tags")) return Response.json({ models: [model] });
+    generated++;
+    assert.match(JSON.stringify(body.messages), /facebook/);
+    return Response.json({
+      done: true,
+      message: { content: JSON.stringify(responseFor("facebook")) },
+    });
+  });
+  const result = await f.ai.execute(
+    {
+      ...input,
+      selected: ["instagram", "facebook"],
+      resume: {
+        posts: [{ ...responseFor("instagram"), platform: "instagram" }],
+        observation: null,
+      },
+    },
+    (p) => progress.push(p.posts.length),
+  );
+  assert.equal(generated, 1);
+  assert.deepEqual(progress, [1, 2]);
+  assert.deepEqual(
+    result.posts.map((p) => p.platform),
+    ["instagram", "facebook"],
+  );
+});
 
 test("görsel bir kez incelenir; gözlem metin üretiminde kullanılır ve görsel yoksa alt boş kalır", async (t) => {
   let vision = 0;

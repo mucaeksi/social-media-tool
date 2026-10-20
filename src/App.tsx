@@ -5,6 +5,12 @@ import { Modal } from "./Modal.tsx";
 import { api } from "./api.ts";
 import { SocialAccounts } from "./SocialAccounts.tsx";
 import { SocialAI } from "./SocialAI.tsx";
+import {
+  ResearchWorkspace,
+  PublicationWorkspace,
+  regionalLabels,
+} from "./ExpertWorkspace.tsx";
+import { WorkspaceSettings } from "./WorkspaceSettings.tsx";
 import type { AITurn } from "./SocialAI.tsx";
 import {
   ArrowDownToLine,
@@ -52,6 +58,7 @@ import type {
   PlatformId,
   Post,
   AuthUser,
+  SourceRef,
 } from "./types.ts";
 
 const initialPlatforms: PlatformId[] = [
@@ -136,7 +143,14 @@ export default function App({
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [companyId, setCompanyId] = useState("");
   const [page, setPage] = useState<
-    "studio" | "drafts" | "companies" | "connections" | "ai"
+    | "studio"
+    | "drafts"
+    | "companies"
+    | "connections"
+    | "ai"
+    | "research"
+    | "publications"
+    | "settings"
   >("studio");
   const [loading, setLoading] = useState(true);
   const [fatalError, setFatalError] = useState("");
@@ -160,6 +174,7 @@ export default function App({
   const [text, setText] = useState("");
   const [selected, setSelected] = useState<PlatformId[]>(initialPlatforms);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [sourceRefs, setSourceRefs] = useState<SourceRef[]>([]);
   const [media, setMedia] = useState<Media | null>(null);
   const [mediaFit, setMediaFit] = useState<"contain" | "cover">("contain");
   const [activePlatform, setActivePlatform] = useState<PlatformId>("instagram");
@@ -265,6 +280,7 @@ export default function App({
     setText("");
     setSelected(initialPlatforms);
     setPosts([]);
+    setSourceRefs([]);
     setMedia(null);
     setMediaFit("contain");
     setActivePlatform("instagram");
@@ -299,6 +315,7 @@ export default function App({
   }
   function draftInput(): DraftInput {
     return {
+      sourceRefs,
       companyId,
       name: draftName,
       text,
@@ -337,6 +354,7 @@ export default function App({
         setDirty(true);
         setStale(false);
         setSource("rules");
+        setSourceRefs([]);
         setNotice({
           text: "Temel metinler hazır. Özgün uyarlama için ChatGPT asistanını kullanabilirsiniz.",
         });
@@ -376,6 +394,7 @@ export default function App({
       setDirty(true);
       setStale(false);
       setSource("chatgpt-import");
+      setSourceRefs([]);
       setImportDialog(false);
       setImportText("");
       setNotice({
@@ -408,6 +427,7 @@ export default function App({
               "AI görseli veya seçili şirket değişti. Aktarım yapılmadı.",
             );
           reset();
+          setSourceRefs(turn.sourceRefs || []);
           setMedia(image);
           setText(turn.question);
           setPosts(turn.posts);
@@ -474,6 +494,7 @@ export default function App({
           setText(draft.text);
           setSelected(draft.selected);
           setPosts(draft.posts);
+          setSourceRefs(draft.sourceRefs || []);
           setPostRevision((v) => v + 1);
           setMedia(image);
           setMediaFit(draft.mediaFit);
@@ -511,6 +532,9 @@ export default function App({
     { id: "drafts", name: "Taslaklar", icon: Layers3 },
     { id: "companies", name: "Şirketler", icon: Building2 },
     { id: "connections", name: "Hesap bağlantıları", icon: Link2 },
+    { id: "research", name: "KKTC ve kaynaklar", icon: FileText },
+    { id: "publications", name: "Yayın takvimi", icon: CheckCheck },
+    { id: "settings", name: "Ekip ve ayarlar", icon: Settings2 },
   ] as const;
   const pageTitles = {
     studio: "İçerik stüdyosu",
@@ -518,6 +542,9 @@ export default function App({
     companies: "Şirketler",
     connections: "Hesap bağlantıları",
     ai: "AI asistanı",
+    research: "KKTC ve kaynaklar",
+    publications: "Yayın takvimi",
+    settings: "Ekip ve ayarlar",
   };
 
   if (loading || fatalError)
@@ -582,23 +609,29 @@ export default function App({
           </div>
         </div>
         <nav aria-label="Ana menü">
-          {navItems.map(({ id, name, icon: Icon }) => (
-            <button
-              key={id}
-              className={`nav-item ${page === id ? "active" : ""}`}
-              onClick={() => {
-                setPage(id);
-                setMobileMenu(false);
-              }}
-            >
-              <Icon size={19} />
-              <span>{name}</span>
-              {id === "drafts" && drafts.length > 0 && (
-                <span className="nav-count">{drafts.length}</span>
-              )}
-              {page === id && <span className="nav-dot" />}
-            </button>
-          ))}
+          {navItems
+            .filter(
+              (i) =>
+                cloud ||
+                !["research", "publications", "settings"].includes(i.id),
+            )
+            .map(({ id, name, icon: Icon }) => (
+              <button
+                key={id}
+                className={`nav-item ${page === id ? "active" : ""}`}
+                onClick={() => {
+                  setPage(id);
+                  setMobileMenu(false);
+                }}
+              >
+                <Icon size={19} />
+                <span>{name}</span>
+                {id === "drafts" && drafts.length > 0 && (
+                  <span className="nav-count">{drafts.length}</span>
+                )}
+                {page === id && <span className="nav-dot" />}
+              </button>
+            ))}
         </nav>
         <div className="sidebar-bottom">
           <div className="assistant-promo">
@@ -735,7 +768,7 @@ export default function App({
             </div>
           </div>
 
-          {!companies.length && page !== "companies" ? (
+          {!companies.length && page !== "companies" && page !== "settings" ? (
             <div className="welcome-card">
               <div className="welcome-art">
                 <Building2 size={42} />
@@ -744,18 +777,24 @@ export default function App({
                 </span>
               </div>
               <div className="eyebrow">İLK ADIM</div>
-              <h2>Önce markanızla tanışalım.</h2>
+              <h2>
+                {user.role === "editor"
+                  ? "Henüz şirket erişimi atanmadı."
+                  : "Önce markanızla tanışalım."}
+              </h2>
               <p>
-                Şirketinizin adını, hedef kitlesini ve anlatım dilini ekleyin.
-                <br />
-                Sonra tüm platformlar için aynı alanda içerik hazırlayın.
+                {user.role === "editor"
+                  ? "Yöneticiniz Ekip ve ayarlar ekranından şirket erişiminizi atayabilir."
+                  : "Şirketinizin adını, hedef kitlesini ve anlatım dilini ekleyin. Sonra tüm platformlar için aynı alanda içerik hazırlayın."}
               </p>
-              <button
-                className="primary"
-                onClick={() => setCompanyDialog("new")}
-              >
-                <Plus size={17} /> İlk şirketimi ekle
-              </button>
+              {user.role === "admin" && (
+                <button
+                  className="primary"
+                  onClick={() => setCompanyDialog("new")}
+                >
+                  <Plus size={17} /> İlk şirketimi ekle
+                </button>
+              )}
               <small>Her şirketin taslakları ve görselleri ayrı tutulur.</small>
             </div>
           ) : page === "studio" ? (
@@ -1439,7 +1478,7 @@ export default function App({
                 <span>{companies.length} şirket profili</span>
                 <button
                   className="primary"
-                  disabled={isBusy}
+                  disabled={isBusy || user.role !== "admin"}
                   onClick={() => setCompanyDialog("new")}
                 >
                   <Plus size={17} /> Şirket ekle
@@ -1629,6 +1668,21 @@ export default function App({
                 </div>
               )}
             </>
+          ) : page === "research" && company ? (
+            <ResearchWorkspace key={company.id} company={company} user={user} />
+          ) : page === "publications" && company ? (
+            <PublicationWorkspace
+              key={company.id}
+              company={company}
+              user={user}
+              drafts={drafts}
+            />
+          ) : page === "settings" ? (
+            <WorkspaceSettings
+              user={user}
+              companies={companies}
+              company={company}
+            />
           ) : page === "ai" && company ? (
             <SocialAI
               key={company.id}
@@ -1901,7 +1955,19 @@ function CompanyForm({
   onSave: (data: CompanyInput) => void;
 }) {
   const [form, setForm] = useState<CompanyInput>(
-    company ? { ...company } : { ...blankCompany },
+    company
+      ? {
+          ...company,
+          regional: {
+            languages: "Türkçe",
+            timezone: "Asia/Famagusta",
+            ...company.regional,
+          },
+        }
+      : {
+          ...blankCompany,
+          regional: { languages: "Türkçe", timezone: "Asia/Famagusta" },
+        },
   );
   function field<K extends keyof CompanyInput>(key: K, value: CompanyInput[K]) {
     setForm((before) => ({ ...before, [key]: value }));
@@ -1989,6 +2055,52 @@ function CompanyForm({
               placeholder="tasarım, sürdürülebilirlik, dekorasyon"
               onChange={(e) => field("keywords", e.target.value)}
             />
+          </div>
+          <div className="color-field">
+            <span>KKTC uzman profili</span>
+          </div>
+          {Object.entries(regionalLabels).map(([key, label]) => (
+            <div className="field" key={key}>
+              <label htmlFor={`regional-${key}`}>{label}</label>
+              <textarea
+                id={`regional-${key}`}
+                maxLength={
+                  key === "languages"
+                    ? 100
+                    : key === "currency" || key === "hours"
+                      ? 200
+                      : ["delivery", "contact", "restrictions"].includes(key)
+                        ? 400
+                        : 300
+                }
+                value={
+                  form.regional?.[
+                    key as keyof NonNullable<CompanyInput["regional"]>
+                  ] || ""
+                }
+                onChange={(e) =>
+                  field("regional", { ...form.regional, [key]: e.target.value })
+                }
+              />
+            </div>
+          ))}
+          <div className="field">
+            <label htmlFor="regional-timezone">
+              İçerik takvimi saat dilimi
+            </label>
+            <select
+              id="regional-timezone"
+              value={form.regional?.timezone || "Asia/Famagusta"}
+              onChange={(e) =>
+                field("regional", {
+                  ...form.regional,
+                  timezone: e.target.value,
+                })
+              }
+            >
+              <option value="Asia/Famagusta">KKTC — Asia/Famagusta</option>
+              <option value="Europe/Istanbul">Türkiye — Europe/Istanbul</option>
+            </select>
           </div>
           <div className="color-field">
             <label htmlFor="company-color">Marka rengi</label>

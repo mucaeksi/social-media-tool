@@ -3526,3 +3526,152 @@ main {
 .ai-engine-choice select { width: 100%; padding: 12px; border: 1px solid #dce4dc; border-radius: 9px; background: white; }
 
 .local-ai-status .ai-section-heading { flex-wrap: wrap; }
+
+.expert-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  align-items: start;
+}
+.expert-panel {
+  padding: 26px;
+  min-width: 0;
+}
+.expert-panel h2 {
+  font-size: 20px;
+  margin: 0 0 14px;
+}
+.expert-panel h3 {
+  font-size: 16px;
+  margin: 10px 0;
+}
+.expert-panel p {
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.expert-panel .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+}
+.expert-panel input,
+.expert-panel textarea,
+.expert-panel select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d9e1de;
+  border-radius: 9px;
+  padding: 11px;
+  background: #fff;
+  color: #233831;
+  font: inherit;
+  min-width: 0;
+}
+.expert-panel textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+.expert-panel button,
+.expert-panel a {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.expert-item {
+  border-top: 1px solid #e4ebe7;
+  padding: 18px 0;
+}
+.expert-item a {
+  color: #24604b;
+  word-break: break-word;
+}
+.expert-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.expert-actions .field,
+.expert-actions .expert-check {
+  flex-basis: 100%;
+}
+.expert-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 14px 0;
+  line-height: 1.5;
+}
+.expert-check input {
+  width: auto;
+  margin-top: 5px;
+}
+.source-excerpt {
+  white-space: pre-wrap;
+  max-height: 360px;
+  overflow: auto;
+  background: #f5f8f6;
+  padding: 14px;
+  border-radius: 9px;
+}
+.expert-panel details {
+  margin: 14px 0;
+}
+.expert-panel summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.expert-panel dt {
+  font-weight: 600;
+}
+.expert-panel dd {
+  margin: 5px 0 15px;
+}
+.browser-tools-panel {
+  border: 1px solid #d9e1de;
+  padding: 16px;
+  border-radius: 12px;
+  margin: 16px 0;
+}
+.browser-tools-panel .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+.browser-tools-panel textarea,
+.browser-tools-panel input,
+.browser-tools-panel select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #d9e1de;
+  border-radius: 8px;
+  font: inherit;
+}
+.browser-tools-panel textarea {
+  min-height: 90px;
+}
+.browser-tools-panel p {
+  overflow-wrap: anywhere;
+}
+.browser-tools-panel .expert-actions {
+  margin-top: 12px;
+}
+@media (max-width: 1000px) {
+  .expert-grid {
+    grid-template-columns: 1fr;
+  }
+  .expert-panel {
+    padding: 20px;
+  }
+}
+.sidebar nav {
+  overflow: auto;
+  min-height: 100px;
+  flex: 1;
+}
+.sidebar-bottom {
+  flex-shrink: 0;
+}

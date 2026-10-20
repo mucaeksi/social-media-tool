@@ -1,5 +1,7 @@
 # KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi
 
+Bu belge geliştirme öncesindeki incelemeyi kaydeder. Sonraki yamada uygulanan özellikler, kullanım ve doğrulama sınırları [güncel KKTC uzman rehberindedir](KKTC_UZMAN_KULLANIM.md).
+
 İnceleme tarihi: 20 Ekim 2026. Bu belge kaynak kod incelemesine dayanır. Aşağıdaki öneriler uygulanmış özellikler değildir. Gerçek Windows bilgisayarı, sosyal hesaplar, canlı model kalitesi ve harici siteler bu incelemede test edilmedi. Son canlı dağıtım kanıtı `deployment/cloudflare.json` dosyasındadır; yeni yayının sonucu ayrıca doğrulanmalıdır.
 
 ## Değerlendirme
