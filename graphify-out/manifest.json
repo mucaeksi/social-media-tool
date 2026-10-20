@@ -870,9 +870,9 @@
     "semantic_hash": ""
   },
   "scripts/install-test-firefox.mjs": {
-    "mtime": 1792482523.0036685,
-    "seen": 1792482531.7838402,
-    "ast_hash": "6a6fc858b518978a0d2710266ba0cbb1",
+    "mtime": 1792500760.4512293,
+    "seen": 1792500765.1483853,
+    "ast_hash": "3b0a9904c3bee246a936fd0952942712",
     "semantic_hash": ""
   },
   "tests/companion/launcher.test.mjs": {
@@ -996,9 +996,9 @@
     "semantic_hash": ""
   },
   "tests/companion/firefox-extension.test.mjs": {
-    "mtime": 1792500548.484787,
-    "seen": 1792500578.2899663,
-    "ast_hash": "742224e3c15523bdd0173ea32afa390f",
+    "mtime": 1792500760.939226,
+    "seen": 1792500765.1498148,
+    "ast_hash": "e5fcd60e9f2ecc90520445d50c32eacb",
     "semantic_hash": ""
   },
   "tests/firefox-extension.test.mjs": {
@@ -1020,8 +1020,8 @@
     "semantic_hash": ""
   },
   "companion/extension-sources.json": {
-    "mtime": 1792500574.0525975,
-    "seen": 1792500578.2860703,
+    "mtime": 1792500761.9872184,
+    "seen": 1792500765.1474304,
     "ast_hash": "df2c720e47746f9802867eeebe61b69b",
     "semantic_hash": ""
   },
@@ -1032,9 +1032,9 @@
     "semantic_hash": ""
   },
   "companion/studio-firefox.mjs": {
-    "mtime": 1792500547.9687908,
-    "seen": 1792500578.2865999,
-    "ast_hash": "88769cdf091b636c5e34ded236ed16ae",
+    "mtime": 1792500759.9752328,
+    "seen": 1792500765.1476867,
+    "ast_hash": "ee4ba7a91fa6a14f076f31e0d6ef57c0",
     "semantic_hash": ""
   },
   "firefox-extension/managed.js": {

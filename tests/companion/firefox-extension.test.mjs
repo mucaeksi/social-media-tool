@@ -9,7 +9,7 @@ import { extensionFiles } from "../../scripts/build-firefox-extension.mjs";
 import { prepareFirefoxExtension } from "../../companion/firefox-extension.mjs";
 import { prepareStudioFirefoxProfile, ensureStudioFirefox } from "../../companion/studio-firefox.mjs";
 
-const executablePath = process.env.FIREFOX_EXECUTABLE || "/workspace/.tools/firefox/usr/lib/firefox-esr/firefox-esr";
+const executablePath = process.env.FIREFOX_EXTENSION_EXECUTABLE || "/workspace/.tools/firefox/usr/lib/firefox-esr/firefox-esr";
 test("Gerçek Firefox eklentisi: otomatik kurulum, çoklu hesap, AI okuması ve şirket/kişisel gönderi ayrımı", { timeout: 240000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), "studio-extension-native-"));
   const extensionId = "firefox@sosyal-studio.local", uuid = "baf10523-2fb7-4c87-a821-39ced556aba0";

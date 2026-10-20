@@ -8,7 +8,7 @@ import { join } from "node:path";
 // Resolve the installer's matching version from Puppeteer itself. The separate
 // Cloudflare SDK also uses an older installer, which npm may hoist to the root.
 const pairedRequire = createRequire(import.meta.resolve("puppeteer-core"));
-const { install, Browser } = await import(
+const { install, Browser, BrowserTag, detectBrowserPlatform, resolveBuildId } = await import(
   pathToFileURL(pairedRequire.resolve("@puppeteer/browsers")).href
 );
 
@@ -23,3 +23,11 @@ const installed = await install({
 if (process.env.GITHUB_ENV)
   await appendFile(process.env.GITHUB_ENV, `FIREFOX_EXECUTABLE=${installed.executablePath}\n`);
 console.log(`Firefox test sürümü: ${PUPPETEER_REVISIONS.firefox}`);
+// Permanent unsigned extension loading requires Developer Edition (or ESR).
+// Windows tests install the actual product through ensureStudioFirefox instead.
+if (process.platform === "linux") {
+  const buildId = await resolveBuildId(Browser.FIREFOX, detectBrowserPlatform(), BrowserTag.DEVEDITION);
+  const extensionBrowser = await install({ browser: Browser.FIREFOX, buildId, cacheDir: join(process.env.RUNNER_TEMP || tmpdir(), "sosyal-studio-test-browsers") });
+  if (process.env.GITHUB_ENV) await appendFile(process.env.GITHUB_ENV, `FIREFOX_EXTENSION_EXECUTABLE=${extensionBrowser.executablePath}\n`);
+  console.log(`Eklenti test sürümü: ${buildId}`);
+}

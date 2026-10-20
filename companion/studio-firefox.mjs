@@ -7,8 +7,12 @@ const downloadURL = "https://download.mozilla.org/?product=firefox-devedition-la
 const hosts = new Set(["download.mozilla.org", "download-installer.cdn.mozilla.net", "download.cdn.mozilla.net", "archive.mozilla.org"]);
 async function powershell(script, env) {
   return new Promise((resolve, reject) => {
-    const child = spawn(join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
-      ["-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { windowsHide: true, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, ...env } });
+    const shellDirectory = join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0");
+    // PowerShell 7 can export its own incompatible module path to child Node
+    // processes. This Windows PowerShell child only needs Windows' built-ins.
+    const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => key.toLowerCase() !== "psmodulepath"));
+    const child = spawn(join(shellDirectory, "powershell.exe"),
+      ["-NoProfile", "-NonInteractive", "-OutputFormat", "Text", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { windowsHide: true, stdio: ["ignore", "pipe", "pipe"], env: { ...inherited, ...env, PSModulePath: join(shellDirectory, "Modules") } });
     let output = ""; child.stdout.on("data", (b) => { output = (output + b).slice(-2000); });
     let error = ""; child.stderr.on("data", (b) => { error = (error + b).slice(-2000); });
     child.once("error", reject); child.once("close", (code) => code === 0 ? resolve(output.trim()) : reject(new Error(`Mozilla imza doğrulaması veya süreç kontrolü tamamlanamadı (${code}). ` + (output.trim() || error.trim()))));
