@@ -82,6 +82,26 @@ test("Web araştırması özel IP, kullanıcı bilgili URL ve alan dışı yönl
   );
   assert.equal(called, 1);
 });
+test("Gece iptali DNS dönüşünden sonra yeni HTTP açmaz ve devam eden isteğe iptal sinyalini taşır", async () => {
+  const first = new AbortController(); let requests = 0;
+  await assert.rejects(publicHTML("https://fixture.com/", ["fixture.com"], {
+    signal: first.signal,
+    resolve: async () => { first.abort(); return { address: "1.1.1.1", family: 4 }; },
+    request: () => { requests++; },
+  }), { name: "AbortError" });
+  assert.equal(requests, 0);
+  const active = new AbortController();
+  await assert.rejects(publicHTML("https://fixture.com/", ["fixture.com"], {
+    signal: active.signal, resolve: async () => ({ address: "1.1.1.1", family: 4 }),
+    request: (_url, options) => {
+      assert.equal(options.signal, active.signal);
+      const req = new EventEmitter();
+      active.signal.addEventListener("abort", () => req.emit("error", new Error("İstek iptal edildi")), { once: true });
+      req.end = () => active.abort();
+      return req;
+    },
+  }), /iptal/);
+});
 test("Site metni boyutu ve türü sınırlıdır; robots grupları ve izin önceliği uygulanır", async () => {
   const fetcher = (size, type) => ({
     resolve: async () => ({ address: "1.1.1.1", family: 4 }),

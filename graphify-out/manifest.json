@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792499866.1165626,
-    "seen": 1792499958.6057324,
-    "ast_hash": "baa66de64cdaee009130a3f70ca11477",
+    "mtime": 1792501723.5322862,
+    "seen": 1792501810.4957857,
+    "ast_hash": "9e3ecadef9d6d8daccfc3c1644e00426",
     "semantic_hash": ""
   },
   "README.md": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/cloudflare.yml": {
-    "mtime": 1792499663.172852,
-    "seen": 1792499958.605709,
-    "ast_hash": "54bc2eb03e6d297b3eee9fa88077c8fe",
+    "mtime": 1792501412.2785563,
+    "seen": 1792501810.4956722,
+    "ast_hash": "949c28c91b11d00dc055269e6f887af7",
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
@@ -492,9 +492,9 @@
     "semantic_hash": ""
   },
   "src/SocialAI.tsx": {
-    "mtime": 1792499223.0247145,
-    "seen": 1792499958.6041849,
-    "ast_hash": "2c5a2c345cd94d150e46d75c5f862639",
+    "mtime": 1792501959.1186547,
+    "seen": 1792502104.71309,
+    "ast_hash": "228d903b95dbdbd7a328611fe3c306bd",
     "semantic_hash": ""
   },
   "tests/browser/social-ai.spec.mjs": {
@@ -552,15 +552,15 @@
     "semantic_hash": ""
   },
   "companion/package.json": {
-    "mtime": 1792499223.0255136,
-    "seen": 1792499958.6026344,
-    "ast_hash": "f379a1cba6d8b3dda0709f5ba51d38ad",
+    "mtime": 1792501721.7362993,
+    "seen": 1792501810.4926934,
+    "ast_hash": "a493a438ebcb382e4cc43496e7d72d76",
     "semantic_hash": ""
   },
   "companion/start.mjs": {
-    "mtime": 1792499350.0537286,
-    "seen": 1792499958.6026936,
-    "ast_hash": "81c70d6f81618a973f9506fb31c373bb",
+    "mtime": 1792501201.524097,
+    "seen": 1792501321.9904947,
+    "ast_hash": "50aec93e26a2d2701d4615d1b2527313",
     "semantic_hash": ""
   },
   "scripts/build-companion.mjs": {
@@ -594,9 +594,9 @@
     "semantic_hash": ""
   },
   "tests/cloud/company-computer.test.mjs": {
-    "mtime": 1792500263.7428708,
-    "seen": 1792500270.2128668,
-    "ast_hash": "f7915991ffc7ab4836b345f9cbdca063",
+    "mtime": 1792501471.6901243,
+    "seen": 1792501810.4944382,
+    "ast_hash": "bc8dce9d07af38df04a03df0739401eb",
     "semantic_hash": ""
   },
   "tests/companion/firefox.test.mjs": {
@@ -618,9 +618,9 @@
     "semantic_hash": ""
   },
   "docs/SIRKET_BILGISAYARI.md": {
-    "mtime": 1792499911.7660613,
-    "seen": 1792499958.6060622,
-    "ast_hash": "37d637054bb41c5a095b20e1f9c94b0d",
+    "mtime": 1792501722.99229,
+    "seen": 1792501810.4961092,
+    "ast_hash": "38b16d7ccd43a3a7e6c0f3fd087a4606",
     "semantic_hash": ""
   },
   "companion/launch.mjs": {
@@ -636,9 +636,9 @@
     "semantic_hash": ""
   },
   "companion/release.mjs": {
-    "mtime": 1792499303.3100696,
-    "seen": 1792499958.602664,
-    "ast_hash": "48f3adb197458d83c463e8840c427204",
+    "mtime": 1792501202.0160933,
+    "seen": 1792501321.9904711,
+    "ast_hash": "8d2181ed7a56c1888def30ccc1702a3b",
     "semantic_hash": ""
   },
   "companion/supervisor.mjs": {
@@ -660,33 +660,33 @@
     "semantic_hash": ""
   },
   "companion/local-ai.mjs": {
-    "mtime": 1792499615.1717935,
-    "seen": 1792499958.6025324,
-    "ast_hash": "f285ab71f41a5171413ed26575099bd9",
+    "mtime": 1792502046.774033,
+    "seen": 1792502104.7117307,
+    "ast_hash": "ea66dd873f7f261f9a0ca31d69f2013f",
     "semantic_hash": ""
   },
   "shared/local-ai.mjs": {
-    "mtime": 1792499221.198668,
-    "seen": 1792499958.6037467,
-    "ast_hash": "4408fabe0f5d6aceae59265eb70ec82d",
+    "mtime": 1792502045.8540397,
+    "seen": 1792502104.7127583,
+    "ast_hash": "01c8de2b4a0a6e7b0455368e4a4f4ed0",
     "semantic_hash": ""
   },
   "src/LocalAIStatus.tsx": {
-    "mtime": 1792500067.4403334,
-    "seen": 1792500071.984842,
-    "ast_hash": "0cacf3291fffd9d347e51687b746b187",
+    "mtime": 1792501411.2705636,
+    "seen": 1792501810.4940186,
+    "ast_hash": "f514bf3a719c609223121aefe81a04b4",
     "semantic_hash": ""
   },
   "tests/browser/local-ai.spec.mjs": {
-    "mtime": 1792499223.0249875,
-    "seen": 1792499958.6044824,
-    "ast_hash": "bcbc6751541655dd09607ee54ff32012",
+    "mtime": 1792501887.843157,
+    "seen": 1792501937.8823054,
+    "ast_hash": "432070a1ef91abc55de8497192b23550",
     "semantic_hash": ""
   },
   "tests/companion/local-ai.test.mjs": {
-    "mtime": 1792499686.247274,
-    "seen": 1792499958.604852,
-    "ast_hash": "d7ae2290c7ee6cfe257936dd2b2e1bcf",
+    "mtime": 1792501626.516993,
+    "seen": 1792501810.4946666,
+    "ast_hash": "8d2d704069067792f165236dc8fcbb02",
     "semantic_hash": ""
   },
   "tests/fixtures/release-v1.1.mjs": {
@@ -696,9 +696,9 @@
     "semantic_hash": ""
   },
   "worker/local-ai.mjs": {
-    "mtime": 1792481149.8939767,
-    "seen": 1792481406.9354773,
-    "ast_hash": "89843d5b35bf67596ef09498e28fe23d",
+    "mtime": 1792502076.6138139,
+    "seen": 1792502104.7143686,
+    "ast_hash": "e001b4b48966ca15e65a4b02abeb4bed",
     "semantic_hash": ""
   },
   "docs/KKTC_GELISTIRME_INCELEMESI.md": {
@@ -726,9 +726,9 @@
     "semantic_hash": ""
   },
   "companion/research.mjs": {
-    "mtime": 1792479079.8256202,
-    "seen": 1792479084.565805,
-    "ast_hash": "4dd2560fde813a13e86e9a649fef0d21",
+    "mtime": 1792501787.6118612,
+    "seen": 1792501810.4927368,
+    "ast_hash": "5d2a0f39b7ca1832a8788d79463fc426",
     "semantic_hash": ""
   },
   "shared/quality-cases.mjs": {
@@ -816,9 +816,9 @@
     "semantic_hash": ""
   },
   "tests/companion/research.test.mjs": {
-    "mtime": 1792476508.2252078,
-    "seen": 1792477222.9693785,
-    "ast_hash": "227bb0796c717e06c0cd186d89c63a6d",
+    "mtime": 1792501904.1550434,
+    "seen": 1792501937.882946,
+    "ast_hash": "95298310938097b7793ffbff2c3d935d",
     "semantic_hash": ""
   },
   "worker/knowledge.mjs": {
@@ -906,9 +906,9 @@
     "semantic_hash": ""
   },
   "companion/local-memory.mjs": {
-    "mtime": 1792486910.5144427,
-    "seen": 1792486976.6129448,
-    "ast_hash": "a0de5ef457bb75fec2056f8391b2074d",
+    "mtime": 1792502046.3060365,
+    "seen": 1792502104.711732,
+    "ast_hash": "3f80489e62a36a56b87865b0c8df00c3",
     "semantic_hash": ""
   },
   "companion/ollama-host.mjs": {
@@ -996,9 +996,9 @@
     "semantic_hash": ""
   },
   "tests/companion/firefox-extension.test.mjs": {
-    "mtime": 1792501083.9209645,
-    "seen": 1792501087.070563,
-    "ast_hash": "563c572c465b8d3f56c84b91f6c1e26e",
+    "mtime": 1792501318.5072424,
+    "seen": 1792501321.992879,
+    "ast_hash": "344989aec7393cbf39ab91163562ecfc",
     "semantic_hash": ""
   },
   "tests/firefox-extension.test.mjs": {
@@ -1020,8 +1020,8 @@
     "semantic_hash": ""
   },
   "companion/extension-sources.json": {
-    "mtime": 1792500761.9872184,
-    "seen": 1792500765.1474304,
+    "mtime": 1792502078.4738004,
+    "seen": 1792502104.7116525,
     "ast_hash": "df2c720e47746f9802867eeebe61b69b",
     "semantic_hash": ""
   },
@@ -1053,6 +1053,36 @@
     "mtime": 1792499911.5535018,
     "seen": 1792499958.6060803,
     "ast_hash": "8d992eec9fb35fb8e88ef80fc5db0b22",
+    "semantic_hash": ""
+  },
+  "companion/night-learning.mjs": {
+    "mtime": 1792501786.587868,
+    "seen": 1792501810.4926567,
+    "ast_hash": "3dbda5fb0e99617a431152b5e50a6693",
+    "semantic_hash": ""
+  },
+  "shared/night-learning.mjs": {
+    "mtime": 1792501593.377236,
+    "seen": 1792501810.4936612,
+    "ast_hash": "daf3f4d0f6527e72a3199ff27eba82fd",
+    "semantic_hash": ""
+  },
+  "src/NightLearning.tsx": {
+    "mtime": 1792501787.0798647,
+    "seen": 1792501810.4940372,
+    "ast_hash": "3778a94898fb0759f00a0e2117f2a0b3",
+    "semantic_hash": ""
+  },
+  "tests/companion/night-learning.test.mjs": {
+    "mtime": 1792502047.2540295,
+    "seen": 1792502104.7137578,
+    "ast_hash": "04d7d9e73a43d91511d692a5c19b18f8",
+    "semantic_hash": ""
+  },
+  "docs/GECE_OGRENMESI.md": {
+    "mtime": 1792502077.0978103,
+    "seen": 1792502104.7147334,
+    "ast_hash": "245ec936991e131b6191383ca405e6b8",
     "semantic_hash": ""
   }
 }

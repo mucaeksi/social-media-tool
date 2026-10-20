@@ -588,6 +588,33 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
   }
 });
 
+test("Gece planı yalnız yöneticiye ve seçili şirketin güncel onaylı kaynaklarına açılır", async () => {
+  const now = new Date().toISOString(), future = new Date(Date.now() + 86400000).toISOString();
+  for (const [company, name, until, state] of [[companyId, "approved", future, "approved"], [companyId, "expired", "2020-01-01", "approved"], [otherCompany, "other", future, "approved"], [companyId, "pending", future, "pending"]]) {
+    const id = crypto.randomUUID(), url = `https://company.org/${name}`;
+    await db.prepare("INSERT INTO research_sources(id,company_id,url,final_url,title,excerpt,content_hash,fetched_at,state) VALUES(?,?,?,?,?,?,?,?,?)").bind(id, company, url, url, name, "Kurgu kaynak", name, now, state).run();
+    await db.prepare("INSERT INTO research_facts(id,company_id,source_id,field,value,evidence,approved_by,approved_at,valid_until) VALUES(?,?,?,?,?,?,?,?,?)").bind(crypto.randomUUID(), company, id, "test", "Kurgu", "Kurgu", "admin", now, until).run();
+  }
+  let captured;
+  const listener = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.type !== "ai-command" || !m.input.action.startsWith("night-")) return;
+    captured = m.input;
+    agent.send(JSON.stringify({ type: "ai-result", id: m.id, result: { ok: true, learning: { enabled: true, running: false, syncedAt: now, notes: [], attempts: [] } } }));
+  };
+  agent.addEventListener("message", listener);
+  try {
+    assert.equal((await request(`/api/computer/ai/night?companyId=${companyId}`, { role: "editor" })).status, 403);
+    assert.equal((await request(`/api/computer/ai/night?companyId=${companyId}`, { role: null })).status, 401);
+    const response = await request("/api/computer/ai/night", { method: "POST", body: { companyId, sources: [{ url: "https://unapproved.net/" }] } });
+    assert.equal(response.status, 200); assert.equal(captured.action, "night-sync");
+    assert.deepEqual(captured.sources.map((s) => s.url), ["https://company.org/approved"]);
+    assert.equal((await request(`/api/computer/ai/night?companyId=${crypto.randomUUID()}`)).status, 404);
+    assert.equal((await request("/api/computer/ai/night/review", { method: "POST", body: { companyId, noteId: crypto.randomUUID(), state: "approved" } })).status, 200);
+    assert.equal(captured.companyId, companyId); assert.equal(captured.action, "night-review");
+  } finally { agent.removeEventListener("message", listener); }
+});
+
 test("Cihaz iptali bağlantıyı ve eski anahtarla yeniden bağlanmayı keser", async () => {
   const response = await request(`/api/computer/devices/${device.id}/revoke`, {
     method: "POST",

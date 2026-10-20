@@ -343,6 +343,26 @@ test("10 GiB üzeri GPU ölçümünde model boşaltılır; yeni model hazır say
   assert.equal(f.ai.failure, "GPU_LIMIT"); assert.equal(unloaded, true);
   assert.equal(f.calls.some((c) => c.url.endsWith("delete")), false);
 });
+test("Yerel içerik üretimi gece işini önceler; yalnız incelenmiş aynı şirket notunu ikincil bağlama ekler", async (t) => {
+  let messages, paused = 0;
+  const f = await fixture(t, (url, body) => {
+    if (url.endsWith("tags")) return Response.json({ models: [model] });
+    messages = body.messages;
+    return Response.json({ done: true, done_reason: "stop", message: { content: "Kurgu yanıtı" } });
+  });
+  f.ai.night = { pause: async () => { paused++; } };
+  const url = "https://creators.instagram.com/", until = new Date(Date.now() + 86400000).toISOString();
+  f.ai.memory.nightNote(input.companyId, { url, finalUrl: url, text: "Kaynak" }, "bekleyen-not-fixture", until);
+  await f.ai.execute({ ...input, mode: "chat" });
+  assert.equal(JSON.stringify(messages).includes("bekleyen-not-fixture"), false);
+  const note = f.ai.memory.nightStatus(input.companyId).notes[0];
+  f.ai.memory.nightReview(input.companyId, note.id, "approved");
+  f.ai.memory.nightNote("22222222-2222-4222-8222-222222222222", { url, finalUrl: url, text: "Diğer" }, "diger-sirket-notu", until);
+  await f.ai.execute({ ...input, mode: "chat" });
+  assert.equal(paused, 2); assert.equal(JSON.stringify(messages).includes("bekleyen-not-fixture"), true);
+  assert.equal(JSON.stringify(messages).includes("diger-sirket-notu"), false);
+  assert.ok(messages.some((m) => m.content.includes("ikincil referans")));
+});
 
 test("v1.1 güncelleyicisi AI eklenen yeni kaynak paketini doğrulayarak açabilir", async (t) => {
   const f = await fixture(t);

@@ -12,6 +12,7 @@ import {
   ImagePlus,
 } from "lucide-react";
 import { LocalAIStatus } from "./LocalAIStatus.tsx";
+import { NightLearning } from "./NightLearning.tsx";
 import { LocalAIJobs } from "./LocalAIJobs.tsx";
 import { FirefoxConnection } from "./FirefoxConnection.tsx";
 import { firefoxQuestion, firefoxRequest, firefoxTarget } from "./firefoxBridge.ts";
@@ -322,6 +323,7 @@ export function SocialAI({
         </label>
       )}
       {engine === "local" && <LocalAIStatus onReady={setLocalReady} />}
+      {engine === "local" && user.role === "admin" && <NightLearning key={`night-${company.id}`} companyId={company.id} />}
       {cloud && admin && engine === "local" && (
         <FirefoxConnection key={`firefox-${company.id}`} companyId={company.id} companyName={company.name} disabled={busy} modelReady={localReady} onBinding={setFirefox} />
       )}

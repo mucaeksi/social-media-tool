@@ -90,6 +90,15 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
     phase = "downloading";
     return route.fulfill({ status: 202, json: status() });
   });
+  let nightEnabled = true, noteState = "pending";
+  const noteId = crypto.randomUUID();
+  await page.route("**/api/computer/ai/night**", (route) => {
+    const body = route.request().method() === "POST" ? route.request().postDataJSON() : null;
+    if (body) expect(body.companyId).toBe(company.id);
+    if (body?.enabled !== undefined) nightEnabled = body.enabled;
+    if (route.request().url().endsWith("/review")) { expect(body.noteId).toBe(noteId); noteState = body.state; }
+    return route.fulfill({ json: { enabled: nightEnabled, running: false, syncedAt: new Date().toISOString(), expired: false, pendingCount: noteState === "pending" ? 1 : 0, attempts: [], notes: [{ id: noteId, url: "https://creators.instagram.com/", summary: "Kaynağı kontrol ederek somut faydayla başlayın.", state: noteState, createdAt: new Date().toISOString(), validUntil: new Date(Date.now() + 86400000).toISOString() }] } });
+  });
   await page.route("**/api/computer/ai/ask", async (route) => {
     sent = route.request().postDataJSON();
     modelCalls++;
@@ -125,6 +134,16 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
     await expect(
       page.getByRole("combobox", { name: "Asistanın çalışacağı yer" }),
     ).toHaveValue("local");
+    const night = page.getByRole("region", { name: "Gece öğrenmesi" });
+    await expect(night.getByText("Gece programı açık.", { exact: true })).toBeVisible();
+    await night.getByText("Sabah incelemesi", { exact: false }).click();
+    await night.getByRole("button", { name: "İnceledim, notu kullan" }).click();
+    await expect(night.getByText("İncelendi; ikincil bağlamda kullanılabilir", { exact: false })).toBeVisible();
+    await night.getByRole("button", { name: "Notu reddet" }).click();
+    await expect(night.getByText("Reddedildi", { exact: false })).toBeVisible();
+    await night.getByRole("button", { name: "Gece programını kapat" }).click();
+    await expect(night.getByText("Gece programı kapalı.", { exact: true })).toBeVisible();
+    await night.getByRole("button", { name: "Gece programını aç" }).click();
     await expect(
       page.getByText("İlk kurulum gerekli", { exact: true }),
     ).toBeVisible();

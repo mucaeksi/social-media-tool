@@ -26,6 +26,7 @@ const labels: Record<string, string> = {
   installing: "AI çalıştırıcısı kuruluyor",
   downloading: "Küçük model indiriliyor",
   generating: "İçerikler hazırlanıyor",
+  learning: "Gece çalışma notu hazırlanıyor",
   error: "Kurulum kontrol edilmeli",
 };
 export function LocalAIStatus({
@@ -47,7 +48,7 @@ export function LocalAIStatus({
         if (valid) {
           setStatus(next);
           setError("");
-          onReady(next.phase === "ready");
+          onReady(next.phase === "ready" || next.phase === "learning");
         }
       } catch (e) {
         if (valid) {

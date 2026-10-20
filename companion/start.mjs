@@ -9,6 +9,7 @@ import { LocalAI } from "./local-ai.mjs";
 import { prepareFirefoxExtension } from "./firefox-extension.mjs";
 import { ensureStudioFirefox, prepareStudioFirefoxProfile, openStudioFirefox } from "./studio-firefox.mjs";
 import { WebsiteResearch } from "./research.mjs";
+import { NightLearning } from "./night-learning.mjs";
 import { localErrors, LOCAL_AI_LIMITS } from "../shared/local-ai.mjs";
 import { production, directory } from "./locations.mjs";
 
@@ -257,6 +258,7 @@ async function stop(code = 0) {
   clearTimeout(reconnect);
   clearInterval(heartbeat);
   socket?.close();
+  await localAI.night?.close();
   localAI.generationController?.abort();
   await localAI.close();
   await researcher?.close();
@@ -304,6 +306,8 @@ try {
     console.log("Firefox eklentisi hazırlanamadı. Klasör izinlerini kontrol edin; paneldeki eklenti paketini elle yükleyebilirsiniz.");
   }
   researcher = new WebsiteResearch({ executablePath });
+  localAI.night = new NightLearning({ ai: localAI, researcher: new WebsiteResearch({ executablePath }), canRun: () => !stopping && socket?.readyState === WebSocket.OPEN && commandsInFlight === 0 && !pool?.opened.size && !pool?.manualOpened.size });
+  localAI.night.start();
   if (process.platform === "win32") {
     console.log("Yerel AI otomatik hazırlanıyor. Veriler BAT dosyasının bulunduğu klasörde tutulur; eşleştirme ve hesap girişlerine devam edebilirsiniz.");
     localAI.setup({ automatic: true });

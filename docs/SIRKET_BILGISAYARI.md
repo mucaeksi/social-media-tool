@@ -1,3 +1,7 @@
+# 1.7 güncellemesi: gece araştırması ve yerel hafıza
+
+AI asistanında Yerel AI ekranı açılınca seçili şirketin gece planı eşitlenir. Yardımcı ve bilgisayar açıkken KKTC saatiyle 00.00–07.00 arasında resmî platform rehberleri ve onaylı şirket kaynakları incelenir. Model ağırlıkları eğitilmez; kaynaklı çalışma notları `ai/knowledge.sqlite` içinde inceleme bekler. Sabah notları kontrol edip kullanıma açabilirsiniz. Panel sekmesi gece açık kalmak zorunda değildir; yedi gün eşitlenmeyen plan durur. Gecede tüm şirketler için toplam 20 sayfa denemesi vardır. [Kullanım ve sınırlar](https://github.com/mucaeksi/social-media-tool/blob/main/docs/GECE_OGRENMESI.md).
+
 # 1.6 güncellemesi: otomatik Firefox ve daha güçlü AI
 
 Baslat.cmd artık Windows’ta Mozilla imzası doğrulanan Firefox Developer Edition’ı, kendi FirefoxProfil profilini ve eklentiyi BAT klasörüne otomatik hazırlar. Kişisel Firefox değiştirilmez. Yeni Firefox’ta hesaplara bir kez giriş yapın. Eklenti güncellemeleri yardımcı patch’leriyle gelir; bağlantılar kapatılınca kendini yeniler. Detay: [Firefox kurulumu](https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev/indir/FIREFOX_EKLENTISI.md).

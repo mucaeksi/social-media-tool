@@ -1,7 +1,8 @@
 import { SOCIAL_EXPERT_RULES } from "./social-expert.mjs";
+import { nightInput, validNightStatus } from "./night-learning.mjs";
 
 export const LOCAL_MODEL = "qwen3.5:9b";
-export const LOCAL_EXPERT_VERSION = "yerel-kktc-9b-v3";
+export const LOCAL_EXPERT_VERSION = "yerel-kktc-gece-v4";
 export const LOCAL_AI_LIMITS = Object.freeze({
   imageBytes: 600000,
   wireChars: 900000,
@@ -67,6 +68,7 @@ export const localErrors = {
     "Küçük model geçerli içerik hazırlayamadı. Önceki içerik korundu; daha kısa bir özetle tekrar deneyin.",
   CONTEXT_TOO_LONG:
     "Yerel modelin bağlam sınırı aşıldı. Özeti veya şirket hafızasını kısaltın; kaynak otomatik kesilmedi.",
+  CONTEXT_CHANGED: "İncelenmiş gece notları veya kaynak izinleri değişti. Önceki platformlarla karışmaması için yeni üretim başlatın.",
   FAILED: "Yerel AI işlemi tamamlanamadı. Mevcut içerik korundu.",
   CANCELLED: "Yerel AI üretimi iptal edildi. Mevcut içerik korundu.",
 };
@@ -76,6 +78,9 @@ export function localFail(code) {
   });
 }
 export function localInput(input) {
+  if (typeof input?.action === "string" && input.action.startsWith("night-")) {
+    try { return nightInput(input); } catch { localFail("FAILED"); }
+  }
   if (
     !input ||
     !["status", "setup", "generate", "cancel"].includes(input.action)
@@ -201,7 +206,7 @@ export function validLocalResult(value) {
     (value.ok === false
       ? Object.hasOwn(localErrors, value.code)
       : value.ok === true &&
-        (value.status
+        (value.learning ? validNightStatus(value.learning) : value.status
           ? typeof value.status.phase === "string" &&
             value.status.model === LOCAL_MODEL &&
             (value.status.runtime == null ||

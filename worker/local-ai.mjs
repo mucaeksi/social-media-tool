@@ -45,7 +45,7 @@ export function registerLocalAI(app) {
       );
     if (!value.ok)
       throw computerError(
-        value.code === "BUSY" ? 409 : 503,
+        ["BUSY", "CONTEXT_CHANGED"].includes(value.code) ? 409 : 503,
         localErrors[value.code] || localErrors.FAILED,
       );
     return value;
@@ -59,6 +59,28 @@ export function registerLocalAI(app) {
   app.post("/api/computer/ai/cancel", async (c) =>
     c.json((await call(c, { action: "cancel" })).status),
   );
+  const nightCompany = async (c, id) => {
+    if (c.get("identity")?.role !== "admin") throw computerError(403, "Gece öğrenmesi için yönetici yetkisi gerekli.");
+    const profile = await c.get("store").company(id);
+    if (!profile) throw computerError(404, "Şirket bulunamadı.");
+    return profile;
+  };
+  app.get("/api/computer/ai/night", async (c) => {
+    const companyId = z.uuid().parse(c.req.query("companyId"));
+    await nightCompany(c, companyId);
+    return c.json((await call(c, { action: "night-status", companyId })).learning);
+  });
+  app.post("/api/computer/ai/night", async (c) => {
+    const input = z.object({ companyId: z.uuid(), enabled: z.boolean().optional() }).parse(await c.req.json());
+    const profile = await nightCompany(c, input.companyId);
+    const { results } = await c.env.DB.prepare("SELECT s.final_url AS url,MAX(f.valid_until) AS validUntil FROM research_facts f JOIN research_sources s ON s.id=f.source_id WHERE f.company_id=? AND s.state='approved' AND f.retired_at IS NULL AND f.valid_until>? GROUP BY s.final_url ORDER BY validUntil DESC LIMIT 11").bind(input.companyId, new Date().toISOString()).all();
+    return c.json((await call(c, { action: "night-sync", ...input, companyName: profile.name, sources: results })).learning);
+  });
+  app.post("/api/computer/ai/night/review", async (c) => {
+    const input = z.object({ companyId: z.uuid(), noteId: z.uuid(), state: z.enum(["approved", "rejected"]) }).parse(await c.req.json());
+    await nightCompany(c, input.companyId);
+    return c.json((await call(c, { action: "night-review", ...input })).learning);
+  });
   const ask = async (c, suppliedInput, resumeJob) => {
     const input = z
       .object({

@@ -46,17 +46,20 @@ export async function publicTarget(host, resolver = lookup) {
 export async function publicHTML(
   value,
   hosts,
-  { resolve = publicTarget, request = https.request } = {},
+  { resolve = publicTarget, request = https.request, signal } = {},
 ) {
   let url = webUrl(value, hosts);
   for (let hop = 0; hop < 5; hop++) {
+    signal?.throwIfAborted();
     const u = new URL(url),
       target = await resolve(u.hostname);
+    signal?.throwIfAborted();
     const r = await new Promise((accept, reject) => {
       const req = request(
         u,
         {
           method: "GET",
+          signal,
           agent: false,
           headers: {
             Accept: "text/html,text/plain",
@@ -217,6 +220,7 @@ export class WebsiteResearch {
   }
   async close() {
     this.cancelled = true;
+    this.requestController?.abort();
     await this.activeBrowser?.close().catch(() => {});
     await this.activeProxy?.close().catch(() => {});
     if (this.activeDirectory)
@@ -236,6 +240,7 @@ export class WebsiteResearch {
       throw new Error("Ağ proxy yapılandırması araştırmayı desteklemiyor.");
     this.busy = true;
     this.cancelled = false;
+    this.requestController = new AbortController();
     let browser, proxy;
     let deadline;
     let directory;
@@ -276,6 +281,7 @@ export class WebsiteResearch {
       });
       this.activeBrowser = browser;
       deadline = setTimeout(() => {
+        this.requestController?.abort();
         void browser?.close().catch(() => {});
       }, 150000);
       // Firefox starts with an empty tab. Reuse it as the account browser does;
@@ -304,7 +310,7 @@ export class WebsiteResearch {
         const robotUrl = new URL("/robots.txt", url).href;
         let robots = "";
         try {
-          robots = (await this.readHTML(robotUrl, input.hosts)).html;
+          robots = (await this.readHTML(robotUrl, input.hosts, { signal: this.requestController.signal })).html;
         } catch (e) {
           if (![404, 410].includes(e.status)) throw e;
         }
@@ -314,7 +320,7 @@ export class WebsiteResearch {
           throw new Error("Site bu sayfanın taranmasına izin vermiyor.");
         let finalUrl;
         if (input.mode === "static") {
-          const source = await this.readHTML(url, input.hosts);
+          const source = await this.readHTML(url, input.hosts, { signal: this.requestController.signal });
           finalUrl = source.url;
           // Disable site scripts before parsing any untrusted markup. Disabling
           // Firefox's global JS preference also breaks BiDi page creation in
@@ -352,6 +358,7 @@ export class WebsiteResearch {
       this.activeBrowser = null;
       this.activeProxy = null;
       this.activeDirectory = null;
+      this.requestController = null;
       this.busy = false;
     }
   }
