@@ -55,7 +55,7 @@ jobs:
           NPM_CONFIG_CACHE: ${{ runner.temp }}/sosyal-studio-npm-cache
       - run: node scripts/build-companion.mjs
       - run: node scripts/install-test-firefox.mjs
-      - run: node --test --test-reporter=spec --test-reporter=./scripts/action-test-reporter.mjs --test-reporter-destination=stdout --test-reporter-destination=stdout tests/companion/update.test.mjs tests/companion/local-ai.test.mjs tests/companion/launcher.test.mjs tests/companion/normal-login.test.mjs tests/companion/ai-install.test.mjs tests/companion/portable-data.test.mjs
+      - run: node --test --test-reporter=spec --test-reporter=./scripts/action-test-reporter.mjs --test-reporter-destination=stdout --test-reporter-destination=stdout tests/companion/update.test.mjs tests/companion/local-ai.test.mjs tests/companion/launcher.test.mjs tests/companion/normal-login.test.mjs tests/companion/ai-install.test.mjs tests/companion/portable-data.test.mjs tests/companion/firefox-extension.test.mjs
         env:
           NPM_CONFIG_CACHE: ${{ runner.temp }}/sosyal-studio-npm-cache
   deploy:

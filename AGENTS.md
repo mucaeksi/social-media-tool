@@ -15,6 +15,8 @@ Rules:
 
 ## Projeye özgü geliştirme notları
 
+- 20 Ekim 2026 yeni kullanıcı isteği: ana Firefox'taki sabit sekmeleri kullanmak için eklenti artık isteniyor; önceki "eklenti istemiyor" notları bu yol için geçerli değil. `firefox-extension/` mevcut paneldeki `FirefoxConnection` üzerinden çalışır. Kullanıcı Firefox simgesinden panel/şirket/pencere ve hedef hesap onayı verir. Gezinti yalnız panelin bulunduğu tek Firefox penceresindeki tüm sekmeleri kapsar; başka pencere seçimi ve taşınan panel/hesap sekmesi reddedilir. Yerel AI sekme başlıklarından tek sekme seçebilir; yanıt JSON'u yalnız mevcut sekme kimliklerinden biri olmalı, ek komut çalıştırılmaz. Sayfa okuma/taslak hazırlama ayrıca kayıtlı şirket hesabının sosyal ağında çalışır; anlık metin güvenilmeyen soru bağlamıdır, onaylı hafıza değildir. Eklenti yalnız okur/sekme değiştirir/onaylı boş gönderi alanına metin yerleştirir; yayın düğmesine basmaz ve mevcut Facebook pilotunun tarayıcısını değiştirmez. Kalıcı Mozilla imzası henüz alınmadı; normal Firefox için geçici `about:debugging` kurulumu ve ESR seçeneği `docs/FIREFOX_EKLENTISI.md` içinde açıklanır. İmza denetimi otomatik kapatılmaz; kişisel Firefox profili kopyalanmaz/taşınmaz.
+
 - Kullanıcı arayüzü, bildirimler ve yeni kullanım dokümanı tamamen Türkçe olmalıdır. Dış kaynak becerilerin asıllarını ve lisanslarını koruyun.
 - Kullanıcı manuel ChatGPT aktarımını korurken 19 Ekim 2026'da entegre Cloudflare AI asistanını seçti. Workers AI binding, Gemma 4 ve şirkete özel D1 hafızası kullanılır. ChatGPT hesabına giriş/model ağırlığı eğitimi yapılmaz. Uydurma sonuç/SEO başarısı/yayın iddiası üretilmez.
 - Gerçek OAuth bağlantısı ve yayınlama servisi henüz yoktur. Şifreleri veya erişim belirteçlerini koda, test verisine ya da becerilere eklemeyin.

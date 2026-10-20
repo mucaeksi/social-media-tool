@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import { LocalAIStatus } from "./LocalAIStatus.tsx";
 import { LocalAIJobs } from "./LocalAIJobs.tsx";
+import { FirefoxConnection } from "./FirefoxConnection.tsx";
+import { firefoxQuestion, firefoxRequest, firefoxTarget } from "./firefoxBridge.ts";
+import type { FirefoxBinding, FirefoxPage } from "./firefoxBridge.ts";
 import { api } from "./api.ts";
 import type {
   AuthUser,
@@ -93,6 +96,9 @@ export function SocialAI({
     localAvailable && user.role === "admin" ? "local" : "cloudflare",
   );
   const [localReady, setLocalReady] = useState(false);
+  const [firefox, setFirefox] = useState<FirefoxBinding | null>(null);
+  const [includeFirefox, setIncludeFirefox] = useState(false);
+  const activeFirefox = firefox?.companyId === company.id ? firefox : null;
   const [entries, setEntries] = useState<Memory[]>([]),
     [turns, setTurns] = useState<AITurn[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null),
@@ -175,13 +181,19 @@ export function SocialAI({
   async function ask() {
     await run(async () => {
       try {
+        let requestQuestion = question;
+        if (engine === "local" && includeFirefox) {
+          if (!activeFirefox) throw new Error("Bu şirkete ait Firefox sekmesini bağlayın veya sekme ekleme seçimini kaldırın.");
+          const result = await firefoxRequest<{ page: FirefoxPage }>("read", firefoxTarget(activeFirefox));
+          requestQuestion = firefoxQuestion(question, result.page);
+        }
         const turn = await api<AITurn>(
           engine === "local" ? "/api/computer/ai/ask" : "/api/ai/ask",
           {
             method: "POST",
             body: JSON.stringify({
               companyId: company.id,
-              question,
+              question: requestQuestion,
               mode,
               mediaId: attachment?.id ?? null,
               ...(mode === "posts" ? { selected } : {}),
@@ -201,6 +213,16 @@ export function SocialAI({
           .then(setUsage)
           .catch(() => {});
       }
+    });
+  }
+  async function prepareInFirefox(post: Post) {
+    await run(async () => {
+      if (!activeFirefox || activeFirefox.platform !== post.platform) throw new Error("Taslağın platformuna ait şirket sekmesini bağlayın.");
+      const { page } = await firefoxRequest<{ page: FirefoxPage }>("read", firefoxTarget(activeFirefox));
+      if (!page.canPrepare) throw new Error(page.reason);
+      const text = [post.caption, post.hashtags.join(" ")].filter(Boolean).join("\n\n");
+      await firefoxRequest("prepare", { ...firefoxTarget(activeFirefox), snapshotId: page.id, text });
+      setNotice("Firefox araç çubuğundaki Sosyal Studio simgesini açıp hedefi ve taslağı onaylayın. Metin yalnız doğrulanan hedefin boş alanına yerleştirilir. Son paylaşımı Firefox'ta siz yaparsınız; henüz yayın yapılmadı.");
     });
   }
   async function upload(file?: File) {
@@ -270,7 +292,8 @@ export function SocialAI({
         <small>
           Şirket hafızası modelin ağırlıklarını değiştirmez. Yanıtları inceleyip
           düzenleyin. Görsel tanıma içeriği anlamaya yardımcı olur. Canlı
-          internet, hesap analitiği ve görsel rötuş bu asistanda yoktur.
+          hesap analitiği ve görsel rötuş bu asistanda yoktur. Yerel AI'a
+          Firefox eklentisiyle seçtiğiniz sekmenin anlık metnini ekleyebilirsiniz.
         </small>
       </section>
       {!cloud && (
@@ -299,6 +322,9 @@ export function SocialAI({
         </label>
       )}
       {engine === "local" && <LocalAIStatus onReady={setLocalReady} />}
+      {cloud && admin && engine === "local" && (
+        <FirefoxConnection key={`firefox-${company.id}`} companyId={company.id} companyName={company.name} disabled={busy} modelReady={localReady} onBinding={setFirefox} />
+      )}
       {engine === "local" && (
         <LocalAIJobs
           key={company.id}
@@ -463,6 +489,11 @@ export function SocialAI({
                               Bu taslak henüz paylaşılmadı. Hedef hesabı Hesap
                               bağlantıları bölümünden açabilirsiniz.
                             </p>
+                            {activeFirefox?.platform === post.platform && (
+                              <button className="secondary" disabled={busy} onClick={() => void prepareInFirefox(post)}>
+                                Taslağı ana Firefox'ta onaya gönder
+                              </button>
+                            )}
                           </details>
                         ))}
                       </div>
@@ -622,11 +653,18 @@ export function SocialAI({
                 </div>
               </div>
               <label htmlFor="ai-question">Asistandan ne istersiniz?</label>
+              {engine === "local" && activeFirefox && (
+                <label className="expert-check">
+                  <input type="checkbox" checked={includeFirefox} disabled={busy} onChange={(e) => setIncludeFirefox(e.target.checked)} />
+                  {activeFirefox.identityLabel || activeFirefox.label} sekmesini bu istekte oku. Anlık sayfa metni AI'a iletilir ve sohbet kaydına eklenir; onaylı şirket hafızasına eklenmez.
+                </label>
+              )}
+              {engine === "local" && includeFirefox && !activeFirefox && <p role="status">Sekme bağlantısı yok. Yeniden bağlayın veya <button type="button" className="secondary" disabled={busy} onClick={() => setIncludeFirefox(false)}>Sekmeyi bu istekten çıkar</button>.</p>}
               <textarea
                 id="ai-question"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                maxLength={6000}
+                maxLength={engine === "local" && includeFirefox ? 2000 : 6000}
                 rows={5}
                 required
                 disabled={
@@ -658,7 +696,7 @@ export function SocialAI({
               </div>
               <div className="ai-composer-footer">
                 <small>
-                  {question.length.toLocaleString("tr-TR")} / 6.000 karakter ·
+                  {question.length.toLocaleString("tr-TR")} / {engine === "local" && includeFirefox ? "2.000" : "6.000"} karakter ·
                   Taslak üretir, paylaşmaz.
                 </small>
                 <button

@@ -1,8 +1,8 @@
 {
   "package.json": {
-    "mtime": 1792482523.1876671,
-    "seen": 1792482531.7834506,
-    "ast_hash": "2910f9d9341be0579fcbfcf55a6ae724",
+    "mtime": 1792493805.7148702,
+    "seen": 1792496756.4303324,
+    "ast_hash": "a42f02e0a7dbf4920d788778e1e4e70c",
     "semantic_hash": ""
   },
   "scripts/dev.mjs": {
@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792491067.5509958,
-    "seen": 1792491080.8485272,
-    "ast_hash": "aea4cc0c466dc261e91b4baeefbd0a41",
+    "mtime": 1792496741.7010055,
+    "seen": 1792496756.4330535,
+    "ast_hash": "015622916dc8e4319d0e17dfa53acb8f",
     "semantic_hash": ""
   },
   "README.md": {
@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/cloudflare.yml": {
-    "mtime": 1792490944.41993,
-    "seen": 1792491080.8485034,
-    "ast_hash": "8b757119ee5f97eff0b85f826a218420",
+    "mtime": 1792494067.9849288,
+    "seen": 1792496756.4330251,
+    "ast_hash": "793dea96a8dd0962e812d1a99c9645d8",
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
@@ -492,9 +492,9 @@
     "semantic_hash": ""
   },
   "src/SocialAI.tsx": {
-    "mtime": 1792476507.4132137,
-    "seen": 1792477222.9690056,
-    "ast_hash": "b4402278c64453ca27ef46c9f6add43e",
+    "mtime": 1792496616.109932,
+    "seen": 1792496756.4313612,
+    "ast_hash": "a02bb738fb968005e4246ec6b41b4312",
     "semantic_hash": ""
   },
   "tests/browser/social-ai.spec.mjs": {
@@ -933,6 +933,90 @@
     "mtime": 1792490943.923934,
     "seen": 1792491080.8477242,
     "ast_hash": "75527c2746e607807c11c138672fa303",
+    "semantic_hash": ""
+  },
+  "firefox-extension/background.js": {
+    "mtime": 1792496553.3383949,
+    "seen": 1792496756.4303231,
+    "ast_hash": "76719a53abc3979eef762127a91b9732",
+    "semantic_hash": ""
+  },
+  "firefox-extension/manifest.json": {
+    "mtime": 1792493531.7889287,
+    "seen": 1792496756.4303255,
+    "ast_hash": "40931e3eff1bbd01ee9e22385faafb10",
+    "semantic_hash": ""
+  },
+  "firefox-extension/page-agent.js": {
+    "mtime": 1792493672.6318622,
+    "seen": 1792496756.4303267,
+    "ast_hash": "109e630e7cb68855db6d866ee7ea61a0",
+    "semantic_hash": ""
+  },
+  "firefox-extension/panel-bridge.js": {
+    "mtime": 1792494333.7789707,
+    "seen": 1792496756.4303281,
+    "ast_hash": "bb13fe83bed029d947b23d72d5da78c6",
+    "semantic_hash": ""
+  },
+  "firefox-extension/policy.js": {
+    "mtime": 1792493671.6558695,
+    "seen": 1792496756.4303293,
+    "ast_hash": "69acaea750c79aae14d2e5e573de004e",
+    "semantic_hash": ""
+  },
+  "firefox-extension/popup.js": {
+    "mtime": 1792496488.5428724,
+    "seen": 1792496756.4303303,
+    "ast_hash": "9bc9acbd4cb522c298de8d133f2534db",
+    "semantic_hash": ""
+  },
+  "scripts/build-firefox-extension.mjs": {
+    "mtime": 1792493804.6988778,
+    "seen": 1792496756.4304636,
+    "ast_hash": "3ecf80b17292344339a29969c46d9b21",
+    "semantic_hash": ""
+  },
+  "src/FirefoxConnection.tsx": {
+    "mtime": 1792496670.8015285,
+    "seen": 1792496756.4312758,
+    "ast_hash": "4613c7b5104d4b29a7b27746501f7493",
+    "semantic_hash": ""
+  },
+  "src/firefoxBridge.ts": {
+    "mtime": 1792496614.9659402,
+    "seen": 1792496756.4315984,
+    "ast_hash": "5d908556f375e7e84125ce16858a1cf4",
+    "semantic_hash": ""
+  },
+  "tests/browser/firefox-extension.spec.mjs": {
+    "mtime": 1792496672.3175173,
+    "seen": 1792496756.4318185,
+    "ast_hash": "13a76f5f76b771fb5ada0be66022b057",
+    "semantic_hash": ""
+  },
+  "tests/companion/firefox-extension.test.mjs": {
+    "mtime": 1792496671.805521,
+    "seen": 1792496756.4320939,
+    "ast_hash": "b5a541f0212c72d6da55496975c7faf1",
+    "semantic_hash": ""
+  },
+  "tests/firefox-extension.test.mjs": {
+    "mtime": 1792496671.3055248,
+    "seen": 1792496756.4323936,
+    "ast_hash": "2437854e6de0bb12fc44052273a19eb7",
+    "semantic_hash": ""
+  },
+  "docs/FIREFOX_EKLENTISI.md": {
+    "mtime": 1792496741.06901,
+    "seen": 1792496756.4331055,
+    "ast_hash": "dc6dba04e5c5a0fa44d6d99d8f7ccf33",
+    "semantic_hash": ""
+  },
+  "firefox-extension/popup.html": {
+    "mtime": 1792493602.1044042,
+    "seen": 1792496756.4332674,
+    "ast_hash": "b5add90f594feb03706648210897bb26",
     "semantic_hash": ""
   }
 }
