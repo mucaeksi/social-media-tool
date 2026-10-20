@@ -8,9 +8,10 @@ const hosts = new Set(["download.mozilla.org", "download-installer.cdn.mozilla.n
 async function powershell(script, env) {
   return new Promise((resolve, reject) => {
     const child = spawn(join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
-      ["-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { windowsHide: true, stdio: ["ignore", "pipe", "ignore"], env: { ...process.env, ...env } });
+      ["-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], { windowsHide: true, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, ...env } });
     let output = ""; child.stdout.on("data", (b) => { output = (output + b).slice(-2000); });
-    child.once("error", reject); child.once("exit", (code) => code === 0 ? resolve(output.trim()) : reject(new Error("Mozilla imza doğrulaması veya süreç kontrolü tamamlanamadı." + (output.trim() ? " " + output.trim() : ""))));
+    let error = ""; child.stderr.on("data", (b) => { error = (error + b).slice(-2000); });
+    child.once("error", reject); child.once("close", (code) => code === 0 ? resolve(output.trim()) : reject(new Error(`Mozilla imza doğrulaması veya süreç kontrolü tamamlanamadı (${code}). ` + (output.trim() || error.trim()))));
   });
 }
 export async function verifyMozillaSignature(path) {
