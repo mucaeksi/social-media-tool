@@ -9,6 +9,7 @@ import {
 import { computerCommand } from "../shared/computer-protocol.mjs";
 import { browserTool } from "./browser-tools.mjs";
 import { facebookPublish } from "./facebook-publisher.mjs";
+import { normalFirefox } from "./normal-firefox.mjs";
 
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -21,6 +22,7 @@ export class ProfileBrowsers {
     platforms = browserPlatforms,
     testing = false,
     browser = "firefox",
+    launchNormal = normalFirefox,
   }) {
     Object.assign(this, {
       directory,
@@ -30,8 +32,10 @@ export class ProfileBrowsers {
       platforms,
       testing,
       browser,
+      launchNormal,
     });
     this.opened = new Map();
+    this.manualOpened = new Map();
     this.queue = Promise.resolve();
   }
   execute(account, value) {
@@ -53,6 +57,56 @@ export class ProfileBrowsers {
       key = shared ? `company-${account.companyId}` : `${account.companyId}-${account.id}`;
     const opening = ["open", "workspace"].includes(command.action);
     let entry = this.opened.get(key);
+    const manualResult = () => ({
+      manualLogin: true,
+      manualRunning: this.manualOpened.has(key),
+      noFrame: true,
+      profilePresent: true,
+      loginVerified: false,
+      authDetected: null,
+    });
+    if (command.action === "manual-status") return manualResult();
+    if (command.action === "manual-login") {
+      if (this.browser !== "firefox")
+        throw new Error("Normal giriş için Mozilla Firefox gerekli.");
+      if (!this.manualOpened.has(key)) {
+        if (this.manualOpened.size + this.opened.size - Number(Boolean(entry)) >= 3)
+          throw new Error("Önce açık Firefox pencerelerinden birini kapatın.");
+        if (entry) {
+          await entry.browser.close();
+          this.opened.delete(key);
+        }
+        const userDataDir = join(this.directory, key);
+        await mkdir(userDataDir, { recursive: true, mode: 0o700 });
+        if (!this.allowed(config.login, config))
+          throw new Error("Giriş adresi geçersiz.");
+        const manual = await this.launchNormal({
+          executablePath: this.executablePath,
+          userDataDir,
+          url: config.login,
+          headless: this.testing && this.headless,
+          ...(this.testing ? {
+            env: {
+              ...process.env,
+              MOZ_DISABLE_CONTENT_SANDBOX: "1",
+              MOZ_CRASHREPORTER_DISABLE: "1",
+              XDG_CACHE_HOME: join(this.directory, "cache"),
+            },
+          } : {}),
+        });
+        this.manualOpened.set(key, manual);
+        void manual.exited.then(() => {
+          if (this.manualOpened.get(key) === manual) this.manualOpened.delete(key);
+        });
+      }
+      return manualResult();
+    }
+    if (this.manualOpened.has(key)) {
+      if (opening) return manualResult();
+      // Closing a panel view leaves the person's ordinary Firefox untouched.
+      if (command.action === "close") return { ...manualResult(), closed: true };
+      throw new Error("Önce bilgisayardaki normal Firefox giriş penceresini kapatın.");
+    }
     if (command.action === "close") {
       const authDetected = entry
         ? await this.authHint(entry.browser, config)
@@ -73,8 +127,11 @@ export class ProfileBrowsers {
         throw new Error("Önce hesap ekranını açın.");
       // Keep a bounded number of browser processes. Closed profiles keep their
       // complete local browser data, including IndexedDB and persistent cookies.
-      if (this.opened.size >= 3) {
-        const [oldKey, old] = this.opened.entries().next().value;
+      if (this.opened.size + this.manualOpened.size >= 3) {
+        const oldest = this.opened.entries().next().value;
+        if (!oldest)
+          throw new Error("Önce bilgisayardaki normal Firefox pencerelerinden birini kapatın.");
+        const [oldKey, old] = oldest;
         await old.browser.close();
         this.opened.delete(oldKey);
       }

@@ -167,7 +167,7 @@ export function registerCompanyComputer(app) {
       throw computerError(400, "Bu işlem yayın kuyruğundan başlatılmalıdır.");
     delete command.media;
     const viewId =
-      ["open", "workspace"].includes(command.action) ? undefined : z.uuid().parse(input.viewId);
+      ["open", "workspace", "manual-login"].includes(command.action) ? undefined : z.uuid().parse(input.viewId);
     const row = await c.env.DB.prepare(
       "SELECT id,company_id,platform,label,profile_url FROM social_accounts WHERE id=?",
     )

@@ -121,7 +121,7 @@ function connect(config) {
     socket.send(
       JSON.stringify({
         type: "hello",
-        capabilities: ["local-ai-v1", "research-v1", "browser-tasks-v1", "company-tabs-v1"],
+        capabilities: ["local-ai-v1", "research-v1", "browser-tasks-v1", "company-tabs-v1", "normal-login-v1"],
       }),
     );
     heartbeat = setInterval(() => {
@@ -276,6 +276,7 @@ process.on("message", (message) => {
     pool &&
     commandsInFlight === 0 &&
     pool.opened.size === 0 &&
+    pool.manualOpened.size === 0 &&
     !localAI.busy
   )
     void stop(75);

@@ -149,6 +149,7 @@ export class CompanyComputer {
         return Response.json({
           onlineDeviceId: sockets[0]?.deserializeAttachment().id ?? null,
           companyTabs: Boolean(sockets[0]?.deserializeAttachment().companyTabs),
+          normalLogin: Boolean(sockets[0]?.deserializeAttachment().normalLogin),
           active: lease
             ? {
                 accountId: lease.accountId,
@@ -168,7 +169,10 @@ export class CompanyComputer {
           "Şirket bilgisayarı çevrimdışı. Bilgisayarda Sosyal Studio yardımcısını başlatın.",
         );
       const { command, account, userId } = input;
-      const opening = ["open", "workspace"].includes(command.action);
+      const opening = ["open", "workspace", "manual-login"].includes(command.action);
+      if (["manual-login", "manual-status"].includes(command.action) &&
+          !socket.deserializeAttachment().normalLogin)
+        throw computerError(409, "Normal Firefox girişi için açık hesapları kapatıp yardımcı güncellemesini bekleyin.");
       if ((command.action === "workspace" || input.switchAccount) &&
           !socket.deserializeAttachment().companyTabs)
         throw computerError(409, "Tek pencereli Firefox için açık hesapları kapatıp yardımcı güncellemesini bekleyin.");
@@ -189,6 +193,8 @@ export class CompanyComputer {
         ![
           "open",
           "workspace",
+          "manual-login",
+          "manual-status",
           "screen",
           "click",
           "type",
@@ -219,6 +225,8 @@ export class CompanyComputer {
           410,
           "Bu hesap ekranı kapandı. Hesabı yeniden açın.",
         );
+      if (command.action === "manual-status" && !lease?.normalLogin)
+        throw computerError(409, "Önce normal Firefox girişini başlatın.");
       const count = budget?.day === day ? budget.count : 0;
       if (count >= COMPUTER_LIMITS.dailyCommands)
         throw computerError(
@@ -263,6 +271,11 @@ export class CompanyComputer {
       try {
         const result = await this.rpc(socket, { command, account },
           command.action === "workspace" ? { timeout: 90000 } : undefined);
+        // A previous panel must not type into a profile after a login handoff.
+        if (Boolean(result.manualLogin) !== Boolean(lease.normalLogin)) {
+          lease = { ...lease, normalLogin: Boolean(result.manualLogin), viewId: crypto.randomUUID() };
+          await this.ctx.storage.put("lease", lease);
+        }
         if (command.action === "close") await this.ctx.storage.delete("lease");
         return Response.json({
           ...result,
@@ -498,6 +511,8 @@ export class CompanyComputer {
           value.capabilities.includes("browser-tasks-v1"),
         companyTabs:
           Array.isArray(value.capabilities) && value.capabilities.includes("company-tabs-v1"),
+        normalLogin:
+          Array.isArray(value.capabilities) && value.capabilities.includes("normal-login-v1"),
       });
       return;
     }

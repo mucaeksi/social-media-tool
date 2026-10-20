@@ -38,6 +38,7 @@ type Profile = {
 };
 type ComputerStatus = {
   companyTabs?: boolean;
+  normalLogin?: boolean;
   devices: { id: string; name: string }[];
   onlineDeviceId: string | null;
   active: { accountId: string; companyId: string; owned: boolean } | null;
@@ -49,7 +50,9 @@ type Screen = {
   tabs?: BrowserTab[];
   accountId: string;
   viewId: string;
-  frame: string;
+  frame?: string;
+  manualLogin?: boolean;
+  manualRunning?: boolean;
   width: number;
   height: number;
   loginVerified: false;
@@ -166,14 +169,14 @@ export function CompanyAccounts({
     if (!screen) return;
     let valid = true;
     const timer = setInterval(() => {
-      if (localLogin || working.current || !live.current) return;
+      if ((localLogin && !live.current?.manualLogin) || working.current || !live.current) return;
       const target = live.current;
       working.current = true;
       const pending = api<Screen>(
         `/api/computer/accounts/${target.accountId}/command`,
         {
           method: "POST",
-          body: JSON.stringify({ action: "screen", viewId: target.viewId }),
+          body: JSON.stringify({ action: target.manualLogin ? "manual-status" : "screen", viewId: target.viewId }),
         },
       )
         .then((next) => {
@@ -207,7 +210,7 @@ export function CompanyAccounts({
       clearInterval(timer);
       window.removeEventListener("pagehide", leave);
     };
-  }, [screen?.viewId, localLogin]);
+  }, [screen?.viewId, screen?.manualLogin, localLogin]);
   async function run(action: () => Promise<void>) {
     const scope = currentCompany.current;
     const previous = operation.current;
@@ -231,12 +234,12 @@ export function CompanyAccounts({
     operation.current = next;
     await next;
   }
-  async function open(target: Account, workspace = false) {
+  async function open(target: Account, workspace = false, normal = false) {
     await run(async () => {
       const next = await api<Screen>(
         `/api/computer/accounts/${target.id}/command`,
         { method: "POST", body: JSON.stringify({
-          action: workspace ? "workspace" : "open",
+          action: normal ? "manual-login" : workspace ? "workspace" : "open",
           switchAccount: Boolean(live.current),
           previousViewId: live.current?.viewId,
         }) },
@@ -246,7 +249,7 @@ export function CompanyAccounts({
         return;
       }
       show(next);
-      setLocalLogin(workspace);
+      setLocalLogin(workspace || next.manualLogin === true);
       await refresh();
     });
   }
@@ -278,7 +281,9 @@ export function CompanyAccounts({
         body: JSON.stringify({ action: "close", viewId: target.viewId }),
       });
       setNotice(
-        "Firefox penceresi kapatıldı. Giriş profili şirket bilgisayarında korundu; sosyal hesaptan çıkış yapılmadı.",
+        target.manualLogin
+          ? "Panel görünümü kapatıldı. Normal Firefox penceresini bilgisayardan kapatın; girişler profilde korunur."
+          : "Firefox penceresi kapatıldı. Giriş profili şirket bilgisayarında korundu; sosyal hesaptan çıkış yapılmadı.",
       );
       await refresh();
     });
@@ -461,9 +466,13 @@ export function CompanyAccounts({
           <p>Şirketin her sosyal ağdaki ilk hesabı aynı kalıcı Firefox profilini kullanır.
             Açılan sekmelerde giriş yapıp sayfalarını sabitleyebilirsin.
             Aynı ağdaki ek hesaplar ayrı profilde tutulur.</p>
+          <p>Google girişte tarayıcıyı reddederse aşağıdaki YouTube hesabında
+            <b> Normal Firefox’ta giriş yap</b> seçeneğini kullanın.
+            Normal pencereyi kapattıktan sonra aynı profille panel kontrolüne dönebilirsiniz.</p>
           <button className="primary" disabled={!online || busy || !accounts.length || !status?.companyTabs}
             onClick={() => void open(accounts[0], true)}>Şirket Firefox’unu aç</button>
           {online && !status?.companyTabs && <p>Bu özellik için açık hesap ekranlarını kapatıp yardımcının güncellenmesini bekleyin.</p>}
+          {online && !status?.normalLogin && <p>Normal giriş seçeneği için açık hesap ekranlarını kapatıp yardımcı güncellemesini bekleyin.</p>}
           {!accounts.length && <p>Önce aşağıdan şirkete ait sosyal hesapları ekleyin.</p>}
         </section>
       )}
@@ -513,6 +522,13 @@ export function CompanyAccounts({
                         onClick={() => void open(a)}
                       >
                         <LogIn size={14} /> Hesap ekranını aç
+                      </button>
+                      <button
+                        className="secondary"
+                        disabled={!admin || !online || busy || !status?.normalLogin}
+                        onClick={() => void open(a, false, true)}
+                      >
+                        Normal Firefox’ta giriş yap
                       </button>
                       <button
                         className="icon-button"
@@ -619,23 +635,29 @@ export function CompanyAccounts({
             onClose={close}
           >
             <p className="modal-description">
-              Bu ekran şirket bilgisayarındaki Firefox'u kontrol eder. Alana
+              {screen.manualLogin ? "Şirket profili normal Firefox’ta açıldı. Bilgisayarındaki Firefox penceresinde giriş yap; bu sırada panel tarayıcıyı kontrol etmez. Giriş bitince bu Firefox penceresini tamamen kapat, ardından aşağıdan panel kontrolüne dön. Girişler aynı profilde korunur. Google tekrar doğrulama isteyebilir." : <>Bu ekran şirket bilgisayarındaki Firefox'u kontrol eder. Alana
               tıklayın, aşağıdan metni yazın veya tuşları kullanın. Girişi ve
               doğrulamayı tamamlayın. Ekranı kapatmak sosyal hesaptan çıkış
-              yapmaz.
+              yapmaz.</>}
             </p>
             <p role="status">
-              {localLogin ? "Bilgisayarda giriş modu: otomatik ekran yenilemesi duraklatıldı. Firefox sekmelerinde giriş yapıp sayfalarını sabitleyebilirsin." : "Panel kontrolü etkin."}
+              {screen.manualLogin
+                ? screen.manualRunning ? "Normal Firefox açık. Giriş bitince pencereyi bilgisayardan kapat." : "Normal Firefox kapandı. Panel kontrolüne dönebilirsin."
+                : localLogin ? "Bilgisayarda giriş modu: otomatik ekran yenilemesi duraklatıldı. Firefox sekmelerinde giriş yapıp sayfalarını sabitleyebilirsin." : "Panel kontrolü etkin."}
             </p>
-            <button className="secondary" disabled={busy} onClick={() => { setText(""); setLocalLogin(!localLogin); }}>
+            {screen.manualLogin ? <button className="primary"
+              disabled={busy || screen.manualRunning !== false || !account}
+              onClick={() => account && void open(account)}>
+              Firefox’u kapattım, panel kontrolüne dön
+            </button> : <button className="secondary" disabled={busy} onClick={() => { setText(""); setLocalLogin(!localLogin); }}>
               {localLogin ? "Panel kontrolüne dön" : "Bilgisayarda giriş yapacağım"}
-            </button>
+            </button>}
             {error && (
               <p className="browser-message error" role="alert">
                 {error}
               </p>
             )}
-            <div className="browser-toolbar">
+            {!screen.manualLogin && <div className="browser-toolbar">
               {status?.companyTabs && <label>Sosyal ağ seç
                 <select value={screen.accountId} disabled={busy}
                   onChange={(e) => { const selected = accounts.find((a) => a.id === e.target.value); if (selected) void open(selected); }}>
@@ -662,7 +684,7 @@ export function CompanyAccounts({
               >
                 <RefreshCw size={14} /> Ekranı yenile
               </button>
-            </div>
+            </div>}
             {!localLogin && <img
               className="computer-screen"
               alt="Şirket bilgisayarındaki sosyal hesap ekranı; alan seçmek için tıklayın"
@@ -774,13 +796,13 @@ export function CompanyAccounts({
               </button>
             )}
             <p className="modal-description">
-              Gönderi yayınlanmış sayılmaz; sosyal ağdaki paylaşma işlemini siz
+              {screen.manualLogin ? "Bu işlem girişin başarılı olduğunu doğrulamaz. Kişisel Firefox profilin ve parola kasan bu profile kopyalanmaz." : <>Gönderi yayınlanmış sayılmaz; sosyal ağdaki paylaşma işlemini siz
               tamamlarsınız. Bilgisayarda açık duran Firefox'dan da giriş
-              yapabilirsiniz.
+              yapabilirsiniz.</>}
             </p>
             <div className="modal-actions">
               <button className="primary" disabled={busy} onClick={close}>
-                Firefox'u kapat, girişi koru
+                {screen.manualLogin ? "Paneli kapat, normal Firefox açık kalsın" : "Firefox'u kapat, girişi koru"}
               </button>
             </div>
           </Modal>

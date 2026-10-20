@@ -5,6 +5,7 @@ export const releaseFiles = [
   "companion/package-lock.json",
   "companion/start.mjs",
   "companion/browser.mjs",
+  "companion/normal-firefox.mjs",
   "companion/browser-tools.mjs",
   "companion/facebook-publisher.mjs",
   "companion/locations.mjs",

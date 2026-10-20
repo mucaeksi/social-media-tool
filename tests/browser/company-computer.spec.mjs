@@ -24,7 +24,8 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
         .toBuffer()
     ).toString("base64");
   let paired = false,
-    online = false;
+    online = false,
+    manualRunning = false;
   const secondAccount = { ...account, id: crypto.randomUUID(), platform: "facebook", label: "Firma Facebook" };
   try {
     for (const name of ["Bilgisayar şirket A", "Bilgisayar şirket B"])
@@ -58,6 +59,7 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
             devices: paired ? [device] : [],
             onlineDeviceId: online ? device.id : null,
             companyTabs: true,
+            normalLogin: true,
             active: null,
             commandsUsed: 0,
             dailyCommands: 20000,
@@ -74,6 +76,9 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
       }
       const input = req.postDataJSON();
       commands.push({ path, ...input });
+      if (input.action === "manual-login") manualRunning = true;
+      if (["manual-login", "manual-status"].includes(input.action))
+        return route.fulfill({ json: { accountId: path.split("/")[4], viewId, manualLogin: true, manualRunning, noFrame: true, loginVerified: false } });
       return route.fulfill({
         json:
           input.action === "close"
@@ -118,6 +123,22 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
     await expect(
       page.getByText("Bilgisayar çevrimiçi", { exact: true }),
     ).toBeVisible();
+    await page.getByRole("button", { name: "Normal Firefox’ta giriş yap", exact: true }).first().click();
+    const manualDialog = page.getByRole("dialog");
+    await expect(manualDialog.getByText(/Normal Firefox açık/)).toBeVisible();
+    await expect(manualDialog.getByRole("img")).toHaveCount(0);
+    await expect(manualDialog.getByRole("textbox")).toHaveCount(0);
+    const resume = manualDialog.getByRole("button", { name: "Firefox’u kapattım, panel kontrolüne dön", exact: true });
+    await expect(resume).toBeDisabled();
+    await expect.poll(() => commands.some((c) => c.action === "manual-status")).toBe(true);
+    expect(commands.filter((c) => c.action === "screen")).toHaveLength(0);
+    manualRunning = false;
+    await expect(resume).toBeEnabled();
+    await resume.click();
+    await expect(manualDialog.getByRole("img")).toBeVisible();
+    await manualDialog.getByRole("button", { name: "Firefox'u kapat, girişi koru", exact: true }).click();
+    await expect(manualDialog).toHaveCount(0);
+    commands.length = 0;
     await page
       .getByRole("button", { name: "Şirket Firefox’unu aç", exact: true })
       .click();

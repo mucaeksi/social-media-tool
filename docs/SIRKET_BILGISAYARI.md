@@ -1,5 +1,7 @@
 # Windows ve Firefox ile kalıcı sosyal hesap girişleri
 
+**Yardımcı 1.4.2 yaması:** Hesap kartlarına **Normal Firefox’ta giriş yap** seçeneği eklendi. Özellikle Google’ın otomasyon bağlantılı tarayıcıda girişi reddettiği durumlarda aynı şirket profilini normal Firefox’ta açar. Gerçek Google hesabında bu yöntemin sonucu ayrıca doğrulanmalıdır.
+
 **Yardımcı 1.4.1 yaması:** Windows başlatıcılarının satır sonları düzeltildi. Başlangıçta `'rlevel'`, `'Node.js'` veya `'Kurulumdan' tanınmıyor` hatası görüyorsanız eski yardımcı penceresini kapatın, güncel ZIP'in tamamını çıkarıp `companion\Kur-ve-Baslat.cmd` dosyasını çalıştırın. Cihaz eşleştirmesi, Firefox girişleri ve model dosyaları korunur.
 
 **Yardımcı 1.3 yaması:** Aynı kurulumun otomatik güncellemesine KKTC kaynak araştırması, Firefox görevleri, AI ara kayıt/devam ve Facebook yayın pilotu eklendi. İlk kurulum adımları aşağıda; güncel özellikler ve gerçek hesapta doğrulanmamış kapsam [KKTC uzman web rehberindedir](https://github.com/mucaeksi/social-media-tool/blob/main/docs/KKTC_UZMAN_KULLANIM.md). Eski sürümün “otomatik yayın yok” notları yeni pilotu kapsamaz; diğer platformların otomatik yayını ve gerçek hesap kontrolü hâlâ tamamlanmış sayılmaz.
@@ -13,6 +15,16 @@ Hesap bağlantılarında **Şirket Firefox’unu aç** seçeneğini kullanın. �
 Yeni ortak profil `%LOCALAPPDATA%\SosyalStudio\profiles\company-<şirket-id>` altındadır. Aynı platformdaki ikinci ve sonraki hesaplar ayrı hesap profilinde tutulur; bunlara geçmeden açık ekranı kapatın. Farklı şirketlerin girişleri paylaşılmaz. İlk kurulumda kullanıcı ağlara kendisi giriş yapar; CAPTCHA ve ek doğrulama kullanıcıya aittir. Firefox’un kendi parola kaydetmesi açıktır; uygulama parola kasasını okumaz. Sekmenin açılması veya kayıtlı bir parolanın bulunması, doğru hesaba giriş yapıldığını doğrulamaz.
 
 Önceki `profiles\<şirket-id>-<hesap-id>` klasörleri silinmez veya birleştirilmez. Ortak profile geçerken bir defa yeniden giriş gerekir. Normal Firefox’taki şifreler/çerezler otomatik taşınmaz; normal profiliniz korunur. Açık ekranları kapatıp yardımcının güncellenmesini bekleyin.
+
+## Google ve diğer ağlarda normal Firefox ile giriş (1.4.2)
+
+1. Yardımcı açıkken paneli yenileyin. **Hesap bağlantıları** bölümünde ilgili hesabın **Normal Firefox’ta giriş yap** düğmesine basın. Google girişi için YouTube hesabını seçin. Düğme kapalıysa açık hesap ekranlarını kapatıp yardımcının güncellenmesini bekleyin.
+2. Bilgisayarda açılan normal Firefox penceresinde kendiniz giriş yapın ve doğrulamayı tamamlayın. Şirketin ilk hesapları aynı profili paylaşır; isterseniz bu pencerede diğer sosyal ağları da sekmelerde açıp giriş yapabilirsiniz. Aynı platformdaki ek hesaplar ayrı profil kullanır.
+3. Giriş bitince bu normal Firefox penceresini tamamen kapatın. Panel pencerenin kapandığını gösterince **Firefox’u kapattım, panel kontrolüne dön** seçin. Aynı profil bu kez programın kontrolünde açılır; site oturumun hâlâ geçerli olup olmadığını kendisi belirler.
+
+Normal giriş sırasında WebDriver/BiDi/Marionette bağlantısı açılmaz; panel ekran, şifre veya klavye girdisi almaz. Açık normal pencereye otomasyon bağlanmaz, aynı profile ikinci süreç açılmaz ve yardımcı güncellemesi pencere bitene kadar bekler. Panel görünümünü kapatmak normal Firefox’u zorla kapatmaz; pencereyi bilgisayardan kapatın. Normal kişisel Firefox’unuzun profili/parola kasası kopyalanmaz. Şirket profilleri ve cihaz eşleştirmesi korunur.
+
+Bu seçenek Google güvenlik kontrolünün kesin aşılacağını veya sonraki otomasyon oturumunun her platformda kabul edileceğini garanti etmez. Gerçek Google girişi hesap sahibi tarafından denenmelidir; diğer platformlarda aynı sorun gözlenmiş sayılmaz.
 
 ## İlk kurulum
 

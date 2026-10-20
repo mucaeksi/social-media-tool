@@ -443,11 +443,13 @@ test(
     registerHooks({ load(url, context, next) {
       if (url.endsWith("/companion/browser.mjs")) return { format: "module", shortCircuit: true, source: \`
         export class ProfileBrowsers {
-          constructor() { this.opened = new Map(); this.queue = Promise.resolve(); }
+          constructor() { this.opened = new Map(); this.manualOpened = new Map(); this.queue = Promise.resolve(); }
           async execute(account, command) {
             await new Promise(r => setTimeout(r, 100));
             if (command.action === "open") this.opened.set("fixture", {});
             if (command.action === "close") this.opened.clear();
+            if (command.action === "manual-login") this.manualOpened.set("fixture", {});
+            if (command.action === "fixture-normal-closed") this.manualOpened.clear();
             return { closed: command.action === "close" };
           }
           async closeAll() { this.opened.clear(); }
@@ -514,6 +516,14 @@ test(
     });
     child.send({ type: "prepare-update" });
     await until(() => messages.some((m) => m.id === "close"));
+    child.send({ type: "fixture-command", id: "normal", command: { action: "manual-login" } });
+    await until(() => messages.some((m) => m.id === "normal"));
+    child.send({ type: "prepare-update" });
+    await pause(30);
+    assert.equal(child.exitCode, null);
+    assert.ok(!messages.some((m) => m.type === "update-ready"), "Normal giriş penceresi kesilmez");
+    child.send({ type: "fixture-command", id: "normal-closed", command: { action: "fixture-normal-closed" } });
+    await until(() => messages.some((m) => m.id === "normal-closed"));
     child.send({ type: "fixture-ai", id: "ai" });
     child.send({ type: "prepare-update" });
     await pause(30);

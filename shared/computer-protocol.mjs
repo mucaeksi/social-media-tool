@@ -29,6 +29,8 @@ export function computerCommand(value) {
     ![
       "open",
       "workspace",
+      "manual-login",
+      "manual-status",
       "screen",
       "click",
       "type",
@@ -151,6 +153,10 @@ export function computerCommand(value) {
   return result;
 }
 export function validComputerResult(value) {
+  if (value?.manualLogin !== undefined &&
+      (value.manualLogin !== true || typeof value.manualRunning !== "boolean" ||
+       value.noFrame !== true || value.frame !== undefined ||
+       value.page !== undefined || value.tabs !== undefined)) return false;
   if (value?.page) {
     const p = value.page;
     if (

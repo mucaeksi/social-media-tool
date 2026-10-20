@@ -8,7 +8,7 @@ import { objectKey } from "../../worker/media.mjs";
 import { Miniflare } from "miniflare";
 import { tokenDigest } from "../../shared/passwords.mjs";
 
-let mf, db, device, agent;
+let mf, db, device, agent, manualForwarded;
 const base = "https://studio.example",
   companyId = crypto.randomUUID(),
   otherCompany = crypto.randomUUID(),
@@ -222,6 +222,8 @@ test("Kimliği doğrulanmış yardımcı hesabı açar; kullanıcı/hesap/görü
         result:
           m.command.action === "close"
             ? { closed: true, profilePresent: true, loginVerified: false }
+            : ["manual-login", "manual-status"].includes(m.command.action)
+            ? (manualForwarded = m, { manualLogin: true, manualRunning: true, noFrame: true, loginVerified: false })
             : {
                 frame,
                 width: 1280,
@@ -235,6 +237,8 @@ test("Kimliği doğrulanmış yardımcı hesabı açar; kullanıcı/hesap/görü
   const status = await (await request("/api/computer/status")).json();
   assert.equal(status.onlineDeviceId, device.id);
   assert.equal(status.companyTabs, false);
+  assert.equal(status.normalLogin, false);
+  assert.equal((await command(accountId, { action: "manual-login" })).status, 409);
   assert.equal((await command(accountId, { action: "workspace" })).status, 409);
   const opened = await command(accountId, { action: "open" });
   assert.equal(opened.status, 200);
@@ -317,6 +321,34 @@ test("Kimliği doğrulanmış yardımcı hesabı açar; kullanıcı/hesap/görü
       .status,
     410,
   );
+});
+
+test("Normal giriş yetenek bildirimi, doğrulanmış şirket profili ve operatör kilidi ister; ekran/şifre taşınmaz", async () => {
+  agent.send(JSON.stringify({ type: "hello", capabilities: ["normal-login-v1"] }));
+  for (let i = 0; i < 100; i++) {
+    if ((await (await request("/api/computer/status")).json()).normalLogin) break;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  const opened = await command(accountId, { action: "manual-login", url: "file:///outside", executablePath: "outside", profileScope: "account" });
+  assert.equal(opened.status, 200);
+  const view = await opened.json();
+  assert.equal(view.manualLogin, true);
+  assert.equal(view.frame, undefined);
+  assert.equal(view.loginVerified, false);
+  assert.deepEqual(manualForwarded.command, { action: "manual-login" });
+  assert.equal(manualForwarded.account.companyId, companyId);
+  assert.equal(manualForwarded.account.profileScope, "company");
+  assert.equal((await command(otherAccount, { action: "manual-login" })).status, 409);
+  assert.equal((await command(accountId, { action: "manual-login" }, "other")).status, 409);
+  assert.equal((await command(accountId, { action: "manual-login" }, "editor")).status, 403);
+  assert.equal((await command(accountId, { action: "manual-status", viewId: crypto.randomUUID() })).status, 410);
+  assert.equal((await command(accountId, { action: "manual-status", viewId: view.viewId })).status, 200);
+  const resumed = await command(accountId, { action: "open" });
+  assert.equal(resumed.status, 200);
+  const controlled = await resumed.json();
+  assert.notEqual(controlled.viewId, view.viewId, "Normal girişten sonra eski panel geçersizdir");
+  assert.equal((await command(accountId, { action: "type", viewId: view.viewId, text: "stale-fixture" })).status, 410);
+  assert.equal((await command(accountId, { action: "close", viewId: controlled.viewId })).status, 200);
 });
 
 test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket bağlamı ve D1 geçmişi korunur", async () => {
