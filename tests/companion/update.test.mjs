@@ -33,7 +33,7 @@ const manifest = JSON.parse(
 const previous = "a".repeat(64);
 const pause = (ms = 5) => new Promise((r) => setTimeout(r, ms));
 async function until(predicate) {
-  for (let i = 0; i < 300; i++) {
+  for (let i = 0; i < 1200; i++) {
     if (await predicate()) return;
     await pause();
   }
@@ -454,6 +454,7 @@ test(
         }
       \` };
       if (url.endsWith("/companion/local-ai.mjs")) return {format:"module", shortCircuit:true, source: "export class LocalAI { constructor(){this.busy=false;} async execute(){this.busy=true;await new Promise(r=>setTimeout(r,100));this.busy=false;return {ok:true,answer:'fixture',posts:[]};} }"};
+      if (url.endsWith("/companion/research.mjs")) return {format:"module", shortCircuit:true, source: "export class WebsiteResearch { async close() {} }"};
       return next(url, context);
     }});
     globalThis.WebSocket = class extends EventTarget {

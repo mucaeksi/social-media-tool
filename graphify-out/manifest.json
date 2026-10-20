@@ -654,9 +654,9 @@
     "semantic_hash": ""
   },
   "tests/companion/update.test.mjs": {
-    "mtime": 1792471950.3951554,
-    "seen": 1792473384.1758273,
-    "ast_hash": "878e2607fa9e54640771013cba8d47ee",
+    "mtime": 1792478466.5105383,
+    "seen": 1792478471.812414,
+    "ast_hash": "ca7aa91c3392ac4c984ce16e289ba701",
     "semantic_hash": ""
   },
   "companion/local-ai.mjs": {
