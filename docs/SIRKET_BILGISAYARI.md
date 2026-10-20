@@ -6,7 +6,7 @@ Panel, şirket kayıtları, taslaklar ve AI verileri Cloudflare'de; kaynak kod G
 
 ## Tek pencereli şirket Firefox’u (1.4)
 
-Hesap bağlantılarında **Şirket Firefox’unu aç** seçeneğini kullanın. Şirkete kayıtlı her sosyal ağın ilk hesabı aynı Firefox penceresinde ayrı sekmede açılır. Bilgisayarda bu sekmelere doğrudan giriş yapıp sayfaları sabitleyebilirsiniz. Panelde **Sosyal ağ seç** ile aynı pencerede ilgili hesabı kontrol edin; seçim önceki panel görünümünü geçersiz kılar. **Firefox’u kapat, girişi koru** ortak pencerenin bütün sekmelerini kapatır ve profili korur.
+Hesap bağlantılarında **Şirket Firefox’unu aç** seçeneğini kullanın. Şirkete kayıtlı her sosyal ağın ilk hesabı aynı Firefox penceresinde ayrı sekmede açılır. Bilgisayarda bu sekmelere doğrudan giriş yapıp sayfaları sabitleyebilirsiniz. Şirket penceresi açıldığında panel otomatik olarak **Bilgisayarda giriş modu**na geçer ve ekran yenilemesini duraklatır; girişler bitince **Panel kontrolüne dön** seçin. Panelde **Sosyal ağ seç** ile aynı pencerede ilgili hesabı kontrol edin; seçim önceki panel görünümünü geçersiz kılar. **Firefox’u kapat, girişi koru** ortak pencerenin bütün sekmelerini kapatır ve profili korur.
 
 Yeni ortak profil `%LOCALAPPDATA%\SosyalStudio\profiles\company-<şirket-id>` altındadır. Aynı platformdaki ikinci ve sonraki hesaplar ayrı hesap profilinde tutulur; bunlara geçmeden açık ekranı kapatın. Farklı şirketlerin girişleri paylaşılmaz. İlk kurulumda kullanıcı ağlara kendisi giriş yapar; CAPTCHA ve ek doğrulama kullanıcıya aittir. Firefox’un kendi parola kaydetmesi açıktır; uygulama parola kasasını okumaz. Sekmenin açılması veya kayıtlı bir parolanın bulunması, doğru hesaba giriş yapıldığını doğrulamaz.
 

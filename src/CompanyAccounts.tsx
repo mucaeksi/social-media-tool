@@ -88,6 +88,7 @@ export function CompanyAccounts({
     [busy, setBusy] = useState(false),
     [pairing, setPairing] = useState<Pairing | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null),
+    [localLogin, setLocalLogin] = useState(false),
     [text, setText] = useState("");
   const [adding, setAdding] = useState<{
       id: SocialPlatformId;
@@ -110,6 +111,7 @@ export function CompanyAccounts({
   function show(value: Screen | null) {
     live.current = value;
     setScreen(value);
+    setLocalLogin(false);
     setText("");
   }
   async function refresh() {
@@ -164,7 +166,7 @@ export function CompanyAccounts({
     if (!screen) return;
     let valid = true;
     const timer = setInterval(() => {
-      if (working.current || !live.current) return;
+      if (localLogin || working.current || !live.current) return;
       const target = live.current;
       working.current = true;
       const pending = api<Screen>(
@@ -205,7 +207,7 @@ export function CompanyAccounts({
       clearInterval(timer);
       window.removeEventListener("pagehide", leave);
     };
-  }, [screen?.viewId]);
+  }, [screen?.viewId, localLogin]);
   async function run(action: () => Promise<void>) {
     const scope = currentCompany.current;
     const previous = operation.current;
@@ -244,12 +246,14 @@ export function CompanyAccounts({
         return;
       }
       show(next);
+      setLocalLogin(workspace);
       await refresh();
     });
   }
   async function control(action: string, extra: Record<string, unknown> = {}) {
     const target = live.current;
     if (!target) return;
+    setLocalLogin(false);
     await run(async () => {
       const next = await api<Screen>(
         `/api/computer/accounts/${target.accountId}/command`,
@@ -620,6 +624,12 @@ export function CompanyAccounts({
               doğrulamayı tamamlayın. Ekranı kapatmak sosyal hesaptan çıkış
               yapmaz.
             </p>
+            <p role="status">
+              {localLogin ? "Bilgisayarda giriş modu: otomatik ekran yenilemesi duraklatıldı. Firefox sekmelerinde giriş yapıp sayfalarını sabitleyebilirsin." : "Panel kontrolü etkin."}
+            </p>
+            <button className="secondary" disabled={busy} onClick={() => { setText(""); setLocalLogin(!localLogin); }}>
+              {localLogin ? "Panel kontrolüne dön" : "Bilgisayarda giriş yapacağım"}
+            </button>
             {error && (
               <p className="browser-message error" role="alert">
                 {error}
@@ -653,7 +663,7 @@ export function CompanyAccounts({
                 <RefreshCw size={14} /> Ekranı yenile
               </button>
             </div>
-            <img
+            {!localLogin && <img
               className="computer-screen"
               alt="Şirket bilgisayarındaki sosyal hesap ekranı; alan seçmek için tıklayın"
               src={`data:image/jpeg;base64,${screen.frame}`}
@@ -675,8 +685,8 @@ export function CompanyAccounts({
                   ),
                 });
               }}
-            />
-            <form
+            />}
+            {!localLogin && <form
               className="computer-input"
               onSubmit={(event) => {
                 event.preventDefault();
@@ -702,8 +712,8 @@ export function CompanyAccounts({
                   "Seçili alana yaz"
                 )}
               </button>
-            </form>
-            {company && (
+            </form>}
+            {company && !localLogin && (
               <BrowserTools
                 key={screen.viewId}
                 accountId={screen.accountId}
@@ -715,7 +725,7 @@ export function CompanyAccounts({
                 command={control}
               />
             )}
-            <div className="computer-keys">
+            {!localLogin && <div className="computer-keys">
               {[
                 ["Tab", "Sonraki alan"],
                 ["Shift+Tab", "Önceki alan"],
@@ -747,8 +757,8 @@ export function CompanyAccounts({
               >
                 Aşağı kaydır
               </button>
-            </div>
-            {prepared && (
+            </div>}
+            {prepared && !localLogin && (
               <button
                 className="secondary"
                 disabled={busy}

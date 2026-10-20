@@ -10,13 +10,14 @@ import { ProfileBrowsers } from "../../companion/browser.mjs";
 const executablePath = process.env.FIREFOX_EXECUTABLE ||
   (existsSync("/workspace/.tools/firefox/usr/lib/firefox-esr/firefox-esr")
     ? "/workspace/.tools/firefox/usr/lib/firefox-esr/firefox-esr" : firefox.executablePath());
-test("Gerçek Firefox: şirketin sosyal sekmeleri tek pencereyi paylaşır, yeniden açılışta saklanır ve ek hesaplar ayrıdır", { timeout: 120000 }, async () => {
+test("Gerçek Firefox: dokuz sosyal ağ sekmesi tek pencereyi paylaşır, yeniden açılışta saklanır ve ek hesaplar ayrıdır", { timeout: 120000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), "studio-company-window-"));
   const servers = [];
   let pool;
   try {
     const urls = [];
-    for (const host of ["127.0.0.1", "127.0.0.2"]) {
+    const platforms = ["x", "facebook", "instagram", "threads", "pinterest", "youtube", "tiktok", "linkedin", "tumblr"];
+    for (const host of platforms.map((_, index) => `127.0.0.${index + 1}`)) {
       const server = createServer((_request, response) => {
         response.setHeader("Content-Type", "text/html; charset=utf-8");
         response.end("<!doctype html><title>Kurgu sosyal ağ</title><h1>Kurgu hesap</h1>");
@@ -26,7 +27,7 @@ test("Gerçek Firefox: şirketin sosyal sekmeleri tek pencereyi paylaşır, yeni
       urls.push(`http://${host}:${server.address().port}/`);
     }
     const companyId = crypto.randomUUID();
-    const accounts = ["x", "facebook"].map((platform, index) => ({
+    const accounts = platforms.map((platform, index) => ({
       id: crypto.randomUUID(), companyId, platform, profileUrl: urls[index], profileScope: "company",
     }));
     const legacy = join(directory, `${companyId}-${accounts[0].id}`);
@@ -44,7 +45,7 @@ test("Gerçek Firefox: şirketin sosyal sekmeleri tek pencereyi paylaşır, yeni
     assert.equal(pool.opened.size, 1);
     const browser = [...pool.opened.values()][0].browser;
     await pool.execute(workspace, { action: "workspace", noFrame: true });
-    assert.equal((await browser.pages()).filter((p) => urls.includes(p.url())).length, 2);
+    assert.equal((await browser.pages()).filter((p) => urls.includes(p.url())).length, 9);
     for (const [index, account] of accounts.entries()) {
       const page = (await browser.pages()).find((p) => p.url() === urls[index]);
       assert.ok(page, account.platform + " sekmesi");

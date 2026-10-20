@@ -122,6 +122,11 @@ test("Windows Firefox kurulumu, çevrimiçi hesap kontrolü ve şirket değişim
       .getByRole("button", { name: "Şirket Firefox’unu aç", exact: true })
       .click();
     const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText(/otomatik ekran yenilemesi duraklatıldı/)).toBeVisible();
+    await expect(dialog.getByRole("img")).toHaveCount(0);
+    await page.waitForTimeout(2100);
+    expect(commands.filter((c) => c.action === "screen")).toHaveLength(0);
+    await dialog.getByRole("button", { name: "Panel kontrolüne dön", exact: true }).click();
     await expect(dialog.getByRole("img")).toBeVisible();
     await dialog
       .getByLabel("Seçili alana yazılacak metin (gizli gösterilir)")

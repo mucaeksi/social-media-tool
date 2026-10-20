@@ -546,9 +546,9 @@
     "semantic_hash": ""
   },
   "companion/browser.mjs": {
-    "mtime": 1792481499.9987428,
-    "seen": 1792481505.0378478,
-    "ast_hash": "9c2fc56613e8fd5d8e09e3282858bcf6",
+    "mtime": 1792481798.892913,
+    "seen": 1792481920.3673544,
+    "ast_hash": "e1cb46400e6606697f46562e8d7bc385",
     "semantic_hash": ""
   },
   "companion/package.json": {
@@ -582,15 +582,15 @@
     "semantic_hash": ""
   },
   "src/CompanyAccounts.tsx": {
-    "mtime": 1792481036.6068094,
-    "seen": 1792481406.9343016,
-    "ast_hash": "a8d6dbc9a269eec2ea2c6f2e9361f3be",
+    "mtime": 1792481889.796279,
+    "seen": 1792481920.3683298,
+    "ast_hash": "b603cc356e65335b3114dcc4234858ee",
     "semantic_hash": ""
   },
   "tests/browser/company-computer.spec.mjs": {
-    "mtime": 1792481335.1242359,
-    "seen": 1792481406.9346058,
-    "ast_hash": "380c881b7b7a3e1788ccfafde5f056f3",
+    "mtime": 1792481890.2882755,
+    "seen": 1792481920.3686206,
+    "ast_hash": "72b898590a9cc22cbaa8043034aa0cd7",
     "semantic_hash": ""
   },
   "tests/cloud/company-computer.test.mjs": {
@@ -618,9 +618,9 @@
     "semantic_hash": ""
   },
   "docs/SIRKET_BILGISAYARI.md": {
-    "mtime": 1792481459.8512824,
-    "seen": 1792481461.9498239,
-    "ast_hash": "80fb302eefd007c89bd18d8e67654af8",
+    "mtime": 1792481691.369523,
+    "seen": 1792481695.1441362,
+    "ast_hash": "4c8947627f1b038c663671e97bd4bb6e",
     "semantic_hash": ""
   },
   "companion/launch.mjs": {
@@ -864,9 +864,9 @@
     "semantic_hash": ""
   },
   "tests/companion/company-window.test.mjs": {
-    "mtime": 1792481500.482739,
-    "seen": 1792481505.039684,
-    "ast_hash": "6b616feabbce089ff9afa25f23ae6cb2",
+    "mtime": 1792481889.1882834,
+    "seen": 1792481920.368874,
+    "ast_hash": "acb064e5cacdabd2ee07ca9b3284ba3f",
     "semantic_hash": ""
   }
 }

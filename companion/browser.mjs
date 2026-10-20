@@ -32,6 +32,7 @@ export class ProfileBrowsers {
       browser,
     });
     this.opened = new Map();
+    this.tabQueues = new WeakMap();
     this.queue = Promise.resolve();
   }
   execute(account, value) {
@@ -117,6 +118,7 @@ export class ProfileBrowsers {
                 "security.fileuri.strict_origin_policy": true,
                 "signon.rememberSignons": true,
                 "signon.autofillForms": true,
+                "browser.link.open_newwindow": 3,
               },
             }
           : {}),
@@ -144,7 +146,7 @@ export class ProfileBrowsers {
         : null) ||
       pages.find((p) => this.platformPage(p.url(), config)) ||
       pages.find((p) => p.url() === "about:blank") ||
-      (await entry.browser.newPage());
+      (await this.newTab(entry.browser));
     await page.setViewport({ width: 1280, height: 800 });
     let extra = {};
     if (["prepare", "publish"].includes(command.action))
@@ -220,7 +222,7 @@ export class ProfileBrowsers {
         let tab = saved && current.includes(saved) && this.allowed(saved.url(), cfg)
           ? saved : current.find((p) => this.platformPage(p.url(), cfg));
         if (!tab) {
-          tab = await entry.browser.newPage();
+          tab = await this.newTab(entry.browser);
           await tab.goto(cfg.login, { waitUntil: "domcontentloaded", timeout: 8000 }).catch(() => {});
         }
         entry.accountPages.set(target.id, tab);
@@ -264,7 +266,7 @@ export class ProfileBrowsers {
     if (!this.allowed(page.url(), config))
       throw new Error("Sosyal ağ dışındaki ekran iletilemez.");
     entry.accountPages.set(account.id, page);
-    await page.bringToFront();
+    if (opening) await page.bringToFront();
     if (command.noFrame)
       return {
         ...extra,
@@ -328,5 +330,32 @@ export class ProfileBrowsers {
   platformPage(value, config) {
     if (!this.allowed(value, config)) return false;
     return domainMatches(new URL(value).hostname, [new URL(config.home).hostname.replace(/^www\./, "")]);
+  }
+  newTab(browser) {
+    const run = (this.tabQueues.get(browser) || Promise.resolve()).then(async () => {
+      const source = (await browser.pages())[0];
+      if (!source || this.browser !== "firefox") return browser.newPage();
+      const previous = new Set(browser.targets());
+      // Firefox's normal link action creates a tab in this window. Some Firefox
+      // builds cannot complete BiDi browsingContext.create. The code and blank
+      // destination are fixed locally; no script or file path arrives remotely.
+      const [target] = await Promise.all([
+        browser.waitForTarget((t) => t.type() === "page" && !previous.has(t), { timeout: 8000 }),
+        source.evaluate(() => {
+          const link = document.createElement("a");
+          link.href = "about:blank";
+          link.target = "_blank";
+          link.rel = "noopener";
+          document.documentElement.append(link);
+          link.click();
+          link.remove();
+        }),
+      ]);
+      const page = await target.page();
+      if (!page) throw new Error("Firefox sekmesi açılamadı.");
+      return page;
+    });
+    this.tabQueues.set(browser, run.catch(() => {}));
+    return run;
   }
 }
