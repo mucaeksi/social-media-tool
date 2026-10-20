@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { EventEmitter } from "node:events";
 import { pathToFileURL } from "node:url";
 import { LocalAI } from "../../companion/local-ai.mjs";
-import { LOCAL_MODEL, localPost } from "../../shared/local-ai.mjs";
+import { LOCAL_MODEL, localPost, validLocalResult } from "../../shared/local-ai.mjs";
 
 const model = {
   name: LOCAL_MODEL,
@@ -31,7 +31,25 @@ const input = {
   selected: ["instagram", "x", "tumblr"],
   image: null,
 };
-async function fixture(t, fn) {
+test("Ollama GPU ölçümü model yüklenmediğinde sıfır, erişilemediğinde bilinmiyor olur", async (t) => {
+  let state = "loaded";
+  const f = await fixture(t, (url) => {
+    if (url.endsWith("tags")) return Response.json({ models: [model] });
+    if (state === "offline") throw new Error("fixture offline");
+    return Response.json({ models: state === "empty" ? [] : [{
+      name: LOCAL_MODEL, size_vram: 4294967296, size: 5000000000, context_length: 16384,
+    }] });
+  }, { measure: true });
+  const result = await f.ai.execute({ action: "status" });
+  assert.equal(result.status.runtime.gpuBytes, 4294967296);
+  assert.equal(validLocalResult(result), true);
+  assert.equal(validLocalResult({ ...result, status: { ...result.status, runtime: { ...result.status.runtime, gpuBytes: -1 } } }), false);
+  state = "empty";
+  assert.equal((await f.ai.status()).runtime.loaded, false);
+  state = "offline";
+  assert.equal((await f.ai.status()).runtime, null);
+});
+async function fixture(t, fn, { measure = false } = {}) {
   const directory = await mkdtemp(join(tmpdir(), "studio-ai-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   await writeFile(
@@ -44,6 +62,7 @@ async function fixture(t, fn) {
     assert.equal(opts.redirect, "error");
     const body = opts.body ? JSON.parse(opts.body) : null;
     calls.push({ url, body });
+    if (url.endsWith("/ps") && !measure) return Response.json({ models: [] });
     return fn ? fn(url, body, opts) : Response.json({ models: [model] });
   };
   return { directory, calls, ai: new LocalAI({ directory, fetcher }) };

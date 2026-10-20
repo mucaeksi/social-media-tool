@@ -134,7 +134,7 @@ export class LocalAI {
       localFail("MODEL_CHANGED");
     return model;
   }
-  async status() {
+  async status({ measure = true } = {}) {
     if (!this.busy && !this.failure) {
       try {
         const model = await this.installedModel();
@@ -159,6 +159,25 @@ export class LocalAI {
                 : "runtime_missing";
       }
     }
+    let runtime = null;
+    try {
+      const current = measure ? await this.json("ps", undefined, 1500) : null;
+      if (Array.isArray(current?.models)) {
+        const loaded = current.models.find(
+          (item) => item.name === LOCAL_MODEL || item.model === LOCAL_MODEL,
+        );
+        const bytes = (value) =>
+          Number.isSafeInteger(value) && value >= 0 ? value : null;
+        runtime = loaded
+          ? {
+              loaded: true,
+              gpuBytes: bytes(loaded.size_vram),
+              modelBytes: bytes(loaded.size),
+              context: bytes(loaded.context_length),
+            }
+          : { loaded: false, gpuBytes: 0, modelBytes: 0, context: null };
+      }
+    } catch {}
     return {
       model: LOCAL_MODEL,
       phase: this.phase,
@@ -166,6 +185,7 @@ export class LocalAI {
       code: this.failure,
       busy: this.busy,
       stage: this.stage || null,
+      runtime,
     };
   }
   async installRuntime() {
@@ -326,7 +346,7 @@ export class LocalAI {
     const input = localInput(value);
     if (input.action === "cancel") {
       this.generationController?.abort();
-      return { ok: true, status: await this.status() };
+      return { ok: true, status: await this.status({ measure: false }) };
     }
     if (input.action === "status")
       return { ok: true, status: await this.status() };

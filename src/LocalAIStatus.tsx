@@ -3,6 +3,12 @@ import { Download, RefreshCw } from "lucide-react";
 import { api } from "./api.ts";
 
 type Status = {
+  runtime?: {
+    loaded: boolean;
+    gpuBytes: number | null;
+    modelBytes: number | null;
+    context: number | null;
+  } | null;
   stage?: string | null;
   model: string;
   phase: string;
@@ -100,6 +106,15 @@ export function LocalAIStatus({
         />
       )}
       {status?.stage && <p role="status">{status.stage}</p>}
+      {status && (
+        <p>
+          {status.runtime
+            ? status.runtime.loaded
+              ? `Modelin GPU belleği: ${status.runtime.gpuBytes === null ? "ölçülemedi" : (status.runtime.gpuBytes / 1024 ** 3).toLocaleString("tr-TR", { maximumFractionDigits: 2 }) + " GiB"}${status.runtime.context ? ` · Bağlam: ${status.runtime.context.toLocaleString("tr-TR")} token` : ""}. Bu değer Firefox ve diğer uygulamaları içermez.`
+              : "Model şu an bellekte değil; model için ayrılmış GPU belleği 0 GiB."
+            : "Ollama bellek ölçümü alınamadı; tüketim sıfır varsayılmadı."}
+        </p>
+      )}
       {status?.phase === "generating" && (
         <button
           className="secondary"

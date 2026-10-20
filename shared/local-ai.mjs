@@ -199,7 +199,15 @@ export function validLocalResult(value) {
       : value.ok === true &&
         (value.status
           ? typeof value.status.phase === "string" &&
-            value.status.model === LOCAL_MODEL
+            value.status.model === LOCAL_MODEL &&
+            (value.status.runtime == null ||
+              (typeof value.status.runtime.loaded === "boolean" &&
+                ["gpuBytes", "modelBytes", "context"].every(
+                  (key) =>
+                    value.status.runtime[key] === null ||
+                    (Number.isSafeInteger(value.status.runtime[key]) &&
+                      value.status.runtime[key] >= 0),
+                )))
           : typeof value.answer === "string" &&
             value.answer.length <= 12000 &&
             Array.isArray(value.posts) &&

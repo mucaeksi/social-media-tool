@@ -35,6 +35,8 @@ Doğrulanan platformlar ve görsel gözlemi D1'de şirket/kullanıcı kapsamlı 
 
 Yerel modelin gerçek Windows hızı, GPU kullanımı ve Türkçe/görsel kalitesi kullanıcının bilgisayarında ölçülmelidir. Otomatik testler model ağırlığı indirmez ve gerçek modeli başarılı çalışmış gibi göstermez. Kalite defterinde 30 kurgu deneme senaryosu, gerçek yanıt kaydı ve 0–4 editör puanlaması vardır. Son 100 değerlendirme korunur; uydurma bilgi ayrı işaretlenir.
 
+Yerel AI durum kartı Ollama'nın `/api/ps` ölçümünden modelin GPU belleğini ve bağlamını gösterir. Bu sayı Firefox'un veya diğer uygulamaların toplam ekran kartı tüketimi değildir. Çalıştırıcıya erişilemezse sıfır yerine ölçüm alınamadığı yazılır. Model bellekte değilse sıfır ancak çalışan Ollama'nın boş model listesiyle doğrulanır. Kod yamaları model ağırlıklarını içermez; yardımcı kaynak paketi bu sürümde yaklaşık 0,15 MB'tır. Önbellekte bulunmayan npm bağımlılıkları ayrıca indirilebilir. Model ve Ollama ilk kurulum indirmeleri ayrıdır.
+
 ## Yayın takvimi ve Facebook pilotu
 
 İlk otomatik adaptör **Facebook** içindir. Diğer sekiz platformda metin/görsel hazırlığı ve genel Firefox form araçları kullanılabilir; onların otomatik yayın adaptörleri bu yamada tamamlanmış sayılmaz. Resmî API/OAuth kurulumu yapılmadı.

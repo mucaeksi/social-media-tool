@@ -1,8 +1,8 @@
 {
   "package.json": {
-    "mtime": 1792471950.3881435,
-    "seen": 1792473384.175765,
-    "ast_hash": "9581ede61073c0a16c82da54e5c8e7f0",
+    "mtime": 1792478689.6565905,
+    "seen": 1792478755.2931457,
+    "ast_hash": "2910f9d9341be0579fcbfcf55a6ae724",
     "semantic_hash": ""
   },
   "scripts/dev.mjs": {
@@ -660,21 +660,21 @@
     "semantic_hash": ""
   },
   "companion/local-ai.mjs": {
-    "mtime": 1792476506.857218,
-    "seen": 1792477222.9684317,
-    "ast_hash": "fbcc7905af268b4b6b8b81a7bc8fc65b",
+    "mtime": 1792478733.5962393,
+    "seen": 1792478755.293005,
+    "ast_hash": "3386472bbd6c8d0f545d64f3b12a2abe",
     "semantic_hash": ""
   },
   "shared/local-ai.mjs": {
-    "mtime": 1792476507.0092168,
-    "seen": 1792477222.968936,
-    "ast_hash": "446d30eb6e0ce7cbf9fc75dab7bf36f5",
+    "mtime": 1792478688.1726022,
+    "seen": 1792478755.2937212,
+    "ast_hash": "d2250c334c76c9a397559243f6bd3fe7",
     "semantic_hash": ""
   },
   "src/LocalAIStatus.tsx": {
-    "mtime": 1792476507.3452144,
-    "seen": 1792477222.968986,
-    "ast_hash": "eefd01f4603192e29d14652161f14f57",
+    "mtime": 1792478688.6605983,
+    "seen": 1792478755.2939858,
+    "ast_hash": "2464b977e0e8cb15361221fbd92f73b9",
     "semantic_hash": ""
   },
   "tests/browser/local-ai.spec.mjs": {
@@ -684,9 +684,9 @@
     "semantic_hash": ""
   },
   "tests/companion/local-ai.test.mjs": {
-    "mtime": 1792476833.0668068,
-    "seen": 1792477222.9693775,
-    "ast_hash": "48aba9119c3d7a0c43daaaaa6ba91870",
+    "mtime": 1792478734.1042352,
+    "seen": 1792478755.2945228,
+    "ast_hash": "3b75b9c70f293a0f9bcbd6d25825251c",
     "semantic_hash": ""
   },
   "tests/fixtures/release-v1.1.mjs": {
@@ -855,6 +855,12 @@
     "mtime": 1792476751.5154018,
     "seen": 1792477222.9699776,
     "ast_hash": "b7c3426e8e301d08b4b6af924874b3ac",
+    "semantic_hash": ""
+  },
+  "scripts/action-test-reporter.mjs": {
+    "mtime": 1792478689.1285946,
+    "seen": 1792478755.2932215,
+    "ast_hash": "e141150af084fd84070fff20915a650a",
     "semantic_hash": ""
   }
 }
