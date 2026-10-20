@@ -888,9 +888,9 @@
     "semantic_hash": ""
   },
   "tests/companion/normal-login.test.mjs": {
-    "mtime": 1792484767.6306338,
-    "seen": 1792484772.953561,
-    "ast_hash": "039bc56b4dac37b3898eb77a02d7161e",
+    "mtime": 1792485089.3882296,
+    "seen": 1792485091.8297634,
+    "ast_hash": "22942fb69dff63a12567be2620362459",
     "semantic_hash": ""
   }
 }

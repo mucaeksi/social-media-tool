@@ -58,7 +58,8 @@ test("Normal giriş eski otomasyon penceresini kapatır; aynı profile ikinci sa
 test("Gerçek normal Firefox: WebDriver kapalıdır; otomasyon → normal giriş → otomasyon çerez/IndexedDB/profil verisini korur", { timeout: 120000 }, async () => {
   assert.ok(existsSync(executablePath), "Normal Firefox testi için FIREFOX_EXECUTABLE gerekli.");
   const directory = await mkdtemp(join(tmpdir(), "studio-normal-firefox-"));
-  let report, finishResponse, normal;
+  let report, finishResponse, normal, failure;
+  let phase = "otomasyon açılışı";
   const server = createServer((request, response) => {
     const url = new URL(request.url, "http://localhost");
     if (url.pathname === "/report") {
@@ -101,20 +102,24 @@ test("Gerçek normal Firefox: WebDriver kapalıdır; otomasyon → normal giriş
     assert.equal(await page.evaluate(() => navigator.webdriver), true);
     await page.evaluate(() => localStorage.setItem("seed", "fixture-automation"));
     await pool.execute(account, { action: "close" });
+    phase = "normal Firefox açılışı";
     // Only the synthetic test page may close its own window, to exercise a
     // graceful OS-process exit on Windows too. Production preferences are untouched.
     await writeFile(join(profile, "user.js"),
       (await readFile(join(profile, "user.js")).catch(() => Buffer.alloc(0))) + '\nuser_pref("dom.allow_scripts_to_close_windows", true);\n');
     await pool.execute(account, { action: "manual-login" });
     normal = [...pool.manualOpened.values()][0];
+    phase = "normal Firefox sayfası ve WebDriver denetimi";
     await until(() => report && finishResponse);
     assert.deepEqual(report, { webdriver: false, seed: "fixture-automation" });
     assert.equal((await pool.execute(account, { action: "workspace", noFrame: true })).manualRunning, true);
     await assert.rejects(pool.execute(account, { action: "screen" }));
     finishResponse.end("ok");
+    phase = "normal Firefox kapanışı";
     assert.equal(await normal.exited, 0);
     await until(() => pool.manualOpened.size === 0);
     await pool.execute(account, { action: "open", noFrame: true });
+    phase = "korunan oturum verileri";
     page = (await [...pool.opened.values()][0].browser.pages()).find((p) => p.url() === url);
     assert.equal(await page.evaluate(() => navigator.webdriver), true);
     assert.equal(await page.evaluate(() => localStorage.getItem("normal-login")), "fixture-normal");
@@ -124,12 +129,20 @@ test("Gerçek normal Firefox: WebDriver kapalıdır; otomasyon → normal giriş
       r.onsuccess=()=>{const db=r.result,q=db.transaction("items").objectStore("items").get("token");
         q.onsuccess=()=>{db.close();resolve(q.result)};q.onerror=reject;};r.onerror=reject;
     })), "fixture-idb");
+  } catch (error) {
+    failure = error;
+    error.message = `${phase}: ${error.message}`;
   } finally {
     finishResponse?.end("ok");
-    if (normal?.child.exitCode === null) normal.child.kill();
     await pool.closeAll();
+    if (normal?.child.exitCode === null) {
+      await Promise.race([normal.exited, new Promise((r) => setTimeout(r, 2000))]);
+      if (normal.child.exitCode === null) normal.child.kill();
+    }
     server.closeAllConnections();
     await new Promise((r) => server.close(r));
-    await rm(directory, { recursive: true, force: true });
+    await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+      .catch((error) => { failure ||= error; });
   }
+  if (failure) throw failure;
 });
