@@ -86,7 +86,7 @@ async function memory(db, id) {
   return (
     await db
       .prepare(
-        "SELECT * FROM ai_memory WHERE company_id=? ORDER BY created_at,id",
+        "SELECT * FROM ai_memory WHERE company_id=? AND NOT EXISTS(SELECT 1 FROM editorial_records r WHERE r.id=ai_memory.id AND r.company_id=ai_memory.company_id AND r.kind='correction' AND json_extract(r.data,'$.domain')='advertising' AND (json_extract(r.data,'$.state')<>'approved' OR COALESCE(json_extract(r.data,'$.validUntil'),'')<=strftime('%Y-%m-%dT%H:%M:%fZ','now'))) ORDER BY created_at,id",
       )
       .bind(id)
       .all()

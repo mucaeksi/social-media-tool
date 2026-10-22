@@ -12,6 +12,11 @@ import {
 } from "./draftRecovery.ts";
 import { DraftLibrary } from "./DraftLibrary.tsx";
 import { StudioDetails } from "./StudioDetails.tsx";
+const AdvertisingWorkspace = lazy(() =>
+  import("./AdvertisingWorkspace.tsx").then((m) => ({
+    default: m.AdvertisingWorkspace,
+  })),
+);
 const ContentWorkspace = lazy(() =>
   import("./ContentWorkspace.tsx").then((m) => ({
     default: m.ContentWorkspace,
@@ -166,6 +171,7 @@ export default function App({
     | "research"
     | "publications"
     | "settings"
+    | "ads"
     | "content"
   >(() => {
     const p = new URL(location.href).searchParams.get("page");
@@ -179,6 +185,7 @@ export default function App({
       "publications",
       "settings",
       "content",
+      "ads",
     ].includes(p || "")
       ? (p as "studio")
       : "studio";
@@ -880,6 +887,7 @@ export default function App({
           "publications",
           "settings",
           "content",
+          "ads",
         ].includes(target)
       )
         setPage(target as typeof page);
@@ -897,6 +905,7 @@ export default function App({
     { id: "ai", name: "AI asistanı", icon: Sparkles },
     { id: "drafts", name: "Taslaklar", icon: Layers3 },
     { id: "content", name: "İçerik planı", icon: FileText },
+    { id: "ads", name: "Reklam çalışma alanı", icon: Sparkles },
     { id: "companies", name: "Şirketler", icon: Building2 },
     { id: "connections", name: "Hesap bağlantıları", icon: Link2 },
     { id: "research", name: "KKTC ve kaynaklar", icon: FileText },
@@ -907,6 +916,7 @@ export default function App({
     studio: "İçerik stüdyosu",
     drafts: "Taslaklar",
     content: "İçerik planı",
+    ads: "KKTC reklam çalışma alanı",
     companies: "Şirketler",
     connections: "Hesap bağlantıları",
     ai: "AI asistanı",
@@ -1270,9 +1280,11 @@ export default function App({
                       ? "Her şirketin kimliği, anlatımı ve içerikleri kendi alanında."
                       : page === "ai"
                         ? "Markanızın bilgileriyle düşünün, platformlara uygun içerik hazırlayın."
-                        : page === "content"
-                          ? "Kampanyaları planlayın, ürün bilgilerini doğrulayın ve sonuçları izleyin."
-                          : "Şirketinizi seçin, sosyal hesaplarınıza uzak tarayıcıdan giriş yapın."}
+                        : page === "ads"
+                          ? "Reklamları planlayın, aynı Firefox penceresinde inceleyin ve sonuçlardan çalışma notları çıkarın."
+                          : page === "content"
+                            ? "Kampanyaları planlayın, ürün bilgilerini doğrulayın ve sonuçları izleyin."
+                            : "Şirketinizi seçin, sosyal hesaplarınıza uzak tarayıcıdan giriş yapın."}
               </p>
             </div>
             <div className="company-picker">
@@ -2007,8 +2019,7 @@ export default function App({
                                   platformFits: {
                                     ...d.platformFits,
                                     [activePlatform]: e.target.value as
-                                      | "contain"
-                                      | "cover",
+                                      "contain" | "cover",
                                   },
                                 }));
                                 setDirty(true);
@@ -2204,6 +2215,16 @@ export default function App({
                 })
               }
             />
+          ) : page === "ads" && company ? (
+            <Suspense
+              fallback={<p role="status">Reklam çalışma alanı açılıyor…</p>}
+            >
+              <AdvertisingWorkspace
+                key={company.id}
+                company={company}
+                user={user}
+              />
+            </Suspense>
           ) : page === "content" && company ? (
             <Suspense fallback={<p role="status">İçerik planı açılıyor…</p>}>
               <ContentWorkspace

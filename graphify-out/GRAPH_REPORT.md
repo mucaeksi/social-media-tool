@@ -1,17 +1,17 @@
 # Graph Report - social-media-tool  (2026-10-22)
 
 ## Corpus Check
-- 214 files · ~153,522 words
+- 222 files · ~163,845 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 9 file(s) not represented in the graph (top: (none) 4, .cmd 2, .css 2)
 
 ## Summary
-- 1284 nodes · 3113 edges · 95 communities (65 shown, 30 thin omitted)
+- 1329 nodes · 3229 edges · 95 communities (60 shown, 35 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 56 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `50ba76ef`
+- Built from commit: `d74c14a9`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -28,21 +28,21 @@
 - Mimari ve veri yerleşimi
 - social-accounts.test.mjs
 - ref_node_crypto
-- dev.mjs
+- ai-install.test.mjs
 - research-platforms.py
 - KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi
 - worker/editorial.mjs
 - SocialAccounts.tsx
 - SocialAI.tsx
 - check-ai.mjs
-- CompanyAccounts.tsx
+- CompanyAccounts
 - companies
 - Windows ve Firefox ile kalıcı sosyal hesap girişleri
-- Sosyal Studio
 - README.md
+- META_KURULUM.md
 - Sosyal medya uzmanı AI
 - Sosyal hesaplara normal giriş
-- Ücretsiz resmi API bağlantısı için ilk kurulum
+- company-computer.test.mjs
 - Sosyal platform bağlantıları
 - setup-firefox.sh
 - release-v1.1.mjs
@@ -51,32 +51,32 @@
 - api
 - App.tsx
 - Projeye eklenen beceriler
-- ref_node_path
-- research.mjs
+- ref_node_assert
+- CompanyAccounts.tsx
 - social-ai.mjs
 - LocalMemory
-- worker/local-ai.mjs
+- api
 - ref_node_fs
 - KKTC uzman çalışma alanı — mevcut programa yama
 - app.mjs
-- platforms.mjs
+- shared/local-ai.mjs
 - Ana Firefox ile Sosyal Studio
 - popup.js
 - background.js
 - policy.js
-- shared/local-ai.mjs
+- advertising.d.mts
+- page-agent.js
 - launch.mjs
-- update.test.mjs
 - worker/index.mjs
 - ContentWorkspace.tsx
-- draftRecovery.ts
+- AD_GUIDE_VERSION
 - YEREL_MODEL_SECIMI.md
 - r2-budget.test.mjs
 - Sosyal Studio 1.8 kullanımı
 - Gece araştırması ve yerel hafıza — 1.7
 - browser-tools.mjs
 - 0003_r2_budget.sql
-- social-profiles.test.mjs
+- adProviderIds
 - editorialKinds
 - initialChannels
 - reviewStates
@@ -88,29 +88,29 @@
 - platformIds
 - platformMap
 - platforms
-- night-learning.test.mjs
-- Updater
-- company-computer.mjs
-- company-computer.test.mjs
-- release.mjs
+- research.mjs
+- update.test.mjs
+- publications.mjs
+- adProviders
+- advertisingRules
+- AuthUser
 - ollama-host.mjs
-- local-ai.test.mjs
-- tests/firefox-extension.test.mjs
+- Sosyal Studio
 - build-companion.mjs
-- DOGRULAMA_1_8.md
-- DEGISIKLIKLER_1_8.md
+- social-profiles.test.mjs
+- editorial.spec.mjs
 
 ## God Nodes (most connected - your core abstractions)
-1. `App()` - 47 edges
-2. `api()` - 42 edges
+1. `App()` - 48 edges
+2. `api()` - 46 edges
 3. `LocalMemory` - 25 edges
 4. `registerSocialAI()` - 23 edges
-5. `companies` - 21 edges
-6. `react` - 21 edges
-7. `LocalAI` - 19 edges
-8. `scripts` - 19 edges
-9. `SocialAI()` - 19 edges
-10. `@playwright/test` - 18 edges
+5. `react` - 22 edges
+6. `companies` - 21 edges
+7. `AdvertisingWorkspace()` - 21 edges
+8. `LocalAI` - 19 edges
+9. `scripts` - 19 edges
+10. `@playwright/test` - 19 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Kodda doğrulanan mevcut durum` --references--> `computerCommand()`  [INFERRED]
@@ -127,7 +127,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (95 total, 30 thin omitted)
+## Communities (95 total, 35 thin omitted)
 
 ### Community 0 - "GitHub ve Cloudflare dağıtımı"
 Cohesion: 0.20
@@ -138,12 +138,12 @@ Cohesion: 0.12
 Nodes (15): engines, node, puppeteer-core, name, private, type, version, @cloudflare/puppeteer (+7 more)
 
 ### Community 2 - "zip.mjs"
-Cohesion: 0.18
-Nodes (16): concat(), crc32(), createZip(), decoder, encoder, readZip(), safePath(), backup() (+8 more)
+Cohesion: 0.19
+Nodes (18): concat(), crc32(), createZip(), decoder, encoder, readZip(), safePath(), BackupManager() (+10 more)
 
 ### Community 3 - "App.tsx"
 Cohesion: 0.12
-Nodes (27): App(), applyAI(), brief(), changeCompany(), changed(), exportDraft(), generatePrompt(), guard() (+19 more)
+Nodes (28): AdvertisingWorkspace, App(), applyAI(), brief(), changeCompany(), changed(), exportDraft(), generatePrompt() (+20 more)
 
 ### Community 4 - "manifest.json"
 Cohesion: 0.09
@@ -173,9 +173,9 @@ Nodes (7): AI bağlamı ve değerlendirme, Bileşenler, İçerik kayıtları, Mi
 Cohesion: 0.11
 Nodes (28): ProfileBrowsers, companyId, controller(), otherId, secret, tokens, captureBrowserState(), restoreBrowserState() (+20 more)
 
-### Community 12 - "ref_node_crypto"
+### Community 13 - "ai-install.test.mjs"
 Cohesion: 0.14
-Nodes (4): @playwright/test, sharp, ids, ids
+Nodes (13): downloadVerified(), extractRuntime(), hashFile(), importLegacyModel(), installPortable(), modelDirectory(), OLLAMA_RELEASE, runtimeDirectory() (+5 more)
 
 ### Community 15 - "KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi"
 Cohesion: 0.20
@@ -183,23 +183,23 @@ Nodes (10): 1. KKTC için yapılandırılmış uzman profili, 2. Web sitelerini 
 
 ### Community 16 - "worker/editorial.mjs"
 Cohesion: 0.13
-Nodes (24): conflict(), date, editorialKinds, id, initialChannels, platforms, preferencesSchema, recordSchemas (+16 more)
+Nodes (25): zod, conflict(), date, draftAssetIds(), editorialKinds, id, initialChannels, platforms (+17 more)
 
 ### Community 17 - "SocialAccounts.tsx"
 Cohesion: 0.14
 Nodes (22): Account, AccountPlatform, caption(), CloudAccounts(), close(), open(), refresh(), run() (+14 more)
 
 ### Community 18 - "SocialAI.tsx"
-Cohesion: 0.09
-Nodes (30): GitHub ve Cloudflare, graphify, Projeye özgü geliştirme notları, FirefoxBinding, FirefoxPage, firefoxQuestion(), firefoxRequest(), firefoxTabChoice() (+22 more)
+Cohesion: 0.07
+Nodes (37): GitHub ve Cloudflare, graphify, Projeye özgü geliştirme notları, zonedTime(), Account, advertisingContext(), AdvertisingWorkspace(), analyze() (+29 more)
 
 ### Community 19 - "check-ai.mjs"
 Cohesion: 0.06
-Nodes (55): jose, applyAdminRequest(), databaseQuery(), keyId(), prepareAdminKey(), ensureBrowserSecret(), diagnoseObservation(), http() (+47 more)
+Nodes (59): jose, applyAdminRequest(), databaseQuery(), keyId(), prepareAdminKey(), ensureBrowserSecret(), diagnoseObservation(), http() (+51 more)
 
-### Community 20 - "CompanyAccounts.tsx"
-Cohesion: 0.18
-Nodes (16): BrowserTab, BrowserTools(), PageRead, Account, CompanyAccounts(), close(), control(), open() (+8 more)
+### Community 20 - "CompanyAccounts"
+Cohesion: 0.54
+Nodes (8): CompanyAccounts(), close(), control(), open(), refresh(), run(), show(), sendClose()
 
 ### Community 21 - "companies"
 Cohesion: 0.06
@@ -209,13 +209,13 @@ Nodes (51): companies, drafts, drafts_company_updated, media, media_company, med
 Cohesion: 0.18
 Nodes (11): Doğrulama kapsamı, Google ve diğer ağlarda normal Firefox ile giriş (1.4.2), İlk kurulum, Küçük yerel sosyal medya AI’ı, Otomatik güncelleme, Sonraki açılış ve Windows başlangıcı, Tek klasör ve yerel SQLite hafızası (1.5), Tek pencereli şirket Firefox’u (1.4) (+3 more)
 
-### Community 23 - "Sosyal Studio"
-Cohesion: 0.33
-Nodes (6): Başvuru, Günlük çalışma, Sosyal Studio, Yedek, Yerel geliştirme, Çalışan altyapı ve sınırlar
+### Community 23 - "README.md"
+Cohesion: 0.16
+Nodes (8): Korunan sınırlar, Sosyal Studio 1.8 — inceleme önerilerinin uygulanması, Sosyal Studio 1.8 doğrulaması, Sosyal Studio 1.9 doğrulaması, Aynı Firefox penceresi, KKTC reklam çalışma alanı · 1.9, Plan ve ölçüm, Reklam konusunda gelişmesi
 
-### Community 24 - "README.md"
-Cohesion: 0.24
-Nodes (3): 1.6 güncellemesi: otomatik Firefox ve daha güçlü AI, 1.7.1: ilk Firefox kurulumunun yarıda kesilmesi düzeltildi, 1.7 güncellemesi: gece araştırması ve yerel hafıza
+### Community 24 - "META_KURULUM.md"
+Cohesion: 0.27
+Nodes (5): Hesap tarafındaki hazırlık, Meta hesabında yapılacak işlem, Uygulama kimliğinden sonraki akış, Ücret sınırı, Ücretsiz resmi API bağlantısı için ilk kurulum
 
 ### Community 25 - "Sosyal medya uzmanı AI"
 Cohesion: 0.29
@@ -225,9 +225,9 @@ Nodes (7): Canlı kontrol durumu, Kullanım ve şirket hafızası, Resmi kaynakl
 Cohesion: 0.25
 Nodes (8): Gerçek doğrulama ve sınırlar, Kaynaklar, Kullanım, MCP ve sürekli açık tarayıcı, Oturum verisinin korunması, Sosyal hesaplara normal giriş, Wood Mood hazırlığı, Ücretsiz kullanım ve oturum ömrü
 
-### Community 27 - "Ücretsiz resmi API bağlantısı için ilk kurulum"
-Cohesion: 0.40
-Nodes (5): Hesap tarafındaki hazırlık, Meta hesabında yapılacak işlem, Uygulama kimliğinden sonraki akış, Ücret sınırı, Ücretsiz resmi API bağlantısı için ilk kurulum
+### Community 27 - "company-computer.test.mjs"
+Cohesion: 0.19
+Nodes (12): accountId, command(), companyId, otherAccount, otherCompany, request(), tokens, fail() (+4 more)
 
 ### Community 28 - "Sosyal platform bağlantıları"
 Cohesion: 0.40
@@ -246,52 +246,52 @@ Cohesion: 0.20
 Nodes (10): devDependencies, miniflare, @playwright/test, puppeteer-core, @types/react, @types/react-dom, typescript, vite (+2 more)
 
 ### Community 33 - "api"
-Cohesion: 0.13
-Nodes (25): ActivityFeed(), labels, api(), ApiError, date(), EditorialMetrics, Evaluation, Fact (+17 more)
+Cohesion: 0.19
+Nodes (15): date(), EditorialMetrics, Evaluation, Fact, Job, json(), Knowledge, MetricsWorkspace() (+7 more)
 
 ### Community 34 - "App.tsx"
-Cohesion: 0.12
-Nodes (24): react, blankCompany, CompanyForm(), initialPlatforms, platformColors, Index, Resource, ClaimReview() (+16 more)
+Cohesion: 0.13
+Nodes (23): blankCompany, initialPlatforms, platformColors, PlatformIcon(), ClaimReview(), Instagram(), Linkedin(), Youtube() (+15 more)
 
 ### Community 35 - "Projeye eklenen beceriler"
 Cohesion: 0.40
 Nodes (4): Bu projede nasıl kullanıldı?, Graphify, Güncelleme, Projeye eklenen beceriler
 
-### Community 37 - "ref_node_path"
-Cohesion: 0.12
-Nodes (14): files, prepareFirefoxExtension(), normalFirefox(), downloadFirefoxInstaller(), child, run, pairedRequire, manifest (+6 more)
+### Community 37 - "ref_node_assert"
+Cohesion: 0.11
+Nodes (14): normalFirefox(), child, run, { app, store }, server, pairedRequire, files, launchers (+6 more)
 
-### Community 38 - "research.mjs"
-Cohesion: 0.23
-Nodes (10): extractVisiblePage(), publicAddress(), publicHTML(), publicTarget(), researchProxy(), robotsDisallows(), WebsiteResearch, RESEARCH_LIMITS (+2 more)
+### Community 38 - "CompanyAccounts.tsx"
+Cohesion: 0.13
+Nodes (15): lucide-react, react, CompanyForm(), BrowserTab, BrowserTools(), PageRead, Account, ComputerStatus (+7 more)
 
 ### Community 39 - "social-ai.mjs"
-Cohesion: 0.13
-Nodes (29): hono, createPrompt(), companies, fail(), observeImage(), VISION_LIMITS, VISION_MODEL, VISION_RATES (+21 more)
+Cohesion: 0.12
+Nodes (32): hono, companies, image(), fail(), observeImage(), VISION_LIMITS, VISION_MODEL, VISION_RATES (+24 more)
 
 ### Community 40 - "LocalMemory"
-Cohesion: 0.10
-Nodes (17): downloadVerified(), extractRuntime(), hashFile(), importLegacyModel(), installPortable(), modelDirectory(), OLLAMA_RELEASE, runtimeDirectory() (+9 more)
+Cohesion: 0.16
+Nodes (5): LocalAI, LocalMemory, validCompany(), localFail(), fixture()
 
-### Community 41 - "worker/local-ai.mjs"
-Cohesion: 0.13
-Nodes (24): zod, qualityCases, publicationBelongsTo(), computerAccount(), computerBroker(), fail(), registerKnowledge(), call() (+16 more)
+### Community 41 - "api"
+Cohesion: 0.17
+Nodes (15): ActivityFeed(), labels, api(), ApiError, Job, LocalAIJobs(), Learning, states (+7 more)
 
 ### Community 42 - "ref_node_fs"
-Cohesion: 0.17
-Nodes (12): configPath, configuration(), connect(), localAI, safeOrigin(), stop(), ensureStudioFirefox(), hosts (+4 more)
+Cohesion: 0.14
+Nodes (15): baseFiles, prepareFirefoxExtension(), configPath, configuration(), connect(), localAI, safeOrigin(), stop() (+7 more)
 
 ### Community 43 - "KKTC uzman çalışma alanı — mevcut programa yama"
-Cohesion: 0.25
-Nodes (8): Firefox görevleri, İlk kullanım, KKTC uzman çalışma alanı — mevcut programa yama, Tek şirket penceresi, Veritabanı yerleşimi ve sınırlar, Yayın takvimi ve Facebook pilotu, Yerel AI ilerlemesi ve devam etme, Yetkiler, ölçümler ve yedekler
+Cohesion: 0.14
+Nodes (11): Firefox görevleri, İlk kullanım, KKTC uzman çalışma alanı — mevcut programa yama, Tek şirket penceresi, Veritabanı yerleşimi ve sınırlar, Yayın takvimi ve Facebook pilotu, Yerel AI ilerlemesi ve devam etme, Yetkiler, ölçümler ve yedekler (+3 more)
 
 ### Community 45 - "app.mjs"
-Cohesion: 0.12
-Nodes (18): { app, store }, server, createApp(), fail(), requireCompany(), requireMedia(), validatePosts(), d1Compat() (+10 more)
+Cohesion: 0.11
+Nodes (24): sharp, createApp(), fail(), requireCompany(), requireMedia(), validatePosts(), d1Compat(), { app, store } (+16 more)
 
-### Community 46 - "platforms.mjs"
-Cohesion: 0.20
-Nodes (13): adaptWithRules(), captionFor(), characterCount(), postWarnings(), tagsFrom(), PLATFORM_CATALOG_VERSION, platformMap, platforms (+5 more)
+### Community 46 - "shared/local-ai.mjs"
+Cohesion: 0.13
+Nodes (22): Kodda doğrulanan mevcut durum, LOCAL_MODEL, LOCAL_AI_LIMITS, LOCAL_EXPERT_VERSION, localErrors, localInput(), localPlatforms, localPost() (+14 more)
 
 ### Community 47 - "Ana Firefox ile Sosyal Studio"
 Cohesion: 0.22
@@ -309,33 +309,21 @@ Nodes (5): cancelPreparation(), expire(), queue(), validBinding(), validWindow()
 Cohesion: 0.60
 Nodes (3): canonical(), clean(), target()
 
-### Community 51 - "shared/local-ai.mjs"
-Cohesion: 0.16
-Nodes (18): Kodda doğrulanan mevcut durum, LOCAL_MODEL, LOCAL_AI_LIMITS, LOCAL_EXPERT_VERSION, localErrors, localInput(), localPost(), platformGuidance (+10 more)
-
 ### Community 54 - "launch.mjs"
 Cohesion: 0.18
 Nodes (10): bundleRoot, lock, dataDirectory(), directory, legacyDirectory, updateDirectory, copyTree(), exists() (+2 more)
 
-### Community 55 - "update.test.mjs"
-Cohesion: 0.17
-Nodes (11): production, archivePath, manifestPath, sha256(), installDependencies(), root, child, manifest (+3 more)
-
 ### Community 56 - "worker/index.mjs"
-Cohesion: 0.17
-Nodes (19): briefSchema, postSchema, regionalSchema, selectedSchema, app, company(), fail(), json() (+11 more)
+Cohesion: 0.14
+Nodes (22): qualityCases, briefSchema, companySchema, postSchema, regionalSchema, selectedSchema, app, company() (+14 more)
 
 ### Community 57 - "ContentWorkspace.tsx"
-Cohesion: 0.15
-Nodes (16): campaignUrl(), latestMeasurements(), zonedTime(), BackupManager(), ContentWorkspace(), refresh(), run(), save() (+8 more)
-
-### Community 58 - "draftRecovery.ts"
-Cohesion: 0.20
-Nodes (10): lucide-react, react-dom, AuthRoot(), logout(), forgetDraft(), forgetUser(), key(), recoverDraft() (+2 more)
+Cohesion: 0.14
+Nodes (15): campaignUrl(), latestMeasurements(), ContentWorkspace, ContentWorkspace(), refresh(), run(), save(), fields (+7 more)
 
 ### Community 61 - "r2-budget.test.mjs"
-Cohesion: 0.14
-Nodes (6): miniflare, tokens, bytes, delete(), get(), put()
+Cohesion: 0.12
+Nodes (16): miniflare, tokens, expectJSON(), newJob(), post(), request(), tokens, bytes (+8 more)
 
 ### Community 62 - "Sosyal Studio 1.8 kullanımı"
 Cohesion: 0.20
@@ -346,68 +334,60 @@ Cohesion: 0.40
 Nodes (4): Doğrulama, Gece araştırması ve yerel hafıza — 1.7, Kaynaklar ve sınırlar, Kullanım
 
 ### Community 64 - "browser-tools.mjs"
-Cohesion: 0.35
+Cohesion: 0.38
 Nodes (9): browserTool(), readPage(), safeReadURL(), uploadJPEG(), exactButton(), facebookPublish(), normalize(), verifyFacebookIdentity() (+1 more)
 
-### Community 66 - "social-profiles.test.mjs"
-Cohesion: 0.40
-Nodes (4): fixture(), database(), migration(), seed
+### Community 84 - "research.mjs"
+Cohesion: 0.11
+Nodes (21): NightLearning, extractVisiblePage(), publicAddress(), publicHTML(), publicTarget(), researchProxy(), robotsDisallows(), WebsiteResearch (+13 more)
 
-### Community 84 - "night-learning.test.mjs"
-Cohesion: 0.19
-Nodes (10): NightLearning, validLocalResult(), clock, NIGHT_LIMITS, nightInput(), nightTime(), OFFICIAL_GUIDES, validNightStatus() (+2 more)
+### Community 85 - "update.test.mjs"
+Cohesion: 0.16
+Nodes (19): installBundle(), production, archiveFiles, archivePath, extractRelease(), manifestPath, sha256(), sourceVersion() (+11 more)
 
-### Community 85 - "Updater"
-Cohesion: 0.36
-Nodes (5): supervise(), atomicJson(), boundedResponse(), Updater, fixture()
+### Community 86 - "publications.mjs"
+Cohesion: 0.13
+Nodes (21): COMPUTER_KEYS, COMPUTER_LIMITS, computerCommand(), computerError(), validComputerResult(), publicationBelongsTo(), send(), computerAccount() (+13 more)
 
-### Community 86 - "company-computer.mjs"
-Cohesion: 0.20
-Nodes (9): COMPUTER_KEYS, COMPUTER_LIMITS, computerCommand(), computerError(), validComputerResult(), computerPublicPaths, registerCompanyComputer(), CompanyComputer (+1 more)
+### Community 89 - "AuthUser"
+Cohesion: 0.27
+Nodes (5): react-dom, AuthRoot(), logout(), forgetUser(), AuthUser
 
-### Community 87 - "company-computer.test.mjs"
-Cohesion: 0.15
-Nodes (15): accountId, command(), companyId, otherAccount, otherCompany, request(), send(), tokens (+7 more)
-
-### Community 88 - "release.mjs"
-Cohesion: 0.62
-Nodes (5): installBundle(), archiveFiles, extractRelease(), sourceVersion(), validVersion()
-
-### Community 89 - "ollama-host.mjs"
+### Community 90 - "ollama-host.mjs"
 Cohesion: 0.25
 Nodes (6): aiRoot, [executable, models], exited, runtimeHome, server, temporary
 
-### Community 90 - "local-ai.test.mjs"
+### Community 91 - "Sosyal Studio"
 Cohesion: 0.33
-Nodes (3): fixture(), input, model
-
-### Community 91 - "tests/firefox-extension.test.mjs"
-Cohesion: 0.29
-Nodes (7): crc32(), buildFirefoxExtension(), extensionFiles, fixture(), connect(), target, value()
+Nodes (6): Başvuru, Günlük çalışma, Sosyal Studio, Yedek, Yerel geliştirme, Çalışan altyapı ve sınırlar
 
 ### Community 92 - "build-companion.mjs"
-Cohesion: 0.15
-Nodes (13): releaseFiles, central, contents, directory, end, extensionSources, parts, version (+5 more)
+Cohesion: 0.09
+Nodes (26): crc32(), releaseFiles, central, contents, directory, end, extensionSources, parts (+18 more)
+
+### Community 93 - "social-profiles.test.mjs"
+Cohesion: 0.40
+Nodes (4): fixture(), database(), migration(), seed
 
 ## Knowledge Gaps
-- **22 isolated node(s):** `puppeteer-core`, `@types/react`, `@types/react-dom`, `puppeteer-core`, `typescript` (+17 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 465 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **26 isolated node(s):** `puppeteer-core`, `@types/react`, `@types/react-dom`, `puppeteer-core`, `typescript` (+21 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 483 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **35 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Kodda doğrulanan mevcut durum` connect `shared/local-ai.mjs` to `social-ai.mjs`, `LocalMemory`, `social-accounts.test.mjs`, `KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi`, `company-computer.mjs`?**
-  _High betweenness centrality (0.159) - this node is a cross-community bridge._
+- **Why does `KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi` connect `KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi` to `KKTC uzman çalışma alanı — mevcut programa yama`, `shared/local-ai.mjs`?**
+  _High betweenness centrality (0.144) - this node is a cross-community bridge._
 - **What connects `puppeteer-core`, `@types/react`, `@types/react-dom` to the rest of the system?**
-  _22 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _26 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.125 - nodes in this community are weakly interconnected._
-- **Why does `KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi` connect `KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi` to `README.md`, `shared/local-ai.mjs`?**
-  _High betweenness centrality (0.159) - this node is a cross-community bridge._
+- **Why does `Kodda doğrulanan mevcut durum` connect `shared/local-ai.mjs` to `social-ai.mjs`, `LocalMemory`, `social-accounts.test.mjs`, `KKTC sosyal medya uzmanı ve Firefox geliştirme incelemesi`, `publications.mjs`?**
+  _High betweenness centrality (0.142) - this node is a cross-community bridge._
 - **Should `App.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.11612903225806452 - nodes in this community are weakly interconnected._
-- **Why does `platforms` connect `platforms.mjs` to `api`, `app.mjs`, `worker/editorial.mjs`, `shared/local-ai.mjs`, `check-ai.mjs`, `worker/index.mjs`, `r2-budget.test.mjs`?**
-  _High betweenness centrality (0.050) - this node is a cross-community bridge._
+  _Cohesion score 0.11931818181818182 - nodes in this community are weakly interconnected._
+- **Why does `localInput()` connect `shared/local-ai.mjs` to `LocalMemory`, `research.mjs`, `ai-install.test.mjs`?**
+  _High betweenness centrality (0.039) - this node is a cross-community bridge._
 - **Should `manifest.json` be split into smaller, more focused modules?**
   _Cohesion score 0.09090909090909091 - nodes in this community are weakly interconnected._

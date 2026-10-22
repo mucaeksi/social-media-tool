@@ -169,13 +169,25 @@ export class CompanyComputer {
           "Şirket bilgisayarı çevrimdışı. Bilgisayarda Sosyal Studio yardımcısını başlatın.",
         );
       const { command, account, userId } = input;
-      const opening = ["open", "workspace", "manual-login"].includes(command.action);
-      if (["manual-login", "manual-status"].includes(command.action) &&
-          !socket.deserializeAttachment().normalLogin)
-        throw computerError(409, "Normal Firefox girişi için açık hesapları kapatıp yardımcı güncellemesini bekleyin.");
-      if ((command.action === "workspace" || input.switchAccount) &&
-          !socket.deserializeAttachment().companyTabs)
-        throw computerError(409, "Tek pencereli Firefox için açık hesapları kapatıp yardımcı güncellemesini bekleyin.");
+      const opening = ["open", "workspace", "manual-login"].includes(
+        command.action,
+      );
+      if (
+        ["manual-login", "manual-status"].includes(command.action) &&
+        !socket.deserializeAttachment().normalLogin
+      )
+        throw computerError(
+          409,
+          "Normal Firefox girişi için açık hesapları kapatıp yardımcı güncellemesini bekleyin.",
+        );
+      if (
+        (command.action === "workspace" || input.switchAccount) &&
+        !socket.deserializeAttachment().companyTabs
+      )
+        throw computerError(
+          409,
+          "Tek pencereli Firefox için açık hesapları kapatıp yardımcı güncellemesini bekleyin.",
+        );
       if (
         (lease?.exclusiveJobId && lease.exclusiveJobId !== input.jobId) ||
         (input.jobExclusive && lease)
@@ -184,10 +196,15 @@ export class CompanyComputer {
           409,
           "Hesap ekranı başka bir görevde. İşlem kontrolü ele geçirmedi.",
         );
-      const switching = opening && input.switchAccount && lease &&
-        !lease.exclusiveJobId && lease.userId === userId &&
+      const switching =
+        opening &&
+        input.switchAccount &&
+        lease &&
+        !lease.exclusiveJobId &&
+        lease.userId === userId &&
         lease.companyId === account.companyId &&
-        lease.account?.profileScope === "company" && account.profileScope === "company" &&
+        lease.account?.profileScope === "company" &&
+        account.profileScope === "company" &&
         lease.viewId === input.previousViewId;
       if (
         ![
@@ -210,7 +227,11 @@ export class CompanyComputer {
           409,
           "Bu işlem için yardımcı güncellemesi gerekli. Açık hesapları kapatıp güncellemeyi bekleyin.",
         );
-      if (lease && !switching && (lease.userId !== userId || lease.accountId !== account.id))
+      if (
+        lease &&
+        !switching &&
+        (lease.userId !== userId || lease.accountId !== account.id)
+      )
         throw computerError(
           409,
           "Başka bir hesap ekranı kullanımda. Önce onu kapatın.",
@@ -247,8 +268,13 @@ export class CompanyComputer {
         burst: burst + 1,
       });
       if (switching) {
-        lease = { ...lease, accountId: account.id, account,
-          viewId: crypto.randomUUID(), expiresAt: Date.now() + COMPUTER_LIMITS.leaseMs };
+        lease = {
+          ...lease,
+          accountId: account.id,
+          account,
+          viewId: crypto.randomUUID(),
+          expiresAt: Date.now() + COMPUTER_LIMITS.leaseMs,
+        };
         await this.ctx.storage.put("lease", lease);
       } else if (!lease) {
         lease = {
@@ -269,11 +295,18 @@ export class CompanyComputer {
         await this.ctx.storage.put("lease", lease);
       }
       try {
-        const result = await this.rpc(socket, { command, account },
-          command.action === "workspace" ? { timeout: 90000 } : undefined);
+        const result = await this.rpc(
+          socket,
+          { command, account },
+          command.action === "workspace" ? { timeout: 90000 } : undefined,
+        );
         // A previous panel must not type into a profile after a login handoff.
         if (Boolean(result.manualLogin) !== Boolean(lease.normalLogin)) {
-          lease = { ...lease, normalLogin: Boolean(result.manualLogin), viewId: crypto.randomUUID() };
+          lease = {
+            ...lease,
+            normalLogin: Boolean(result.manualLogin),
+            viewId: crypto.randomUUID(),
+          };
           await this.ctx.storage.put("lease", lease);
         }
         if (command.action === "close") await this.ctx.storage.delete("lease");
@@ -317,6 +350,14 @@ export class CompanyComputer {
           throw computerError(
             409,
             "Yardımcı güncellenmeli. Açık hesap ekranlarını kapatın; otomatik güncellemeden sonra tekrar deneyin.",
+          );
+        if (
+          input.input.requireAdvertising &&
+          !socket.deserializeAttachment().advertising
+        )
+          throw computerError(
+            409,
+            "Reklam desteği için yardımcı 1.9 veya üzeri gerekli. Açık hesapları kapatıp yardımcı güncellemesini tamamlayın.",
           );
         if (input.input.action !== "status") {
           const now = Date.now(),
@@ -503,6 +544,9 @@ export class CompanyComputer {
         localAI:
           Array.isArray(value.capabilities) &&
           value.capabilities.includes("local-ai-v1"),
+        advertising:
+          Array.isArray(value.capabilities) &&
+          value.capabilities.includes("advertising-v1"),
         research:
           Array.isArray(value.capabilities) &&
           value.capabilities.includes("research-v1"),
@@ -510,9 +554,11 @@ export class CompanyComputer {
           Array.isArray(value.capabilities) &&
           value.capabilities.includes("browser-tasks-v1"),
         companyTabs:
-          Array.isArray(value.capabilities) && value.capabilities.includes("company-tabs-v1"),
+          Array.isArray(value.capabilities) &&
+          value.capabilities.includes("company-tabs-v1"),
         normalLogin:
-          Array.isArray(value.capabilities) && value.capabilities.includes("normal-login-v1"),
+          Array.isArray(value.capabilities) &&
+          value.capabilities.includes("normal-login-v1"),
       });
       return;
     }

@@ -30,6 +30,7 @@ export const releaseFiles = [
   "shared/local-ai.mjs",
   "shared/platform-catalog.mjs",
   "shared/features.mjs",
+  "shared/advertising.mjs",
   "shared/night-learning.mjs",
   "shared/social-expert.mjs",
   "shared/regional-expert.mjs",

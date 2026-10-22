@@ -1,9 +1,11 @@
 import { STUDIO_VERSION, LOCAL_MODEL_LABEL } from "../shared/features.mjs";
+import { AD_GUIDE_VERSION } from "../shared/advertising.mjs";
 import { useEffect, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { api } from "./api.ts";
 
 type Status = {
+  advertisingVersion?: string;
   memory?: { sources: number; generations: number; bytes: number };
   runtime?: {
     loaded: boolean;
@@ -32,8 +34,10 @@ const labels: Record<string, string> = {
 };
 export function LocalAIStatus({
   onReady,
+  advertising = false,
 }: {
   onReady: (ready: boolean) => void;
+  advertising?: boolean;
 }) {
   const [diagnostic, setDiagnostic] = useState("");
   const [status, setStatus] = useState<Status | null>(null),
@@ -50,7 +54,10 @@ export function LocalAIStatus({
         if (valid) {
           setStatus(next);
           setError("");
-          onReady(next.phase === "ready" || next.phase === "learning");
+          onReady(
+            (next.phase === "ready" || next.phase === "learning") &&
+              (!advertising || next.advertisingVersion === AD_GUIDE_VERSION),
+          );
         }
       } catch (e) {
         if (valid) {
@@ -67,7 +74,7 @@ export function LocalAIStatus({
       valid = false;
       clearInterval(timer);
     };
-  }, [onReady]);
+  }, [onReady, advertising]);
   async function setup() {
     setPending(true);
     setError("");
@@ -159,6 +166,15 @@ export function LocalAIStatus({
             : "Kurulum tamamlanamadı. İnterneti ve boş disk alanını kontrol edip aynı kurulum düğmesiyle tekrar deneyin. Ayrı Ollama kurulumu gerekmez."}
         </p>
       )}
+      {advertising &&
+        status &&
+        status.advertisingVersion !== AD_GUIDE_VERSION && (
+          <p role="status">
+            Reklam desteği için yardımcı 1.9 veya üzeri gerekli. Açık hesap
+            ekranlarını kapatıp güncellemesini tamamlayın; model yeniden
+            indirilmez.
+          </p>
+        )}
       {error && (
         <p className="browser-message error" role="alert">
           {error}

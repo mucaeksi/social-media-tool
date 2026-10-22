@@ -2,6 +2,8 @@
 
 Türkçe, çok şirketli sosyal medya içerik hazırlama ve çalışma paneli. Facebook, Instagram, X, Threads, Pinterest, YouTube, TikTok, LinkedIn ve Tumblr için içerik hazırlanır.
 
+**1.9 yaması:** KKTC reklam planı, manuel reklam ölçümleri, yedi sağlayıcının reklam panelini aynı Firefox penceresinde açma, onaylı metin hazırlama ve reklam çalışma notları eklendi. [Reklam kullanım rehberi](docs/REKLAM_KULLANIM.md).
+
 **1.8 yaması:** Otomatik kayıt ve oturum sonrası kurtarma, taslak sürüm kontrolü, medya kütüphanesi, kampanya/ürün kartları, haftalık/aylık içerik takvimi, çok görselli hazırlık, platform kırpması, ölçüm/deney takibi ve görselli parçalı yedek eklendi. [1.8 kullanım rehberi](docs/KULLANIM_1_8.md).
 
 ## Günlük çalışma
@@ -11,6 +13,7 @@ Türkçe, çok şirketli sosyal medya içerik hazırlama ve çalışma paneli. F
 3. Kampanya, ürün, sorumlu ve inceleme durumunu ekleyin. Ürün kaynaklarını yönetici onaylar. Metin ve görselleri ZIP olarak indirebilirsiniz.
 4. İçerik takviminde manuel planları takip edin. Facebook pilotunda yayın için ayrıca açık onay gerekir; diğer platformlarda hazırlık ve manuel paylaşım kullanılır.
 5. Gerçek platform/işletme ölçümlerini gönderiye bağlayın. Boş ölçüm sıfır sayılmaz. UTM ve deneylerle sonraki içerik kararını gerçek sonuçlara dayandırın.
+6. Reklam çalışma alanında bütçe, KKTC hizmet bölgeleri ve reklam denemelerini planlayın. Aynı Firefox penceresinde gerçek reklam hesabınıza giriş yapın; AI değerlendirmesi ve metin yerleştirme için eklenti onayını kullanın. Harcama ve yayın işlemlerini sağlayıcı panelinde siz tamamlarsınız.
 
 Otomatik kayıt yayınlama yapmaz. Taslak çakışmasında eski kopya yeni düzenlemeyi ezmez. Şifreler, sosyal oturumlar ve cihaz anahtarları içerik alanlarına yazılmamalıdır.
 
@@ -57,6 +60,8 @@ Firefox/Windows testlerinin gerçek çalıştırıcı gereksinimleri ilgili rehb
 
 ## Başvuru
 
+- [1.9 KKTC reklam çalışma alanı](docs/REKLAM_KULLANIM.md)
+- [1.9 test ve doğrulama sonuçları](docs/DOGRULAMA_1_9.md)
 - [1.8 kullanım rehberi](docs/KULLANIM_1_8.md)
 - [1.8 değişiklik kapsamı](docs/DEGISIKLIKLER_1_8.md)
 - [1.8 test ve doğrulama sonuçları](docs/DOGRULAMA_1_8.md)

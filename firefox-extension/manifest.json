@@ -1,26 +1,62 @@
 {
   "manifest_version": 2,
   "name": "Sosyal Studio · Firefox bağlantısı",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Seçtiğiniz sosyal medya sekmesini Sosyal Studio paneline bağlar. AI için sayfa okur ve onayladığınız taslağı forma yerleştirir.",
   "browser_specific_settings": {
-    "gecko": { "id": "firefox@sosyal-studio.local", "strict_min_version": "140.0", "data_collection_permissions": { "required": ["websiteContent"], "optional": [] } }
+    "gecko": {
+      "id": "firefox@sosyal-studio.local",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "websiteContent"
+        ],
+        "optional": []
+      }
+    }
   },
   "permissions": [
     "tabs",
     "https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev/*",
-    "https://*.facebook.com/*", "https://*.instagram.com/*",
-    "https://*.linkedin.com/*", "https://*.x.com/*",
-    "https://*.threads.com/*", "https://*.threads.net/*",
-    "https://*.pinterest.com/*", "https://*.youtube.com/*",
-    "https://*.tiktok.com/*", "https://*.tumblr.com/*"
+    "https://*.facebook.com/*",
+    "https://*.instagram.com/*",
+    "https://*.linkedin.com/*",
+    "https://*.x.com/*",
+    "https://*.threads.com/*",
+    "https://*.threads.net/*",
+    "https://*.pinterest.com/*",
+    "https://*.youtube.com/*",
+    "https://*.tiktok.com/*",
+    "https://*.tumblr.com/*",
+    "https://ads.google.com/*",
+    "https://ads.twitter.com/*"
   ],
-  "background": { "scripts": ["managed.js", "policy.js", "background.js"], "persistent": true },
-  "content_scripts": [{
-    "matches": ["https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev/*"],
-    "js": ["panel-bridge.js"], "run_at": "document_idle", "all_frames": false
-  }],
-  "browser_action": { "default_title": "Sosyal Studio bağlantısı", "default_popup": "popup.html" },
+  "background": {
+    "scripts": [
+      "managed.js",
+      "advertising.js",
+      "policy.js",
+      "background.js"
+    ],
+    "persistent": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev/*"
+      ],
+      "js": [
+        "advertising.js",
+        "panel-bridge.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "browser_action": {
+    "default_title": "Sosyal Studio bağlantısı",
+    "default_popup": "popup.html"
+  },
   "content_security_policy": "script-src 'self'; object-src 'none'",
   "incognito": "not_allowed"
 }

@@ -3,6 +3,7 @@ import { api } from "./api.ts";
 
 type Learning = {
   enabled: boolean;
+  advertisingEnabled?: boolean;
   running: boolean;
   syncedAt: string;
   expired: boolean;
@@ -90,6 +91,13 @@ export function NightLearning({ companyId }: { companyId: string }) {
   return (
     <section className="card local-ai-status" aria-label="Gece öğrenmesi">
       <h3>Gece araştırması ve hafıza</h3>
+      {data?.advertisingEnabled && (
+        <p>
+          Yedi platformun reklam rehberleri ve son manuel reklam planı/ölçümleri
+          araştırma kapsamındadır. Yeni ölçüm veya kaynak değişince not yeniden
+          inceleme bekler.
+        </p>
+      )}
       <p>
         KKTC saatiyle 00.00–07.00. Bilgisayar ve yardımcı açıkken resmî platform
         rehberlerini ve onaylı şirket kaynaklarını okur, yerel AI ile çalışma

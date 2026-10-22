@@ -7,7 +7,11 @@ import { COMPUTER_LIMITS } from "../shared/computer-protocol.mjs";
 
 import { LocalAI } from "./local-ai.mjs";
 import { prepareFirefoxExtension } from "./firefox-extension.mjs";
-import { ensureStudioFirefox, prepareStudioFirefoxProfile, openStudioFirefox } from "./studio-firefox.mjs";
+import {
+  ensureStudioFirefox,
+  prepareStudioFirefoxProfile,
+  openStudioFirefox,
+} from "./studio-firefox.mjs";
 import { WebsiteResearch } from "./research.mjs";
 import { NightLearning } from "./night-learning.mjs";
 import { localErrors, LOCAL_AI_LIMITS } from "../shared/local-ai.mjs";
@@ -124,7 +128,14 @@ function connect(config) {
     socket.send(
       JSON.stringify({
         type: "hello",
-        capabilities: ["local-ai-v1", "research-v1", "browser-tasks-v1", "company-tabs-v1", "normal-login-v1"],
+        capabilities: [
+          "local-ai-v1",
+          "advertising-v1",
+          "research-v1",
+          "browser-tasks-v1",
+          "company-tabs-v1",
+          "normal-login-v1",
+        ],
       }),
     );
     heartbeat = setInterval(() => {
@@ -156,7 +167,8 @@ function connect(config) {
       commandsInFlight++;
       try {
         const result = await researcher.execute(message.input);
-        if (message.input.companyId) localAI.memory.research(message.input.companyId, result);
+        if (message.input.companyId)
+          localAI.memory.research(message.input.companyId, result);
         if (socket.readyState === WebSocket.OPEN)
           socket.send(
             JSON.stringify({ type: "research-result", id: message.id, result }),
@@ -294,36 +306,77 @@ try {
   let executablePath, studioProfile;
   if (process.platform === "win32") {
     process.send?.({ type: "initializing", stage: "firefox" });
-    console.log("Firefox Developer Edition aynı BAT klasörüne otomatik hazırlanıyor; Mozilla'nın Windows imzası doğrulanır.");
-    let lastStage, lastProgress = 0;
-    executablePath = await ensureStudioFirefox(directory, { progress: (value) => {
-      if (value.stage === "download" && value.bytes) {
-        if (Date.now() - lastProgress >= 2000 || value.bytes === value.total) {
-          const mb = (bytes) => (bytes / 1024 ** 2).toFixed(1);
-          console.log(`Firefox indiriliyor: ${mb(value.bytes)}${value.total ? " / " + mb(value.total) : ""} MB`);
-          lastProgress = Date.now();
+    console.log(
+      "Firefox Developer Edition aynı BAT klasörüne otomatik hazırlanıyor; Mozilla'nın Windows imzası doğrulanır.",
+    );
+    let lastStage,
+      lastProgress = 0;
+    executablePath = await ensureStudioFirefox(directory, {
+      progress: (value) => {
+        if (value.stage === "download" && value.bytes) {
+          if (
+            Date.now() - lastProgress >= 2000 ||
+            value.bytes === value.total
+          ) {
+            const mb = (bytes) => (bytes / 1024 ** 2).toFixed(1);
+            console.log(
+              `Firefox indiriliyor: ${mb(value.bytes)}${value.total ? " / " + mb(value.total) : ""} MB`,
+            );
+            lastProgress = Date.now();
+          }
+        } else if (value.stage !== lastStage) {
+          const labels = {
+            download:
+              "Firefox kurucusu Mozilla'dan indiriliyor; ilk indirme birkaç dakika sürebilir.",
+            "verify-installer":
+              "İndirilen Firefox kurucusunun Mozilla imzası doğrulanıyor.",
+            install:
+              "Firefox aynı klasöre kuruluyor; Windows izin penceresi açılırsa kurulum için onaylayın.",
+            "verify-installed":
+              "Kurulu Firefox'un Mozilla imzası kontrol ediliyor.",
+          };
+          if (labels[value.stage]) console.log(labels[value.stage]);
         }
-      } else if (value.stage !== lastStage) {
-        const labels = { download: "Firefox kurucusu Mozilla'dan indiriliyor; ilk indirme birkaç dakika sürebilir.", "verify-installer": "İndirilen Firefox kurucusunun Mozilla imzası doğrulanıyor.", install: "Firefox aynı klasöre kuruluyor; Windows izin penceresi açılırsa kurulum için onaylayın.", "verify-installed": "Kurulu Firefox'un Mozilla imzası kontrol ediliyor." };
-        if (labels[value.stage]) console.log(labels[value.stage]);
-      }
-      lastStage = value.stage;
-    } });
+        lastStage = value.stage;
+      },
+    });
     studioProfile = await prepareStudioFirefoxProfile(directory);
   } else executablePath = await firefoxPath();
   try {
-    const extension = await prepareFirefoxExtension(directory, { profile: Boolean(studioProfile) });
-    console.log(`Firefox eklentisi ${extension.version} hazır: ${extension.manifestPath}`);
-    console.log(studioProfile ? "Eklenti özel Firefox profiline otomatik kuruldu. Mevcut kişisel Firefox profiliniz değiştirilmedi. Sosyal hesaplara bu Firefox'ta bir kez giriş yapın." : "Normal Firefox ilk yüklemeyi onaylamanızı ister. Geçici eklenti yükle adımında yukarıdaki manifest.json dosyasını seçin.");
-    if (studioProfile) await openStudioFirefox(directory, executablePath, studioProfile);
+    const extension = await prepareFirefoxExtension(directory, {
+      profile: Boolean(studioProfile),
+    });
+    console.log(
+      `Firefox eklentisi ${extension.version} hazır: ${extension.manifestPath}`,
+    );
+    console.log(
+      studioProfile
+        ? "Eklenti özel Firefox profiline otomatik kuruldu. Mevcut kişisel Firefox profiliniz değiştirilmedi. Sosyal hesaplara bu Firefox'ta bir kez giriş yapın."
+        : "Normal Firefox ilk yüklemeyi onaylamanızı ister. Geçici eklenti yükle adımında yukarıdaki manifest.json dosyasını seçin.",
+    );
+    if (studioProfile)
+      await openStudioFirefox(directory, executablePath, studioProfile);
   } catch {
-    console.log("Firefox eklentisi hazırlanamadı. Klasör izinlerini kontrol edin; paneldeki eklenti paketini elle yükleyebilirsiniz.");
+    console.log(
+      "Firefox eklentisi hazırlanamadı. Klasör izinlerini kontrol edin; paneldeki eklenti paketini elle yükleyebilirsiniz.",
+    );
   }
   researcher = new WebsiteResearch({ executablePath });
-  localAI.night = new NightLearning({ ai: localAI, researcher: new WebsiteResearch({ executablePath }), canRun: () => !stopping && socket?.readyState === WebSocket.OPEN && commandsInFlight === 0 && !pool?.opened.size && !pool?.manualOpened.size });
+  localAI.night = new NightLearning({
+    ai: localAI,
+    researcher: new WebsiteResearch({ executablePath }),
+    canRun: () =>
+      !stopping &&
+      socket?.readyState === WebSocket.OPEN &&
+      commandsInFlight === 0 &&
+      !pool?.opened.size &&
+      !pool?.manualOpened.size,
+  });
   localAI.night.start();
   if (process.platform === "win32") {
-    console.log("Yerel AI otomatik hazırlanıyor. Veriler BAT dosyasının bulunduğu klasörde tutulur; eşleştirme ve hesap girişlerine devam edebilirsiniz.");
+    console.log(
+      "Yerel AI otomatik hazırlanıyor. Veriler BAT dosyasının bulunduğu klasörde tutulur; eşleştirme ve hesap girişlerine devam edebilirsiniz.",
+    );
     localAI.setup({ automatic: true });
   }
   const config = await configuration();

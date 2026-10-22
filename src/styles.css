@@ -4054,3 +4054,15 @@ main {
 }
 .studio-detail-fields {border:0;margin:0;padding:0;min-inline-size:0;}
 .publication-thumbnail {display:block;max-width:260px;width:100%;max-height:220px;object-fit:contain;margin:14px 0;}
+
+/* Advertising stays in the studio's existing palette and form system. */
+.ad-form,.ad-analysis {padding:20px;margin-block:20px;}
+.ad-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
+.advertising-workspace .card {margin-block:16px;}
+.advertising-workspace .source-excerpt {white-space:pre-wrap;overflow-wrap:anywhere;}
+@media(max-width:700px){.ad-grid{grid-template-columns:minmax(0,1fr);}.ad-form,.ad-analysis{padding:16px;}}
+.advertising-workspace {overflow-wrap:anywhere;}
+.advertising-workspace .field {display:flex;flex-direction:column;gap:6px;min-width:0;}
+.advertising-workspace .content-filters .field {flex:1 1 250px;min-width:0;max-width:100%;}
+.advertising-workspace .field input,.advertising-workspace .field textarea,.advertising-workspace .field select {width:100%;min-width:0;max-width:100%;font:inherit;}
+.advertising-workspace select {border:1px solid var(--line);border-radius:6px;min-height:40px;background:white;padding:8px;}

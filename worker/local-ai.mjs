@@ -110,12 +110,59 @@ export function registerLocalAI(app) {
     const channels = preference
       ? JSON.parse(preference.data).platforms
       : profile.preferredPlatforms;
+    const adRows = await c.env.DB.prepare(
+      "SELECT id,kind,revision,data FROM editorial_records WHERE company_id=? AND kind IN ('campaign','metric') AND json_extract(data,'$.advertising') IS NOT NULL ORDER BY updated_at DESC,id DESC LIMIT 4",
+    )
+      .bind(input.companyId)
+      .all();
+    const adContext = JSON.stringify(
+      adRows.results.map((r) => {
+        const d = JSON.parse(r.data),
+          a = d.advertising;
+        return r.kind === "campaign"
+          ? {
+              id: r.id,
+              revision: r.revision,
+              kind: r.kind,
+              name: d.name.slice(0, 80),
+              provider: a.provider,
+              objective: a.objective,
+              districts: a.districts.slice(0, 160),
+              currency: a.currency,
+              dailyBudget: a.dailyBudget,
+              totalCap: a.totalCap,
+            }
+          : {
+              id: r.id,
+              revision: r.revision,
+              kind: r.kind,
+              provider: a.provider,
+              periodStart: a.periodStart,
+              periodEnd: a.periodEnd,
+              currency: a.currency,
+              spend: a.spend,
+              conversions: a.conversions,
+              revenue: a.revenueVerified ? a.revenue : null,
+              revenueVerified: a.revenueVerified,
+              impressions: d.values.impressions,
+              clicks: d.values.clicks,
+              leads: d.values.leads,
+            };
+      }),
+    );
     return c.json(
       (
         await call(c, {
           action: "night-sync",
           ...input,
           companyName: profile.name,
+          adContext,
+          advertising: preference
+            ? JSON.parse(preference.data).adsLearning !== false
+            : true,
+          adProviders: preference
+            ? JSON.parse(preference.data).adsProviders
+            : undefined,
           sources: results.map((source) =>
             priorityByUrl.has(source.url)
               ? { ...source, priority: priorityByUrl.get(source.url) }
@@ -145,6 +192,7 @@ export function registerLocalAI(app) {
       .object({
         companyId: z.uuid(),
         question: z.string().trim().min(1).max(6000),
+        advertising: z.boolean().optional(),
         mode: z.enum(["chat", "posts"]),
         selected: selectedSchema.optional(),
         mediaId: z.uuid().nullable().default(null),
@@ -170,7 +218,7 @@ export function registerLocalAI(app) {
         );
     }
     const { results: rows } = await c.env.DB.prepare(
-      "SELECT kind,title,body FROM ai_memory WHERE company_id=? ORDER BY created_at,id",
+      "SELECT kind,title,body FROM ai_memory WHERE company_id=? AND NOT EXISTS(SELECT 1 FROM editorial_records r WHERE r.id=ai_memory.id AND r.company_id=ai_memory.company_id AND r.kind='correction' AND json_extract(r.data,'$.domain')='advertising' AND (json_extract(r.data,'$.state')<>'approved' OR COALESCE(json_extract(r.data,'$.validUntil'),'')<=strftime('%Y-%m-%dT%H:%M:%fZ','now'))) ORDER BY created_at,id",
     )
       .bind(input.companyId)
       .all();
@@ -268,7 +316,10 @@ export function registerLocalAI(app) {
     }
     let result;
     try {
-      result = await call(c, payload);
+      result = await call(c, {
+        ...payload,
+        requireAdvertising: input.advertising === true,
+      });
     } catch (e) {
       await c.env.DB.prepare(
         "UPDATE local_ai_jobs SET state='paused',updated_at=? WHERE id=? AND state='running'",

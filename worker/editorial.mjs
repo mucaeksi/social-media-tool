@@ -197,6 +197,21 @@ export function registerEditorial(app) {
     if (old && JSON.parse(old.data).state === "approved") admin(c);
     if (kind === "metric" && Date.parse(input.measuredAt) > Date.now() + 60000)
       fail(400, "Ölçüm tarihi gelecekte olamaz.");
+    if (
+      kind === "campaign" &&
+      input.advertising &&
+      input.startsAt &&
+      input.endsAt &&
+      input.endsAt < input.startsAt
+    )
+      fail(400, "Reklam planının bitişi başlangıçtan önce olamaz.");
+    if (
+      kind === "metric" &&
+      input.advertising &&
+      Date.parse(input.advertising.periodEnd) >
+        Date.parse(input.measuredAt) + 60000
+    )
+      fail(400, "Reklam raporunun dönemi ölçüm anından sonra bitemez.");
     for (const [key, target] of [
       ["campaignId", "campaign"],
       ["productId", "product"],
@@ -205,6 +220,14 @@ export function registerEditorial(app) {
         const r = await record(c, input[key]);
         if (r.company_id !== companyId || r.kind !== target)
           fail(400, "İlişkili kayıt bu şirkete ait değil.");
+        if (
+          kind === "metric" &&
+          input.advertising &&
+          key === "campaignId" &&
+          JSON.parse(r.data).advertising?.provider &&
+          JSON.parse(r.data).advertising.provider !== input.advertising.provider
+        )
+          fail(400, "Reklam ölçümü ile kampanya sağlayıcısı farklı.");
       }
     if (input.draftId) {
       const d = await c.get("store").draft(input.draftId);
@@ -233,6 +256,12 @@ export function registerEditorial(app) {
     }
     if (input.state === "approved") {
       admin(c);
+      if (
+        kind === "correction" &&
+        input.domain === "advertising" &&
+        (!input.validUntil || Date.parse(input.validUntil) <= Date.now())
+      )
+        fail(400, "Reklam çalışma notu için ileri geçerlilik tarihi gerekli.");
       if (
         kind === "product" &&
         (!input.evidence ||
@@ -289,11 +318,14 @@ export function registerEditorial(app) {
       if (input.state === "approved") {
         const body = exampleBody;
         const memoryResult = await c.env.DB.prepare(
-          "INSERT INTO ai_memory(id,company_id,kind,title,body,created_at) SELECT ?,?,'example','Onaylı editör düzeltmesi',?,? WHERE ((SELECT COUNT(*) FROM ai_memory WHERE company_id=?)<30 OR EXISTS(SELECT 1 FROM ai_memory WHERE id=?)) AND (SELECT COALESCE(SUM(length(body)),0) FROM ai_memory WHERE company_id=? AND id<>?)+length(?)<=8000 ON CONFLICT(id) DO UPDATE SET body=excluded.body",
+          "INSERT INTO ai_memory(id,company_id,kind,title,body,created_at) SELECT ?,?,'example',?,?,? WHERE ((SELECT COUNT(*) FROM ai_memory WHERE company_id=?)<30 OR EXISTS(SELECT 1 FROM ai_memory WHERE id=?)) AND (SELECT COALESCE(SUM(length(body)),0) FROM ai_memory WHERE company_id=? AND id<>?)+length(?)<=8000 ON CONFLICT(id) DO UPDATE SET body=excluded.body,title=excluded.title",
         )
           .bind(
             recordId,
             companyId,
+            input.domain === "advertising"
+              ? `Onaylı reklam notu · ${input.validUntil}`
+              : "Onaylı editör düzeltmesi",
             body,
             now,
             companyId,

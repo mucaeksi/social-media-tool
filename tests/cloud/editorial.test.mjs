@@ -407,3 +407,66 @@ test("Kaynak kontrolü uydurma referansı geçerli saymaz; geri yükleme kaynak 
     403,
   );
 });
+
+test("Reklam notu onay ve süre ister; süresi dolan örnek AI hafızasına verilmez", async () => {
+  const data = {
+    domain: "advertising",
+    platform: "facebook",
+    before: "Kurgu Meta denemesi",
+    after:
+      "Bu ölçüm döneminde daha az nitelikli talep vardı; açılışı tek değişkenli dene.",
+    reason: "Kurgu rapor, üç günlük pencere",
+    state: "approved",
+  };
+  assert.equal(
+    (
+      await call("/api/content/records", {
+        method: "POST",
+        data: { companyId: first.id, kind: "correction", data },
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await call("/api/content/records", {
+        method: "POST",
+        role: "editor",
+        data: {
+          companyId: first.id,
+          kind: "correction",
+          data: {
+            ...data,
+            validUntil: new Date(Date.now() + 86400000).toISOString(),
+          },
+        },
+      })
+    ).status,
+    403,
+  );
+  const created = await call("/api/content/records", {
+    method: "POST",
+    data: {
+      companyId: first.id,
+      kind: "correction",
+      data: {
+        ...data,
+        validUntil: new Date(Date.now() + 86400000).toISOString(),
+      },
+    },
+  });
+  assert.equal(created.status, 201);
+  let workspace = await call("/api/ai/workspace?companyId=" + first.id);
+  assert.ok(workspace.data.memory.some((m) => m.id === created.data.id));
+  await db
+    .prepare(
+      "UPDATE editorial_records SET data=json_set(data,'$.validUntil','2020-01-01T00:00:00.000Z') WHERE id=?",
+    )
+    .bind(created.data.id)
+    .run();
+  workspace = await call("/api/ai/workspace?companyId=" + first.id);
+  assert.equal(
+    workspace.data.memory.some((m) => m.id === created.data.id),
+    false,
+  );
+});

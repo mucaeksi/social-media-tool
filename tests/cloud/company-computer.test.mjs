@@ -639,6 +639,17 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
       ).status,
       413,
     );
+    const oldAdvertising = await request("/api/computer/ai/ask", {
+      method: "POST",
+      body: {
+        companyId,
+        mode: "chat",
+        advertising: true,
+        question: "KKTC reklam planı",
+      },
+    });
+    assert.equal(oldAdvertising.status, 409);
+    assert.match((await oldAdvertising.json()).error, /1\.9/);
   } finally {
     agent.removeEventListener("message", listener);
   }

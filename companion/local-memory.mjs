@@ -3,7 +3,7 @@ import { mkdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { webUrl, validResearchResult } from "../shared/research-protocol.mjs";
-import { OFFICIAL_GUIDES } from "../shared/night-learning.mjs";
+import { OFFICIAL_GUIDES, AD_GUIDES } from "../shared/night-learning.mjs";
 
 const validCompany = (id) => {
   if (
@@ -176,8 +176,17 @@ export class LocalMemory {
         input.companyId,
         JSON.stringify({
           companyName: input.companyName,
+          ...(input.adContext === undefined
+            ? {}
+            : { adContext: input.adContext }),
           sources: input.sources,
           ...(input.platforms ? { platforms: input.platforms } : {}),
+          ...(input.advertising === undefined
+            ? {}
+            : {
+                advertising: input.advertising,
+                adProviders: input.adProviders,
+              }),
         }),
         Number(input.enabled ?? Boolean(old ? old.enabled : true)),
         now.toISOString(),
@@ -294,6 +303,7 @@ export class LocalMemory {
         .get(companyId);
       return {
         enabled: Boolean(plan?.enabled),
+        advertisingEnabled: Boolean(plan && JSON.parse(plan.data).advertising),
         syncedAt: plan?.synced_at || "",
         running: false,
         expired: Boolean(
@@ -330,7 +340,19 @@ export class LocalMemory {
             )
           : [];
       const allowed = new Set(
-        [...OFFICIAL_GUIDES, ...sources].map((s) => s.url),
+        [
+          ...OFFICIAL_GUIDES,
+          ...(plan &&
+          Date.parse(plan.synced_at) > +now - 7 * 86400000 &&
+          JSON.parse(plan.data).advertising
+            ? AD_GUIDES.filter(
+                (g) =>
+                  !JSON.parse(plan.data).adProviders ||
+                  JSON.parse(plan.data).adProviders.includes(g.provider),
+              )
+            : []),
+          ...sources,
+        ].map((s) => s.url),
       );
       return db
         .prepare(

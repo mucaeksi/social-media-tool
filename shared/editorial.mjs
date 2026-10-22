@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { platformIds } from "../server/platforms.mjs";
+import { adProviderIds } from "./advertising.mjs";
 
 const short = (n = 300) => z.string().trim().max(n).default("");
 const id = z.uuid().nullable().default(null);
@@ -45,6 +46,27 @@ export const reviewStates = [
 ];
 export const recordSchemas = {
   campaign: z.object({
+    advertising: z
+      .object({
+        provider: z.enum(adProviderIds),
+        objective: z.enum([
+          "awareness",
+          "traffic",
+          "messages",
+          "leads",
+          "sales",
+        ]),
+        dailyBudget: z.number().min(0).max(1000000).nullable().default(null),
+        totalCap: z.number().min(0).max(10000000).nullable().default(null),
+        currency: z.enum(["TRY", "EUR", "GBP", "USD"]),
+        districts: short(300),
+        languages: short(100),
+        destination: url,
+        accountLabel: short(100),
+        locationCheck: short(500),
+        creative: short(3000),
+      })
+      .optional(),
     name: short(120).refine(Boolean, "Kampanya adı gerekli."),
     goal: short(),
     audience: short(),
@@ -93,6 +115,8 @@ export const recordSchemas = {
     conclusion: short(2000),
   }),
   correction: z.object({
+    domain: z.enum(["brand", "advertising"]).default("brand"),
+    validUntil: date,
     draftId: id,
     platform: z.enum(platformIds),
     before: short(6000),
@@ -101,6 +125,27 @@ export const recordSchemas = {
     state: z.enum(["pending", "approved", "rejected"]).default("pending"),
   }),
   metric: z.object({
+    advertising: z
+      .object({
+        provider: z.enum(adProviderIds),
+        spend: z.number().min(0).max(100000000).nullable().default(null),
+        currency: z.enum(["TRY", "EUR", "GBP", "USD"]),
+        conversions: z
+          .number()
+          .int()
+          .min(0)
+          .max(100000000)
+          .nullable()
+          .default(null),
+        revenue: z.number().min(0).max(1000000000).nullable().default(null),
+        revenueVerified: z.boolean().default(false),
+        periodStart: date.refine(Boolean),
+        periodEnd: date.refine(Boolean),
+        attribution: short(120),
+        accountLabel: short(100),
+      })
+      .refine((v) => v.periodEnd >= v.periodStart, "Ölçüm dönemi ters olamaz.")
+      .optional(),
     sourceUrl: url.refine(Boolean),
     measuredAt: date.refine(Boolean),
     platform: z.enum(platformIds),
@@ -166,6 +211,12 @@ export const recordSchemas = {
   }),
 };
 export const preferencesSchema = z.object({
+  adsLearning: z.boolean().default(true),
+  adsProviders: z
+    .array(z.enum(adProviderIds))
+    .min(1)
+    .max(7)
+    .default(adProviderIds),
   platforms: platforms.refine((v) => v.length > 0, "En az bir platform seçin."),
   compact: z.boolean().default(false),
 });

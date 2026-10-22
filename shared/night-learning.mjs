@@ -1,4 +1,15 @@
 import { webUrl } from "./research-protocol.mjs";
+import { adProviders, adProviderIds } from "./advertising.mjs";
+export const AD_GUIDES = Object.freeze(
+  adProviders.map((p) =>
+    Object.freeze({
+      platform: p.platforms[0],
+      provider: p.id,
+      topic: "advertising",
+      url: p.guide,
+    }),
+  ),
+);
 
 export const NIGHT_LIMITS = Object.freeze({
   requests: 20,
@@ -77,6 +88,20 @@ export function nightInput(input) {
   });
   const platforms = input.platforms === undefined ? undefined : input.platforms;
   if (
+    input.adContext !== undefined &&
+    (typeof input.adContext !== "string" || input.adContext.length > 3000)
+  )
+    throw new Error("Reklam bağlamı çok uzun.");
+  if (input.advertising !== undefined && typeof input.advertising !== "boolean")
+    throw new Error("Reklam araştırma seçimi geçersiz.");
+  if (
+    input.adProviders !== undefined &&
+    (!Array.isArray(input.adProviders) ||
+      input.adProviders.length > 7 ||
+      input.adProviders.some((p) => !adProviderIds.includes(p)))
+  )
+    throw new Error("Reklam platformu geçersiz.");
+  if (
     platforms !== undefined &&
     (!Array.isArray(platforms) ||
       platforms.length > 9 ||
@@ -87,6 +112,13 @@ export function nightInput(input) {
     ...base,
     companyName: input.companyName,
     sources,
+    ...(input.adContext === undefined ? {} : { adContext: input.adContext }),
+    ...(input.advertising === undefined
+      ? {}
+      : {
+          advertising: input.advertising,
+          adProviders: input.adProviders || adProviderIds,
+        }),
     ...(platforms ? { platforms } : {}),
     ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
   };
@@ -95,33 +127,29 @@ export function validNightStatus(value) {
   try {
     return Boolean(
       value &&
-        typeof value.enabled === "boolean" &&
-        typeof value.running === "boolean" &&
-        typeof value.syncedAt === "string" &&
-        Array.isArray(value.notes) &&
-        value.notes.length <= 20 &&
-        value.notes.every(
-          (n) =>
-            /^[a-f0-9-]{36}$/i.test(n.id) &&
-            webUrl(n.url) &&
-            typeof n.summary === "string" &&
-            n.summary.length <= 4000 &&
-            ["pending", "approved", "rejected"].includes(n.state),
-        ) &&
-        (value.attempts === undefined ||
-          (Array.isArray(value.attempts) &&
-            value.attempts.length <= 20 &&
-            value.attempts.every(
-              (a) =>
-                webUrl(a.url) &&
-                [
-                  "saved",
-                  "unchanged",
-                  "failed",
-                  "cancelled",
-                  "running",
-                ].includes(a.state),
-            ))),
+      typeof value.enabled === "boolean" &&
+      typeof value.running === "boolean" &&
+      typeof value.syncedAt === "string" &&
+      Array.isArray(value.notes) &&
+      value.notes.length <= 20 &&
+      value.notes.every(
+        (n) =>
+          /^[a-f0-9-]{36}$/i.test(n.id) &&
+          webUrl(n.url) &&
+          typeof n.summary === "string" &&
+          n.summary.length <= 4000 &&
+          ["pending", "approved", "rejected"].includes(n.state),
+      ) &&
+      (value.attempts === undefined ||
+        (Array.isArray(value.attempts) &&
+          value.attempts.length <= 20 &&
+          value.attempts.every(
+            (a) =>
+              webUrl(a.url) &&
+              ["saved", "unchanged", "failed", "cancelled", "running"].includes(
+                a.state,
+              ),
+          ))),
     );
   } catch {
     return false;

@@ -348,3 +348,69 @@ test("Gece araştırması seçili rehberleri ve kampanya önceliğini izler; URL
     /önceli/,
   );
 });
+
+test("Reklam rehberlerinin yedisi araştırılır; onay ve araştırma seçimi bağlamı sınırlar", async (t) => {
+  const f = await fixture(t);
+  f.memory.nightSync(
+    nightInput({
+      action: "night-sync",
+      companyId,
+      companyName: "Kurgu",
+      sources: [],
+      advertising: true,
+    }),
+    f.now(),
+  );
+  for (let i = 0; i < 7; i++) await f.night.tick();
+  assert.equal(f.night.status(companyId).notes.length, 7);
+  assert.ok(
+    f.night.status(companyId).notes.some((n) => n.url.includes("google-ads")),
+  );
+  assert.equal(f.memory.learned(companyId, f.now()).length, 0);
+  const note = f.night.status(companyId).notes[0];
+  f.memory.nightReview(companyId, note.id, "approved");
+  assert.equal(f.memory.learned(companyId, f.now()).length, 1);
+  f.memory.nightSync(
+    nightInput({
+      action: "night-sync",
+      companyId,
+      companyName: "Kurgu",
+      sources: [],
+      advertising: false,
+    }),
+    f.now(),
+  );
+  assert.equal(f.memory.learned(companyId, f.now()).length, 0);
+  assert.equal(f.reads(), 7);
+});
+
+test("Yeni reklam ölçümü aynı resmî sayfayı yeniden inceletir ve eski notun onayını kaldırır", async (t) => {
+  const f = await fixture(t);
+  const sync = (context) =>
+    f.memory.nightSync(
+      nightInput({
+        action: "night-sync",
+        companyId,
+        companyName: "Kurgu",
+        sources: [],
+        advertising: true,
+        adProviders: ["meta"],
+        adContext: JSON.stringify(context),
+      }),
+      f.now(),
+    );
+  sync({ spend: 100, leads: 1 });
+  await f.night.tick();
+  f.memory.nightReview(
+    companyId,
+    f.night.status(companyId).notes[0].id,
+    "approved",
+  );
+  assert.equal(f.memory.learned(companyId, f.now()).length, 1);
+  f.clock("2030-07-11T21:00:00Z");
+  sync({ spend: 200, leads: 2 });
+  await f.night.tick();
+  assert.equal(f.chats(), 2);
+  assert.equal(f.night.status(companyId).notes[0].state, "pending");
+  assert.equal(f.memory.learned(companyId, f.now()).length, 0);
+});
