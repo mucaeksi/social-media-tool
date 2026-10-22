@@ -1,3 +1,5 @@
+import { approvedProductContext } from "./editorial.mjs";
+import { generationTrace } from "./generation-trace.mjs";
 import { z } from "zod";
 import { evidenceFor } from "./knowledge.mjs";
 import { bodyLimit } from "hono/body-limit";
@@ -73,6 +75,7 @@ const turnView = (r) => ({
   engine: r.engine ?? "cloudflare",
   model: r.model ?? AI_MODEL,
   sourceRefs: r.evidence ? JSON.parse(r.evidence) : [],
+  trace: r.trace ? JSON.parse(r.trace) : null,
 });
 async function company(c, id) {
   const result = await c.get("store").company(id);
@@ -93,7 +96,7 @@ async function turns(db, companyId, userId) {
   return (
     await db
       .prepare(
-        "SELECT t.*,e.data AS evidence FROM ai_turns t LEFT JOIN ai_evidence e ON e.turn_id=t.id WHERE t.company_id=? AND t.user_id=? ORDER BY t.created_at DESC,t.id DESC LIMIT 20",
+        "SELECT t.*,e.data AS evidence,g.data AS trace FROM ai_turns t LEFT JOIN ai_evidence e ON e.turn_id=t.id LEFT JOIN ai_generation_trace g ON g.turn_id=t.id WHERE t.company_id=? AND t.user_id=? ORDER BY t.created_at DESC,t.id DESC LIMIT 20",
       )
       .bind(companyId, userId)
       .all()
@@ -191,6 +194,7 @@ export function aiMessages({
       keywords,
       regional: profile.regional,
       sourceRefs: profile.sourceRefs,
+      products: profile.products,
     },
     memory: entries.map(({ kind, title, body }) => ({ kind, title, body })),
   });
@@ -439,6 +443,7 @@ export function registerSocialAI(app) {
         503,
         "Cloudflare AI bu ortamda etkin değil. Yerel testler gerçek modeli çağırmaz.",
       );
+    const started = Date.now();
     const input = requestSchema.parse(await json(c));
     if (input.mode === "posts" && !input.selected)
       fail(400, "İçerik için platform seçin.");
@@ -461,6 +466,8 @@ export function registerSocialAI(app) {
       memory(c.env.DB, input.companyId),
       turns(c.env.DB, input.companyId, userId),
     ]);
+    const products = await approvedProductContext(c.env.DB, input.companyId);
+    if (products.length) profile.products = products;
     const contextHistory = history.slice(-4);
     const placeholder = attachedMedia
       ? "x".repeat(VISION_LIMITS.observationBytes)
@@ -607,7 +614,19 @@ export function registerSocialAI(app) {
     await c.env.DB.prepare("INSERT INTO ai_evidence(turn_id,data) VALUES(?,?)")
       .bind(id, JSON.stringify(profile.sourceRefs))
       .run();
+    const trace = await generationTrace(c.env.DB, {
+      id,
+      companyId: input.companyId,
+      model: AI_MODEL,
+      expertVersion: SOCIAL_EXPERT_VERSION,
+      sourceRefs: profile.sourceRefs,
+      mediaId: input.mediaId,
+      started,
+      products,
+      context: { profile, entries },
+    });
     return c.json({
+      trace,
       id,
       sourceRefs: profile.sourceRefs,
       companyId: input.companyId,

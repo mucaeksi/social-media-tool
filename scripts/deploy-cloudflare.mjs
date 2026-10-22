@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { STUDIO_VERSION } from "../shared/features.mjs";
 import { mkdir, writeFile, appendFile } from "node:fs/promises";
 import { provisionCloudflare } from "./provision-cloudflare.mjs";
 import { smokeCloudflare } from "./smoke-cloudflare.mjs";
@@ -72,7 +73,7 @@ try {
     login: "Kullanıcı adı ve şifre — D1 oturumları",
     socialBrowser: "Cloudflare Browser Run — deneysel hesap girişi",
     companyComputer:
-      "Windows Firefox 1.4 — şirket başına tek pencere, sosyal ağ sekmeleri, kalıcı profiller ve yerel AI; gerçek hesap/model kontrolü bilgisayarda yapılmalı",
+      `Windows Firefox ${STUDIO_VERSION} — şirket başına tek pencere, sosyal ağ sekmeleri, kalıcı profiller ve yerel AI; gerçek hesap/model kontrolü bilgisayarda yapılmalı`,
     ai: "Cloudflare Workers AI — görsel + özet, platform metinleri ve şirket hafızası",
     knowledge:
       "KKTC profili, kanıtlı kaynak onayı, şirket erişimleri ve kalite defteri",

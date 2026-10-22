@@ -1,3 +1,10 @@
+import { lazy, Suspense } from "react";
+import { platforms as editorialPlatforms } from "../shared/platform-catalog.mjs";
+const EditorialMetrics = lazy(() =>
+  import("./ContentWorkspace.tsx").then((m) => ({
+    default: m.ContentWorkspace,
+  })),
+);
 import { useEffect, useState } from "react";
 import { api } from "./api.ts";
 import { ActivityFeed } from "./ActivityFeed.tsx";
@@ -508,7 +515,13 @@ type Job = {
   timezone: string;
   detail: string;
   result_url?: string;
-  snapshot: { text: string; mediaId?: string; identityLabel?: string };
+  snapshot: {
+    text: string;
+    mediaId?: string;
+    identityLabel?: string;
+    accountLabel?: string;
+    profileUrl?: string;
+  };
 };
 const states: Record<string, string> = {
   draft: "Onay bekliyor",
@@ -530,6 +543,7 @@ export function PublicationWorkspace({
   user: AuthUser;
   drafts: Draft[];
 }) {
+  const [stateFilter, setStateFilter] = useState("");
   const [jobs, setJobs] = useState<Job[]>([]),
     [accounts, setAccounts] = useState<
       { id: string; label: string; platform: string }[]
@@ -543,6 +557,26 @@ export function PublicationWorkspace({
     [confirmed, setConfirmed] = useState<Record<string, boolean>>({});
   const refresh = () =>
     api<Job[]>(`/api/publications?companyId=${company.id}`).then(setJobs);
+  useEffect(() => {
+    let valid = true,
+      inFlight = false;
+    const timer = setInterval(() => {
+      if (document.hidden || inFlight) return;
+      inFlight = true;
+      void api<Job[]>(`/api/publications?companyId=${company.id}`)
+        .then((rows) => {
+          if (valid) setJobs(rows);
+        })
+        .catch(() => {})
+        .finally(() => {
+          inFlight = false;
+        });
+    }, 15000);
+    return () => {
+      valid = false;
+      clearInterval(timer);
+    };
+  }, [company.id]);
   useEffect(() => {
     void refresh().catch((e) => setError(e.message));
     if (user.role === "admin")
@@ -665,263 +699,233 @@ export function PublicationWorkspace({
         >
           Durumları yenile
         </button>
-        {jobs.map((j) => (
-          <article className="expert-item" key={j.id}>
-            <h3>{states[j.state] || j.state}</h3>
-            <p>
-              {new Date(j.scheduled_at).toLocaleString("tr-TR", {
-                timeZone: j.timezone,
-              })}{" "}
-              · {j.timezone}
-            </p>
-            <p className="source-excerpt">{j.snapshot.text}</p>
-            <p>{j.snapshot.mediaId ? "Görsel eklenecek" : "Yalnız metin"}</p>
-            <p>{j.detail}</p>
-            {j.result_url && (
-              <a href={j.result_url} target="_blank" rel="noreferrer">
-                Gerçek gönderiyi aç
-              </a>
-            )}
-            {user.role === "admin" && (
-              <>
-                <div className="expert-actions">
-                  {j.state === "draft" && (
-                    <>
-                      <label className="field">
-                        Facebook'ta görünen hedef sayfa adı
-                        <input
-                          value={identity[j.id] || ""}
-                          onChange={(e) =>
-                            setIdentity((s) => ({
-                              ...s,
-                              [j.id]: e.target.value,
-                            }))
+        <label className="field">
+          Yayın durumu
+          <select
+            value={stateFilter}
+            onChange={(e) => setStateFilter(e.target.value)}
+          >
+            <option value="">Bütün işler</option>
+            {Object.entries(states).map(([id, label]) => (
+              <option key={id} value={id}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {jobs
+          .filter((j) => !stateFilter || j.state === stateFilter)
+          .map((j) => (
+            <article className="expert-item" key={j.id}>
+              <h3>{states[j.state] || j.state}</h3>
+              <p>
+                {new Date(j.scheduled_at).toLocaleString("tr-TR", {
+                  timeZone: j.timezone,
+                })}{" "}
+                · {j.timezone}
+              </p>
+              <p>
+                <strong>
+                  Hedef hesap:{" "}
+                  {j.snapshot.accountLabel ||
+                    j.snapshot.identityLabel ||
+                    "Hesap adını onayda kontrol edin"}
+                </strong>
+              </p>
+              {j.snapshot.profileUrl && (
+                <a
+                  href={j.snapshot.profileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {j.snapshot.profileUrl}
+                </a>
+              )}
+              {j.snapshot.mediaId && (
+                <img
+                  className="publication-thumbnail"
+                  src={`/api/media/${j.snapshot.mediaId}/facebook.jpg`}
+                  alt="Yayınlanacak görsel önizlemesi"
+                />
+              )}
+              <p className="source-excerpt">{j.snapshot.text}</p>
+              <p>{j.snapshot.mediaId ? "Görsel eklenecek" : "Yalnız metin"}</p>
+              <p>{j.detail}</p>
+              {j.result_url && (
+                <a href={j.result_url} target="_blank" rel="noreferrer">
+                  Gerçek gönderiyi aç
+                </a>
+              )}
+              {user.role === "admin" && (
+                <>
+                  <div className="expert-actions">
+                    {j.state === "draft" && (
+                      <>
+                        <label className="field">
+                          Facebook'ta görünen hedef sayfa adı
+                          <input
+                            value={identity[j.id] || ""}
+                            onChange={(e) =>
+                              setIdentity((s) => ({
+                                ...s,
+                                [j.id]: e.target.value,
+                              }))
+                            }
+                            maxLength={100}
+                          />
+                        </label>
+                        <label className="expert-check">
+                          <input
+                            type="checkbox"
+                            checked={confirmed[j.id] || false}
+                            onChange={(e) =>
+                              setConfirmed((s) => ({
+                                ...s,
+                                [j.id]: e.target.checked,
+                              }))
+                            }
+                          />
+                          Hedef hesabı, metni, görseli ve zamanı kontrol ettim;
+                          paylaşımı onaylıyorum.
+                        </label>
+                        <button
+                          className="primary"
+                          disabled={busy || !confirmed[j.id] || !identity[j.id]}
+                          onClick={() =>
+                            void run(async () => {
+                              await api(
+                                `/api/publications/${j.id}/approve`,
+                                json({
+                                  identityLabel: identity[j.id],
+                                  confirmed: true,
+                                }),
+                              );
+                            })
                           }
-                          maxLength={100}
-                        />
-                      </label>
-                      <label className="expert-check">
-                        <input
-                          type="checkbox"
-                          checked={confirmed[j.id] || false}
-                          onChange={(e) =>
-                            setConfirmed((s) => ({
-                              ...s,
-                              [j.id]: e.target.checked,
-                            }))
-                          }
-                        />
-                        Hedef hesabı, metni, görseli ve zamanı kontrol ettim;
-                        paylaşımı onaylıyorum.
-                      </label>
+                        >
+                          Paylaşımı onayla
+                        </button>
+                      </>
+                    )}
+                    {j.state === "queued" && (
                       <button
-                        className="primary"
-                        disabled={busy || !confirmed[j.id] || !identity[j.id]}
+                        className="secondary"
+                        disabled={busy}
                         onClick={() =>
                           void run(async () => {
                             await api(
-                              `/api/publications/${j.id}/approve`,
-                              json({
-                                identityLabel: identity[j.id],
-                                confirmed: true,
-                              }),
+                              `/api/publications/${j.id}/execute`,
+                              json({}),
                             );
                           })
                         }
                       >
-                        Paylaşımı onayla
+                        Zamanı geldiyse yürüt
                       </button>
-                    </>
-                  )}
-                  {j.state === "queued" && (
-                    <button
-                      className="secondary"
-                      disabled={busy}
-                      onClick={() =>
-                        void run(async () => {
-                          await api(
-                            `/api/publications/${j.id}/execute`,
-                            json({}),
-                          );
-                        })
-                      }
-                    >
-                      Zamanı geldiyse yürüt
-                    </button>
-                  )}
-                  {["draft", "queued", "preparing"].includes(j.state) && (
-                    <button
-                      className="secondary"
-                      disabled={busy}
-                      onClick={() =>
-                        void run(async () => {
-                          await api(
-                            `/api/publications/${j.id}/cancel`,
-                            json({}),
-                          );
-                        })
-                      }
-                    >
-                      İptal et
-                    </button>
-                  )}
-                  {[
-                    "draft",
-                    "cancelled",
-                    "failed",
-                    "missed",
-                    "verified",
-                  ].includes(j.state) && (
-                    <button
-                      className="secondary"
-                      disabled={busy}
-                      onClick={() =>
-                        void run(async () => {
-                          await api(`/api/publications/${j.id}`, {
-                            method: "DELETE",
-                          });
-                        })
-                      }
-                    >
-                      İş kaydını sil
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </article>
-        ))}
+                    )}
+                    {["draft", "queued", "preparing"].includes(j.state) && (
+                      <button
+                        className="secondary"
+                        disabled={busy}
+                        onClick={() =>
+                          void run(async () => {
+                            await api(
+                              `/api/publications/${j.id}/cancel`,
+                              json({}),
+                            );
+                          })
+                        }
+                      >
+                        İptal et
+                      </button>
+                    )}
+                    {[
+                      "draft",
+                      "cancelled",
+                      "failed",
+                      "missed",
+                      "verified",
+                    ].includes(j.state) && (
+                      <button
+                        className="secondary"
+                        disabled={busy}
+                        onClick={() =>
+                          void run(async () => {
+                            await api(`/api/publications/${j.id}`, {
+                              method: "DELETE",
+                            });
+                          })
+                        }
+                      >
+                        İş kaydını sil
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </article>
+          ))}
       </section>
-      <MetricsWorkspace company={company} />
+      <MetricsWorkspace company={company} user={user} />
     </div>
   );
 }
-function MetricsWorkspace({ company }: { company: Company }) {
-  const [rows, setRows] = useState<
-      {
-        id: string;
-        source_url: string;
-        measured_at: string;
-        values: Record<string, number>;
-      }[]
-    >([]),
-    [source, setSource] = useState(""),
-    [values, setValues] = useState({
-      impressions: 0,
-      clicks: 0,
-      messages: 0,
-      leads: 0,
-    }),
-    [error, setError] = useState(""),
-    [campaign, setCampaign] = useState(""),
-    [link, setLink] = useState("");
-  const refresh = () =>
-    api<typeof rows>(`/api/metrics?companyId=${company.id}`).then(setRows);
+function MetricsWorkspace({
+  company,
+  user,
+}: {
+  company: Company;
+  user: AuthUser;
+}) {
+  const [legacy, setLegacy] = useState<
+    {
+      id: string;
+      source_url: string;
+      measured_at: string;
+      values: Record<string, number>;
+    }[]
+  >([]);
   useEffect(() => {
-    void refresh().catch((e) => setError(e.message));
+    let valid = true;
+    void api<typeof legacy>(`/api/metrics?companyId=${company.id}`)
+      .then((rows) => {
+        if (valid) setLegacy(rows);
+      })
+      .catch(() => {});
+    return () => {
+      valid = false;
+    };
   }, [company.id]);
   return (
     <section className="card expert-panel">
-      <h2>Ölçülen performans</h2>
-      <p>
-        Platform panelinde veya işletmede gördüğünüz gerçek sayıları kaynak
-        bağlantısıyla kaydedin. Bu değerler API'den otomatik çekilmez.
-      </p>
-      {error && <p role="alert">{error}</p>}
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          try {
-            await api(
-              "/api/metrics",
-              json({
-                companyId: company.id,
-                sourceUrl: source,
-                measuredAt: new Date().toISOString(),
-                values,
-              }),
-            );
-            await refresh();
-          } catch (e) {
-            setError((e as Error).message);
-          }
-        }}
-      >
-        <label className="field">
-          Ölçüm / gönderi kaynak bağlantısı
-          <input
-            type="url"
-            required
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-          />
-        </label>
-        <div className="form-two">
-          {Object.entries({
-            impressions: "Gösterim",
-            clicks: "Tıklama",
-            messages: "Mesaj",
-            leads: "Teklif / talep",
-          }).map(([key, label]) => (
-            <label className="field" key={key}>
-              {label}
-              <input
-                type="number"
-                min={0}
-                max={1000000000}
-                value={values[key as keyof typeof values]}
-                onChange={(e) =>
-                  setValues((s) => ({ ...s, [key]: Number(e.target.value) }))
-                }
-              />
-            </label>
-          ))}
-        </div>
-        <button className="primary">Gerçek ölçümü kaydet</button>
-      </form>
-      {rows.slice(0, 10).map((r) => (
-        <article className="expert-item" key={r.id}>
-          <a href={r.source_url} target="_blank" rel="noreferrer">
-            Ölçüm kaynağı
-          </a>
-          <p>
-            {date(r.measured_at)} · {r.values.impressions} gösterim ·{" "}
-            {r.values.clicks} tıklama · {r.values.messages} mesaj ·{" "}
-            {r.values.leads} talep
-          </p>
-        </article>
-      ))}
-      <h3>Kampanya bağlantısı</h3>
-      <label className="field">
-        Kampanya adı
-        <input
-          value={campaign}
-          onChange={(e) => setCampaign(e.target.value)}
-          maxLength={100}
+      <Suspense fallback={<p role="status">Ölçümler açılıyor…</p>}>
+        <EditorialMetrics
+          company={company}
+          user={user}
+          platforms={editorialPlatforms}
+          initialTab="metric"
         />
-      </label>
-      <button
-        className="secondary"
-        onClick={() => {
-          try {
-            const u = new URL(company.website);
-            if (!["https:"].includes(u.protocol)) throw new Error();
-            u.searchParams.set("utm_source", "social");
-            u.searchParams.set("utm_medium", "social");
-            u.searchParams.set("utm_campaign", campaign);
-            setLink(u.href);
-          } catch {
-            setError("Şirketin HTTPS web adresini tamamlayın.");
-          }
-        }}
-      >
-        UTM bağlantısı oluştur
-      </button>
-      {link && (
-        <label className="field">
-          Hazırlanan bağlantı
-          <input readOnly value={link} onFocus={(e) => e.target.select()} />
-        </label>
+      </Suspense>
+      {legacy.length > 0 && (
+        <details>
+          <summary>Önceki ölçüm kayıtları ({legacy.length})</summary>
+          <p>
+            Eski kayıtların platform bilgisi yoktur; yeni ölçümlerle
+            birleştirilmez.
+          </p>
+          {legacy.map((r) => (
+            <article key={r.id}>
+              <a href={r.source_url} target="_blank" rel="noreferrer">
+                Ölçüm kaynağı
+              </a>
+              <p>
+                {date(r.measured_at)} · {r.values.impressions} gösterim ·{" "}
+                {r.values.clicks} tıklama · {r.values.messages} mesaj ·{" "}
+                {r.values.leads} talep
+              </p>
+            </article>
+          ))}
+        </details>
       )}
     </section>
   );

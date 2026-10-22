@@ -28,6 +28,8 @@ export const releaseFiles = [
   "companion/Baslat.cmd",
   "shared/computer-protocol.mjs",
   "shared/local-ai.mjs",
+  "shared/platform-catalog.mjs",
+  "shared/features.mjs",
   "shared/night-learning.mjs",
   "shared/social-expert.mjs",
   "shared/regional-expert.mjs",

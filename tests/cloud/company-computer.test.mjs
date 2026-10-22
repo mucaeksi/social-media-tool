@@ -60,6 +60,7 @@ before(async () => {
     "0010_company_computer.sql",
     "0011_local_ai.sql",
     "0012_expert_workspace.sql",
+    "0013_editorial_workspace.sql",
   ])
     for (const sql of (await readFile(`migrations/${name}`, "utf8"))
       .split(";")
@@ -224,14 +225,20 @@ test("Kimliği doğrulanmış yardımcı hesabı açar; kullanıcı/hesap/görü
           m.command.action === "close"
             ? { closed: true, profilePresent: true, loginVerified: false }
             : ["manual-login", "manual-status"].includes(m.command.action)
-            ? (manualForwarded = m, { manualLogin: true, manualRunning: true, noFrame: true, loginVerified: false })
-            : {
-                frame,
-                width: 1280,
-                height: 800,
-                profilePresent: true,
-                loginVerified: false,
-              },
+              ? ((manualForwarded = m),
+                {
+                  manualLogin: true,
+                  manualRunning: true,
+                  noFrame: true,
+                  loginVerified: false,
+                })
+              : {
+                  frame,
+                  width: 1280,
+                  height: 800,
+                  profilePresent: true,
+                  loginVerified: false,
+                },
       }),
     );
   });
@@ -239,7 +246,10 @@ test("Kimliği doğrulanmış yardımcı hesabı açar; kullanıcı/hesap/görü
   assert.equal(status.onlineDeviceId, device.id);
   assert.equal(status.companyTabs, false);
   assert.equal(status.normalLogin, false);
-  assert.equal((await command(accountId, { action: "manual-login" })).status, 409);
+  assert.equal(
+    (await command(accountId, { action: "manual-login" })).status,
+    409,
+  );
   assert.equal((await command(accountId, { action: "workspace" })).status, 409);
   const opened = await command(accountId, { action: "open" });
   assert.equal(opened.status, 200);
@@ -325,12 +335,20 @@ test("Kimliği doğrulanmış yardımcı hesabı açar; kullanıcı/hesap/görü
 });
 
 test("Normal giriş yetenek bildirimi, doğrulanmış şirket profili ve operatör kilidi ister; ekran/şifre taşınmaz", async () => {
-  agent.send(JSON.stringify({ type: "hello", capabilities: ["normal-login-v1"] }));
+  agent.send(
+    JSON.stringify({ type: "hello", capabilities: ["normal-login-v1"] }),
+  );
   for (let i = 0; i < 100; i++) {
-    if ((await (await request("/api/computer/status")).json()).normalLogin) break;
+    if ((await (await request("/api/computer/status")).json()).normalLogin)
+      break;
     await new Promise((r) => setTimeout(r, 10));
   }
-  const opened = await command(accountId, { action: "manual-login", url: "file:///outside", executablePath: "outside", profileScope: "account" });
+  const opened = await command(accountId, {
+    action: "manual-login",
+    url: "file:///outside",
+    executablePath: "outside",
+    profileScope: "account",
+  });
   assert.equal(opened.status, 200);
   const view = await opened.json();
   assert.equal(view.manualLogin, true);
@@ -339,17 +357,55 @@ test("Normal giriş yetenek bildirimi, doğrulanmış şirket profili ve operat�
   assert.deepEqual(manualForwarded.command, { action: "manual-login" });
   assert.equal(manualForwarded.account.companyId, companyId);
   assert.equal(manualForwarded.account.profileScope, "company");
-  assert.equal((await command(otherAccount, { action: "manual-login" })).status, 409);
-  assert.equal((await command(accountId, { action: "manual-login" }, "other")).status, 409);
-  assert.equal((await command(accountId, { action: "manual-login" }, "editor")).status, 403);
-  assert.equal((await command(accountId, { action: "manual-status", viewId: crypto.randomUUID() })).status, 410);
-  assert.equal((await command(accountId, { action: "manual-status", viewId: view.viewId })).status, 200);
+  assert.equal(
+    (await command(otherAccount, { action: "manual-login" })).status,
+    409,
+  );
+  assert.equal(
+    (await command(accountId, { action: "manual-login" }, "other")).status,
+    409,
+  );
+  assert.equal(
+    (await command(accountId, { action: "manual-login" }, "editor")).status,
+    403,
+  );
+  assert.equal(
+    (
+      await command(accountId, {
+        action: "manual-status",
+        viewId: crypto.randomUUID(),
+      })
+    ).status,
+    410,
+  );
+  assert.equal(
+    (await command(accountId, { action: "manual-status", viewId: view.viewId }))
+      .status,
+    200,
+  );
   const resumed = await command(accountId, { action: "open" });
   assert.equal(resumed.status, 200);
   const controlled = await resumed.json();
-  assert.notEqual(controlled.viewId, view.viewId, "Normal girişten sonra eski panel geçersizdir");
-  assert.equal((await command(accountId, { action: "type", viewId: view.viewId, text: "stale-fixture" })).status, 410);
-  assert.equal((await command(accountId, { action: "close", viewId: controlled.viewId })).status, 200);
+  assert.notEqual(
+    controlled.viewId,
+    view.viewId,
+    "Normal girişten sonra eski panel geçersizdir",
+  );
+  assert.equal(
+    (
+      await command(accountId, {
+        action: "type",
+        viewId: view.viewId,
+        text: "stale-fixture",
+      })
+    ).status,
+    410,
+  );
+  assert.equal(
+    (await command(accountId, { action: "close", viewId: controlled.viewId }))
+      .status,
+    200,
+  );
 });
 
 test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket bağlamı ve D1 geçmişi korunur", async () => {
@@ -589,30 +645,108 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
 });
 
 test("Gece planı yalnız yöneticiye ve seçili şirketin güncel onaylı kaynaklarına açılır", async () => {
-  const now = new Date().toISOString(), future = new Date(Date.now() + 86400000).toISOString();
-  for (const [company, name, until, state] of [[companyId, "approved", future, "approved"], [companyId, "expired", "2020-01-01", "approved"], [otherCompany, "other", future, "approved"], [companyId, "pending", future, "pending"]]) {
-    const id = crypto.randomUUID(), url = `https://company.org/${name}`;
-    await db.prepare("INSERT INTO research_sources(id,company_id,url,final_url,title,excerpt,content_hash,fetched_at,state) VALUES(?,?,?,?,?,?,?,?,?)").bind(id, company, url, url, name, "Kurgu kaynak", name, now, state).run();
-    await db.prepare("INSERT INTO research_facts(id,company_id,source_id,field,value,evidence,approved_by,approved_at,valid_until) VALUES(?,?,?,?,?,?,?,?,?)").bind(crypto.randomUUID(), company, id, "test", "Kurgu", "Kurgu", "admin", now, until).run();
+  const now = new Date().toISOString(),
+    future = new Date(Date.now() + 86400000).toISOString();
+  for (const [company, name, until, state] of [
+    [companyId, "approved", future, "approved"],
+    [companyId, "expired", "2020-01-01", "approved"],
+    [otherCompany, "other", future, "approved"],
+    [companyId, "pending", future, "pending"],
+  ]) {
+    const id = crypto.randomUUID(),
+      url = `https://company.org/${name}`;
+    await db
+      .prepare(
+        "INSERT INTO research_sources(id,company_id,url,final_url,title,excerpt,content_hash,fetched_at,state) VALUES(?,?,?,?,?,?,?,?,?)",
+      )
+      .bind(id, company, url, url, name, "Kurgu kaynak", name, now, state)
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO research_facts(id,company_id,source_id,field,value,evidence,approved_by,approved_at,valid_until) VALUES(?,?,?,?,?,?,?,?,?)",
+      )
+      .bind(
+        crypto.randomUUID(),
+        company,
+        id,
+        "test",
+        "Kurgu",
+        "Kurgu",
+        "admin",
+        now,
+        until,
+      )
+      .run();
   }
   let captured;
   const listener = (e) => {
     const m = JSON.parse(e.data);
     if (m.type !== "ai-command" || !m.input.action.startsWith("night-")) return;
     captured = m.input;
-    agent.send(JSON.stringify({ type: "ai-result", id: m.id, result: { ok: true, learning: { enabled: true, running: false, syncedAt: now, notes: [], attempts: [] } } }));
+    agent.send(
+      JSON.stringify({
+        type: "ai-result",
+        id: m.id,
+        result: {
+          ok: true,
+          learning: {
+            enabled: true,
+            running: false,
+            syncedAt: now,
+            notes: [],
+            attempts: [],
+          },
+        },
+      }),
+    );
   };
   agent.addEventListener("message", listener);
   try {
-    assert.equal((await request(`/api/computer/ai/night?companyId=${companyId}`, { role: "editor" })).status, 403);
-    assert.equal((await request(`/api/computer/ai/night?companyId=${companyId}`, { role: null })).status, 401);
-    const response = await request("/api/computer/ai/night", { method: "POST", body: { companyId, sources: [{ url: "https://unapproved.net/" }] } });
-    assert.equal(response.status, 200); assert.equal(captured.action, "night-sync");
-    assert.deepEqual(captured.sources.map((s) => s.url), ["https://company.org/approved"]);
-    assert.equal((await request(`/api/computer/ai/night?companyId=${crypto.randomUUID()}`)).status, 404);
-    assert.equal((await request("/api/computer/ai/night/review", { method: "POST", body: { companyId, noteId: crypto.randomUUID(), state: "approved" } })).status, 200);
-    assert.equal(captured.companyId, companyId); assert.equal(captured.action, "night-review");
-  } finally { agent.removeEventListener("message", listener); }
+    assert.equal(
+      (
+        await request(`/api/computer/ai/night?companyId=${companyId}`, {
+          role: "editor",
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await request(`/api/computer/ai/night?companyId=${companyId}`, {
+          role: null,
+        })
+      ).status,
+      401,
+    );
+    const response = await request("/api/computer/ai/night", {
+      method: "POST",
+      body: { companyId, sources: [{ url: "https://unapproved.net/" }] },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(captured.action, "night-sync");
+    assert.deepEqual(
+      captured.sources.map((s) => s.url),
+      ["https://company.org/approved"],
+    );
+    assert.equal(
+      (await request(`/api/computer/ai/night?companyId=${crypto.randomUUID()}`))
+        .status,
+      404,
+    );
+    assert.equal(
+      (
+        await request("/api/computer/ai/night/review", {
+          method: "POST",
+          body: { companyId, noteId: crypto.randomUUID(), state: "approved" },
+        })
+      ).status,
+      200,
+    );
+    assert.equal(captured.companyId, companyId);
+    assert.equal(captured.action, "night-review");
+  } finally {
+    agent.removeEventListener("message", listener);
+  }
 });
 
 test("Cihaz iptali bağlantıyı ve eski anahtarla yeniden bağlanmayı keser", async () => {

@@ -108,6 +108,41 @@ export async function executePublication(c, id) {
       if (!fact)
         fail(409, "Kaynak bilgisi eski veya değişmiş; yayın durduruldu.");
     }
+    for (const ref of snapshot.productRefs || []) {
+      const p = await c.env.DB.prepare(
+        "SELECT revision,data FROM editorial_records WHERE id=? AND company_id=? AND kind='product'",
+      )
+        .bind(ref.id, row.company_id)
+        .first();
+      if (
+        !p ||
+        p.revision !== ref.revision ||
+        JSON.parse(p.data).state !== "approved" ||
+        Date.parse(JSON.parse(p.data).validUntil) <= Date.now()
+      )
+        fail(
+          409,
+          "Üretimde kullanılan ürün kaynağı değişti; paylaşım durduruldu.",
+        );
+    }
+    if (snapshot.productId) {
+      const product = await c.env.DB.prepare(
+        "SELECT data,revision FROM editorial_records WHERE id=? AND company_id=? AND kind='product'",
+      )
+        .bind(snapshot.productId, row.company_id)
+        .first();
+      const p = product ? JSON.parse(product.data) : null;
+      if (
+        !p ||
+        p.state !== "approved" ||
+        product.revision !== snapshot.productRevision ||
+        Date.parse(p.validUntil) <= Date.now()
+      )
+        fail(
+          409,
+          "Ürün bilgi kartı geçersiz veya süresi dolmuş; paylaşım durduruldu.",
+        );
+    }
     await command({ action: "open" });
     await command({ action: "profile" });
     const media = snapshot.mediaId
@@ -261,6 +296,11 @@ export function registerPublications(app) {
       );
     const post = draft.posts.find((p) => p.platform === account.platform);
     if (!post) fail(400, "Taslakta bu platformun metni yok.");
+    if ((draft.gallery || []).length > 1)
+      fail(
+        400,
+        "Facebook pilotu tek görsel içindir. Carousel için elle paylaşım hazırlığını kullanın.",
+      );
     const text = [post.caption, post.hashtags.join(" ")]
       .filter(Boolean)
       .join("\n\n");
@@ -272,17 +312,67 @@ export function registerPublications(app) {
       scheduled > Date.now() + 30 * 86400000
     )
       fail(400, "Zamanlama en fazla 30 gün ileri olabilir.");
+    for (const ref of draft.productRefs || []) {
+      const row = await c.env.DB.prepare(
+        "SELECT revision,data FROM editorial_records WHERE id=? AND company_id=? AND kind='product'",
+      )
+        .bind(ref.id, draft.companyId)
+        .first();
+      if (
+        !row ||
+        row.revision !== ref.revision ||
+        JSON.parse(row.data).state !== "approved" ||
+        Date.parse(JSON.parse(row.data).validUntil) <= Date.now()
+      )
+        fail(
+          409,
+          "Üretimde kullanılan ürün bilgisi değişti veya süresi doldu. Taslağı yeniden inceleyin.",
+        );
+    }
+    const product = draft.productId
+      ? await c.env.DB.prepare(
+          "SELECT revision,data FROM editorial_records WHERE id=? AND company_id=? AND kind='product'",
+        )
+          .bind(draft.productId, draft.companyId)
+          .first()
+      : null;
+    if (
+      draft.productId &&
+      (!product ||
+        JSON.parse(product.data).state !== "approved" ||
+        Date.parse(JSON.parse(product.data).validUntil) <= Date.now())
+    )
+      fail(400, "Ürün bilgi kartını yeniden onaylayın.");
     const snapshot = {
+      productRevision: product?.revision || null,
       draftId: draft.id,
       post,
       text,
-      mediaId: draft.mediaId,
-      mediaFit: draft.mediaFit,
+      mediaId:
+        draft.platformMedia?.[account.platform] ||
+        draft.gallery?.[0]?.mediaId ||
+        draft.mediaId,
+      mediaFit: draft.platformFits?.[account.platform] || draft.mediaFit,
+      productId: draft.productId || null,
+      productRefs: draft.productRefs || [],
+      accountLabel: account.label,
       sourceRefs: draft.sourceRefs || [],
       profileUrl: account.profile_url,
       immediate: input.immediate,
     };
-    const fingerprint = await hash(JSON.stringify(snapshot));
+    // Labels and review metadata must not change the established content key.
+    const fingerprint = await hash(
+      JSON.stringify({
+        draftId: snapshot.draftId,
+        post: snapshot.post,
+        text: snapshot.text,
+        mediaId: snapshot.mediaId,
+        mediaFit: snapshot.mediaFit,
+        sourceRefs: snapshot.sourceRefs,
+        profileUrl: snapshot.profileUrl,
+        immediate: snapshot.immediate,
+      }),
+    );
     const now = new Date().toISOString();
     const existing = await c.env.DB.prepare(
       "SELECT * FROM publication_jobs WHERE id=?",

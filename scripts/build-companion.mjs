@@ -1,10 +1,21 @@
+import { STUDIO_VERSION } from "../shared/features.mjs";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { extensionFiles } from "./build-firefox-extension.mjs";
 
 // Keep the old helper's strict ZIP path format: the new extension sources are
 // data inside a companion JSON file, not new executable archive path types.
-const extensionSources = Object.fromEntries(await Promise.all(extensionFiles.map(async (file) => [file, await readFile(`firefox-extension/${file}`, "utf8")])));
-await writeFile("companion/extension-sources.json", JSON.stringify({ format: 1, files: extensionSources }));
+const extensionSources = Object.fromEntries(
+  await Promise.all(
+    extensionFiles.map(async (file) => [
+      file,
+      await readFile(`firefox-extension/${file}`, "utf8"),
+    ]),
+  ),
+);
+await writeFile(
+  "companion/extension-sources.json",
+  JSON.stringify({ format: 1, files: extensionSources }),
+);
 
 // Small, deterministic, uncompressed ZIP of an explicit public-source allowlist.
 // Device credentials and user profiles are never read by this build.
@@ -32,6 +43,11 @@ const contents = new Map(
     }),
   ),
 );
+if (
+  JSON.parse(contents.get("companion/package.json").toString()).version !==
+  STUDIO_VERSION
+)
+  throw new Error("Yardımcı sürümü özellik kaydıyla uyuşmuyor.");
 const version = sourceVersion(contents);
 contents.set(
   "companion/release.json",

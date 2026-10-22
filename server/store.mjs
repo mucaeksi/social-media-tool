@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { persistDraft } from "../worker/draft-store.mjs";
+import { d1Compat } from "./d1-compat.mjs";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
@@ -10,7 +13,16 @@ export function createStore(dataDir) {
     CREATE TABLE IF NOT EXISTS companies (id TEXT PRIMARY KEY, data TEXT NOT NULL, created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS media (id TEXT PRIMARY KEY, company_id TEXT NOT NULL REFERENCES companies(id) ON DELETE CASCADE, data TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS drafts (id TEXT PRIMARY KEY, company_id TEXT NOT NULL REFERENCES companies(id) ON DELETE CASCADE, data TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);`);
-  const decode = (row) => (row ? JSON.parse(row.data) : null);
+  db.exec(
+    readFileSync(
+      new URL("../migrations/0013_editorial_workspace.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  const decode = (row) => {
+    const data = row ? JSON.parse(row.data) : null;
+    return data?.deletedAt ? null : data;
+  };
   return {
     db,
     companies: () =>
@@ -48,29 +60,19 @@ export function createStore(dataDir) {
     drafts: (companyId) =>
       db
         .prepare(
-          "SELECT data FROM drafts WHERE company_id=? ORDER BY updated_at DESC",
+          "SELECT data FROM drafts WHERE company_id=? AND json_extract(data,'$.deletedAt') IS NULL ORDER BY updated_at DESC",
         )
         .all(companyId)
         .map(decode),
     draft: (id) =>
       decode(db.prepare("SELECT data FROM drafts WHERE id=?").get(id)),
-    saveDraft: (data, id = randomUUID()) => {
-      const old = decode(
-        db.prepare("SELECT data FROM drafts WHERE id=?").get(id),
-      );
-      const now = new Date().toISOString();
-      const draft = {
-        ...data,
-        id,
-        createdAt: old?.createdAt ?? now,
-        updatedAt: now,
-      };
-      db.prepare(
-        "INSERT INTO drafts (id,company_id,data,created_at,updated_at) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data,updated_at=excluded.updated_at",
-      ).run(id, data.companyId, JSON.stringify(draft), draft.createdAt, now);
-      return draft;
-    },
-    deleteDraft: (id) => db.prepare("DELETE FROM drafts WHERE id=?").run(id),
+    saveDraft: (data, id) => persistDraft(d1Compat(db), data, id),
+    deleteDraft: (id) =>
+      db
+        .prepare(
+          "UPDATE drafts SET data=json_set(data,'$.deletedAt',?,'$.revision',COALESCE(json_extract(data,'$.revision'),0)+1),updated_at=? WHERE id=?",
+        )
+        .run(new Date().toISOString(), new Date().toISOString(), id),
     close: () => db.close(),
   };
 }

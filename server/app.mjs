@@ -1,3 +1,9 @@
+import { Hono } from "hono";
+import { STUDIO_VERSION } from "../shared/features.mjs";
+import { Readable } from "node:stream";
+import { registerEditorial } from "../worker/editorial.mjs";
+import { validateDraftRelations } from "../worker/draft-store.mjs";
+import { d1Compat } from "./d1-compat.mjs";
 import express from "express";
 import { z } from "zod";
 import sharp from "sharp";
@@ -87,12 +93,73 @@ export function createApp({
     res.setHeader("Cache-Control", "no-store");
     next();
   });
-  app.use(express.json({ limit: "512kb" }));
+  app.use(express.json({ limit: "2mb" }));
+
+  const content = new Hono();
+  content.use("*", async (c, next) => {
+    c.set("store", store);
+    c.set("identity", { id: "local", role: "admin", local: true });
+    await next();
+  });
+  registerEditorial(content);
+  content.onError((e, c) =>
+    c.json(
+      {
+        error:
+          e instanceof z.ZodError
+            ? e.issues.map((v) => v.message).join("\n")
+            : e.status && e.status < 500
+              ? e.message
+              : "İşlem tamamlanamadı.",
+      },
+      e instanceof z.ZodError ? 400 : e.status || 500,
+    ),
+  );
+  app.use("/api/content", async (req, res, next) => {
+    try {
+      const response = await content.request(
+        `http://127.0.0.1${req.originalUrl}`,
+        {
+          method: req.method,
+          headers: { "content-type": "application/json" },
+          ...(!["GET", "HEAD"].includes(req.method) && req.body
+            ? { body: JSON.stringify(req.body) }
+            : {}),
+        },
+        {
+          DB: d1Compat(store.db),
+          LOCAL_CONTENT: true,
+          MEDIA_IO: {
+            remove: (m) => rm(path.join(mediaDir, m.file), { force: true }),
+            read: async (m, target) => {
+              let img = sharp(await readFile(path.join(mediaDir, m.file)));
+              if (target !== "original") {
+                const i = target.lastIndexOf("_"),
+                  p = platformMap[target.slice(0, i)];
+                img = img.resize(p.width, p.height, {
+                  fit: target.slice(i + 1),
+                  background: "#ffffff",
+                });
+              }
+              return { body: await img.jpeg({ quality: 88 }).toBuffer() };
+            },
+          },
+        },
+      );
+      res.status(response.status);
+      response.headers.forEach((v, k) => res.setHeader(k, v));
+      if (response.body) Readable.fromWeb(response.body).pipe(res);
+      else res.end();
+    } catch (e) {
+      next(e);
+    }
+  });
 
   app.get("/api/health", (_req, res) => {
     store.db.prepare("SELECT 1").get();
     res.json({
       ok: true,
+      version: STUDIO_VERSION,
       database: "sqlite",
       publishing: false,
       ai: "manual-chatgpt",
@@ -177,10 +244,14 @@ export function createApp({
     if (!draft) fail(404, "Taslak bulunamadı.");
     res.json(draft);
   });
-  const saveDraft = (req, res) => {
+  const saveDraft = async (req, res) => {
     const input = draftSchema.parse(req.body);
     requireCompany(store, input.companyId);
     requireMedia(store, input.mediaId, input.companyId);
+    await validateDraftRelations(store, d1Compat(store.db), input, {
+      id: "local",
+      role: "admin",
+    });
     validatePosts(input.posts, input.selected);
     if (req.params.id) {
       const previous = store.draft(req.params.id);
@@ -190,7 +261,7 @@ export function createApp({
     }
     res
       .status(req.params.id ? 200 : 201)
-      .json(store.saveDraft(input, req.params.id));
+      .json(await store.saveDraft(input, req.params.id));
   };
   app.post("/api/drafts", saveDraft);
   app.put("/api/drafts/:id", saveDraft);

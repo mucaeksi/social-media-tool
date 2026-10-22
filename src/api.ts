@@ -1,3 +1,11 @@
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+  }
+}
 export async function api<T>(
   url: string,
   options: RequestInit = {},
@@ -17,6 +25,7 @@ export async function api<T>(
     .catch(() => ({ error: "Sunucudan geçerli bir yanıt alınamadı." }));
   if (response.status === 401)
     window.dispatchEvent(new Event("studio:session-expired"));
-  if (!response.ok) throw new Error(data.error ?? "İşlem tamamlanamadı.");
+  if (!response.ok)
+    throw new ApiError(data.error ?? "İşlem tamamlanamadı.", response.status);
   return data as T;
 }

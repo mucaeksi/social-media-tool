@@ -1,3 +1,4 @@
+import { STUDIO_VERSION, LOCAL_MODEL_LABEL } from "../shared/features.mjs";
 import { useEffect, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { api } from "./api.ts";
@@ -34,6 +35,7 @@ export function LocalAIStatus({
 }: {
   onReady: (ready: boolean) => void;
 }) {
+  const [diagnostic, setDiagnostic] = useState("");
   const [status, setStatus] = useState<Status | null>(null),
     [error, setError] = useState(""),
     [pending, setPending] = useState(false);
@@ -83,7 +85,7 @@ export function LocalAIStatus({
   return (
     <section className="card local-ai-status" aria-label="Yerel AI durumu">
       <div className="ai-section-heading">
-        <strong>Bilgisayarınızda · Qwen3.5-9B · 4-bit</strong>
+        <strong>Bilgisayarınızda · {LOCAL_MODEL_LABEL}</strong>
         <span>
           {status
             ? labels[status.phase] || labels.unknown
@@ -92,14 +94,20 @@ export function LocalAIStatus({
       </div>
       <p>
         Yardımcı açılınca Ollama başlar ve model bellekte hazır tutulur.
-        Yardımcı kapanınca model ve ona ait Ollama süreci kapanır.
-        Cloudflare AI kotası kullanılmaz.
+        Yardımcı kapanınca model ve ona ait Ollama süreci kapanır. Cloudflare AI
+        kotası kullanılmaz.
       </p>
-      <p>9B / 4-bit model, 16 GB ekran kartında yaklaşık 7–10 GiB model VRAM hedefiyle ayarlanır. Gerçek ölçüm aşağıda gösterilir; ölçüm hedefi aşarsa model boşaltılır. Yeni model hazır olduktan sonra eski 4B ağırlıkları silinir; şirket hafızası ve hesap girişleri korunur.</p>
+      <p>
+        9B / 4-bit model, 16 GB ekran kartında yaklaşık 7–10 GiB model VRAM
+        hedefiyle ayarlanır. Gerçek ölçüm aşağıda gösterilir; ölçüm hedefi
+        aşarsa model boşaltılır. Yeni model hazır olduktan sonra eski 4B
+        ağırlıkları silinir; şirket hafızası ve hesap girişleri korunur.
+      </p>
       <p>
         İlk açılışta AI otomatik kurulur. Çalıştırıcı, model ve knowledge.sqlite
-        veritabanı çalıştırdığınız BAT dosyasının yanındaki ai klasöründe tutulur.
-        Şirket hafızası Cloudflare’de de korunur; mevcut hesap girişleri silinmez.
+        veritabanı çalıştırdığınız BAT dosyasının yanındaki ai klasöründe
+        tutulur. Şirket hafızası Cloudflare’de de korunur; mevcut hesap
+        girişleri silinmez.
       </p>
       {status?.progress != null && (
         <progress
@@ -109,8 +117,17 @@ export function LocalAIStatus({
         />
       )}
       {status?.stage && <p role="status">{status.stage}</p>}
-      {status?.memory && <p>Yerel hafıza: {status.memory.sources} kaynak, {status.memory.generations} taslak/yanıt · {(status.memory.bytes / 1024 ** 2).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} MB.
-        Kaynak metinleri onaylanmadan kesin şirket bilgisi olarak kullanılmaz.</p>}
+      {status?.memory && (
+        <p>
+          Yerel hafıza: {status.memory.sources} kaynak,{" "}
+          {status.memory.generations} taslak/yanıt ·{" "}
+          {(status.memory.bytes / 1024 ** 2).toLocaleString("tr-TR", {
+            maximumFractionDigits: 1,
+          })}{" "}
+          MB. Kaynak metinleri onaylanmadan kesin şirket bilgisi olarak
+          kullanılmaz.
+        </p>
+      )}
       {status && (
         <p>
           {status.runtime
@@ -161,6 +178,42 @@ export function LocalAIStatus({
           ? "Modeli yeniden doğrula"
           : "Yerel AI kurulumunu başlat"}
       </button>
+      <button
+        className="secondary"
+        onClick={() => {
+          const report = JSON.stringify(
+            {
+              surum: STUDIO_VERSION,
+              tarih: new Date().toISOString(),
+              model: LOCAL_MODEL_LABEL,
+              durum: status && labels[status.phase] ? status.phase : "unknown",
+              hata:
+                status?.code && /^[A-Z_]{1,60}$/.test(status.code)
+                  ? status.code
+                  : null,
+              ilerleme: status?.progress ?? null,
+              gpuBellekBayt: status?.runtime?.gpuBytes ?? null,
+              baglam: status?.runtime?.context ?? null,
+            },
+            null,
+            2,
+          );
+          setDiagnostic(report);
+          void navigator.clipboard?.writeText(report).catch(() => {});
+        }}
+      >
+        Sorun raporunu kopyala
+      </button>
+      {diagnostic && (
+        <label className="field">
+          Güvenli tanılama raporu
+          <textarea
+            readOnly
+            value={diagnostic}
+            onFocus={(e) => e.target.select()}
+          />
+        </label>
+      )}
       <small>
         Günde 50 üretim, kullanıcı başına saatte 10 istek. Yardımcı
         güncellenirken açık hesap ekranları ve AI işlemi bitene kadar beklenir.

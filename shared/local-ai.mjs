@@ -1,8 +1,10 @@
+import { platforms } from "./platform-catalog.mjs";
 import { SOCIAL_EXPERT_RULES } from "./social-expert.mjs";
 import { nightInput, validNightStatus } from "./night-learning.mjs";
 
-export const LOCAL_MODEL = "qwen3.5:9b";
-export const LOCAL_EXPERT_VERSION = "yerel-kktc-gece-v4";
+import { LOCAL_MODEL } from "./features.mjs";
+export { LOCAL_MODEL };
+export const LOCAL_EXPERT_VERSION = "yerel-kktc-kampanya-v5";
 export const LOCAL_AI_LIMITS = Object.freeze({
   imageBytes: 600000,
   wireChars: 900000,
@@ -12,53 +14,22 @@ export const LOCAL_AI_LIMITS = Object.freeze({
   dailyRequests: 50,
   hourlyRequests: 10,
 });
-export const localPlatforms = {
-  instagram: {
-    limit: 2200,
-    tags: 5,
-    guide: "Görsel odaklı güçlü açılış ve tek çağrı.",
-  },
-  facebook: {
-    limit: 63206,
-    tags: 2,
-    guide: "Topluluk/yerel bağlamda somut fayda.",
-  },
-  x: { limit: 280, tags: 2, guide: "Tek fikir; etiketler dahil 280 karakter." },
-  threads: { limit: 500, tags: 1, guide: "Doğal sohbet; gerçek bir soru." },
-  pinterest: {
-    limit: 500,
-    tags: 0,
-    guide: "Aranabilir ürün ve kullanım terimleri, açık başlık.",
-  },
-  youtube: {
-    limit: 5000,
-    tags: 3,
-    guide: "Başlık ve video açıklaması taslağı; video yapılmış gibi yazma.",
-  },
-  tiktok: {
-    limit: 2200,
-    tags: 4,
-    guide: "Kısa açılış ve fotoğraf/video anlatımı taslağı.",
-  },
-  linkedin: {
-    limit: 3000,
-    tags: 3,
-    guide: "Profesyonel kullanım ve iş faydası.",
-  },
-  tumblr: {
-    limit: 4000,
-    tags: 5,
-    guide: "Görsel hikâye, kısa başlık ve keşif etiketleri.",
-  },
-};
+export const localPlatforms = Object.fromEntries(
+  platforms.map((p) => [
+    p.id,
+    { limit: p.limit, tags: p.hashtags, guide: p.hint },
+  ]),
+);
 export const localErrors = {
   RUNTIME_MISSING:
     "AI çalıştırıcısı bulunamadı. Yerel AI kurulumu düğmesini kullanın.",
   INSTALL_FAILED:
     "Otomatik AI kurulumu tamamlanamadı. İnterneti ve kurulum klasöründeki boş alanı kontrol edip tekrar deneyin.",
-  PORT_IN_USE: "AI için ayrılmış yerel bağlantı başka bir süreçte kullanımda. Yardımcıyı kapatıp yeniden açın.",
+  PORT_IN_USE:
+    "AI için ayrılmış yerel bağlantı başka bir süreçte kullanımda. Yardımcıyı kapatıp yeniden açın.",
   MODEL_MISSING: "Küçük model henüz indirilmedi. Yerel AI kurulumunu başlatın.",
-  GPU_LIMIT: "Modelin bildirilen GPU belleği 10 GiB hedefini aştı; model boşaltıldı. Bağlam/bellek ayarları kontrol edilmeli.",
+  GPU_LIMIT:
+    "Modelin bildirilen GPU belleği 10 GiB hedefini aştı; model boşaltıldı. Bağlam/bellek ayarları kontrol edilmeli.",
   MODEL_CHANGED:
     "Modelin boyutu, özeti veya 4-bit biçimi doğrulanamadı. Kurulum düğmesiyle yeniden doğrulayın.",
   OFFLINE:
@@ -68,7 +39,8 @@ export const localErrors = {
     "Küçük model geçerli içerik hazırlayamadı. Önceki içerik korundu; daha kısa bir özetle tekrar deneyin.",
   CONTEXT_TOO_LONG:
     "Yerel modelin bağlam sınırı aşıldı. Özeti veya şirket hafızasını kısaltın; kaynak otomatik kesilmedi.",
-  CONTEXT_CHANGED: "İncelenmiş gece notları veya kaynak izinleri değişti. Önceki platformlarla karışmaması için yeni üretim başlatın.",
+  CONTEXT_CHANGED:
+    "İncelenmiş gece notları veya kaynak izinleri değişti. Önceki platformlarla karışmaması için yeni üretim başlatın.",
   FAILED: "Yerel AI işlemi tamamlanamadı. Mevcut içerik korundu.",
   CANCELLED: "Yerel AI üretimi iptal edildi. Mevcut içerik korundu.",
 };
@@ -79,7 +51,11 @@ export function localFail(code) {
 }
 export function localInput(input) {
   if (typeof input?.action === "string" && input.action.startsWith("night-")) {
-    try { return nightInput(input); } catch { localFail("FAILED"); }
+    try {
+      return nightInput(input);
+    } catch {
+      localFail("FAILED");
+    }
   }
   if (
     !input ||
@@ -206,20 +182,22 @@ export function validLocalResult(value) {
     (value.ok === false
       ? Object.hasOwn(localErrors, value.code)
       : value.ok === true &&
-        (value.learning ? validNightStatus(value.learning) : value.status
-          ? typeof value.status.phase === "string" &&
-            value.status.model === LOCAL_MODEL &&
-            (value.status.runtime == null ||
-              (typeof value.status.runtime.loaded === "boolean" &&
-                ["gpuBytes", "modelBytes", "context"].every(
-                  (key) =>
-                    value.status.runtime[key] === null ||
-                    (Number.isSafeInteger(value.status.runtime[key]) &&
-                      value.status.runtime[key] >= 0),
-                )))
-          : typeof value.answer === "string" &&
-            value.answer.length <= 12000 &&
-            Array.isArray(value.posts) &&
-            value.posts.length <= 9))
+        (value.learning
+          ? validNightStatus(value.learning)
+          : value.status
+            ? typeof value.status.phase === "string" &&
+              value.status.model === LOCAL_MODEL &&
+              (value.status.runtime == null ||
+                (typeof value.status.runtime.loaded === "boolean" &&
+                  ["gpuBytes", "modelBytes", "context"].every(
+                    (key) =>
+                      value.status.runtime[key] === null ||
+                      (Number.isSafeInteger(value.status.runtime[key]) &&
+                        value.status.runtime[key] >= 0),
+                  )))
+            : typeof value.answer === "string" &&
+              value.answer.length <= 12000 &&
+              Array.isArray(value.posts) &&
+              value.posts.length <= 9))
   );
 }

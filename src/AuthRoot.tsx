@@ -1,3 +1,4 @@
+import { forgetUser } from "./draftRecovery.ts";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowRight,
@@ -96,6 +97,7 @@ export default function AuthRoot() {
       const response = await fetch("/api/auth/logout", { method: "POST" });
       if (!response.ok && response.status !== 401)
         throw new Error("Çıkış yapılamadı. Yeniden deneyin.");
+      if (user) forgetUser(user.id);
       setUser(null);
       setError("");
       setPassword("");
@@ -113,6 +115,7 @@ export default function AuthRoot() {
   if (user)
     return (
       <App
+        key={user.id}
         user={user}
         onLogout={
           user.local
@@ -157,6 +160,7 @@ export default function AuthRoot() {
               "YouTube",
               "TikTok",
               "LinkedIn",
+              "Tumblr",
             ].map((name) => (
               <span key={name}>{name}</span>
             ))}

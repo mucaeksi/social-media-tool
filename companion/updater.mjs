@@ -86,10 +86,14 @@ export async function installDependencies(root) {
       ],
       {
         cwd: join(root, "companion"),
-        stdio: "ignore",
+        stdio: ["ignore", "ignore", "pipe"],
         windowsHide: true,
       },
     );
+    let diagnostic = "";
+    child.stderr?.on("data", (chunk) => {
+      diagnostic = (diagnostic + chunk.toString("utf8")).slice(-8192);
+    });
     const timer = setTimeout(() => {
       child.kill();
       reject(new Error("Bağımlılık kurulumu zaman aşımına uğradı."));
@@ -104,7 +108,15 @@ export async function installDependencies(root) {
         ? resolve()
         : reject(
             new Error(
-              "Bağımlılıklar kurulamadı; internet bağlantısını kontrol edin.",
+              /EACCES|EPERM/.test(diagnostic)
+                ? "Bağımlılıklar kurulamadı: klasör veya önbellek yazma izni yok (NPM_PERMISSION)."
+                : /ENOSPC/.test(diagnostic)
+                  ? "Bağımlılıklar kurulamadı: diskte boş alan yok (NPM_DISK_FULL)."
+                  : /CERT|certificate/i.test(diagnostic)
+                    ? "Bağımlılıklar kurulamadı: güvenli bağlantı sertifikası doğrulanamadı (NPM_TLS)."
+                    : /ECONN|ENOTFOUND|ETIMEDOUT|network/i.test(diagnostic)
+                      ? "Bağımlılıklar kurulamadı: ağ bağlantısını kontrol edin (NPM_NETWORK)."
+                      : `Bağımlılıklar kurulamadı (NPM_EXIT_${code}). Kurulum klasörünü ve Node.js sürümünü kontrol edin.`,
             ),
           );
     });

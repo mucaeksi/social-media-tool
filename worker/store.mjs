@@ -1,4 +1,8 @@
-const decode = (row) => (row ? JSON.parse(row.data) : null);
+import { persistDraft } from "./draft-store.mjs";
+const decode = (row) => {
+  const data = row ? JSON.parse(row.data) : null;
+  return data?.deletedAt ? null : data;
+};
 
 export function createCloudStore(db) {
   return {
@@ -48,7 +52,7 @@ export function createCloudStore(db) {
       (
         await db
           .prepare(
-            "SELECT data FROM drafts WHERE company_id=? ORDER BY updated_at DESC",
+            "SELECT data FROM drafts WHERE company_id=? AND json_extract(data,'$.deletedAt') IS NULL ORDER BY updated_at DESC",
           )
           .bind(id)
           .all()
@@ -57,26 +61,13 @@ export function createCloudStore(db) {
       decode(
         await db.prepare("SELECT data FROM drafts WHERE id=?").bind(id).first(),
       ),
-    saveDraft: async (data, id = crypto.randomUUID()) => {
-      const previous = decode(
-        await db.prepare("SELECT data FROM drafts WHERE id=?").bind(id).first(),
-      );
-      const now = new Date().toISOString();
-      const draft = {
-        ...data,
-        id,
-        createdAt: previous?.createdAt ?? now,
-        updatedAt: now,
-      };
-      await db
-        .prepare(
-          "INSERT INTO drafts(id,company_id,data,created_at,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data,updated_at=excluded.updated_at",
-        )
-        .bind(id, data.companyId, JSON.stringify(draft), draft.createdAt, now)
-        .run();
-      return draft;
-    },
+    saveDraft: (data, id) => persistDraft(db, data, id),
     deleteDraft: (id) =>
-      db.prepare("DELETE FROM drafts WHERE id=?").bind(id).run(),
+      db
+        .prepare(
+          "UPDATE drafts SET data=json_set(data,'$.deletedAt',?,'$.revision',COALESCE(json_extract(data,'$.revision'),0)+1),updated_at=? WHERE id=?",
+        )
+        .bind(new Date().toISOString(), new Date().toISOString(), id)
+        .run(),
   };
 }

@@ -1,42 +1,63 @@
-# Mimari ve kapsam
+# Mimari ve veri yerleşimi
 
-Sosyal Studio, sekiz platform için içerik hazırlayan Türkçe bir web uygulamasıdır. Üretim Cloudflare Workers, D1 ve R2 üzerinde çalışacak şekilde hazırlanmıştır; eski Node/SQLite sürümü yerel geliştirme için korunur. R2 etkin olmayan hesaplarda görseller de D1 üzerinde saklanır. Cloudflare dağıtımı ve kullanıcı adı/şifre girişi `docs/CLOUDFLARE.md` içinde açıklanır. Aşağıdaki yerel disk bilgileri Node sürümüne aittir. İlk geliştirme hedefi dört şirketi aynı panelden yönetebilmekti; mevcut sürüm 30 şirket profiline kadar izin verir. Her şirketin taslak listesi ve görselleri kendi kimliğiyle ilişkilidir. Bu ayrım çok kullanıcılı bir yetkilendirme sistemi değildir.
-
-## Veri akışı
-
-1. Kullanıcı şirketi seçer; marka adı, hedef kitle, anlatım dili ve anahtar kelimeler içerik hazırlığında kullanılır.
-2. Ana metin ve isteğe bağlı görsel girilir. JPEG, PNG ve WebP dosyaları en fazla 15 MB / 40 megapiksel olarak kabul edilir. Sunucu dosyanın gerçek içeriğini okur, yönünü düzeltir, üstverisini temizleyip JPEG olarak saklar.
-3. Temel şablon kaynak metni koruyup etiket ekler; yapay zekâ değildir. Cloudflare AI asistanı Qwen3 modeli ve şirket hafızasıyla danışma/ayrı platform içerikleri üretir; kullanıcı sonucu stüdyoya aktarır. Manuel ChatGPT seçeneğinde kullanıcı şirkete özel talimatı kendi hesabında çalıştırıp JSON yanıtını panele yapıştırır.
-4. İçe aktarılan JSON, seçili platformların her birini tam bir kez içermelidir. Hatalı yanıt mevcut taslağın üzerine yazılmaz. Kullanıcı başlıkları, metinleri, etiketleri ve görsel açıklamalarını düzenler.
-5. SQLite taslakları kalıcı olarak saklar. Görseller platforma uygun boyutta JPEG; metinler JSON olarak indirilir. JSON içindeki görsel yolları bu uygulamaya aittir; görseller ayrıca indirilmelidir.
+Sosyal Studio 1.8, dokuz platform için Türkçe içerik hazırlayan, şirket erişimleriyle ayrılmış bir paneldir. Üretim Cloudflare Workers, D1 ve R2 kullanır. Node/SQLite sürümü yerel geliştirme ve geçici testler içindir.
 
 ## Bileşenler
 
-| Dosya | Görev |
+| Bileşen | Sorumluluk |
 | --- | --- |
-| `src/App.tsx` | Türkçe şirket, içerik, taslak, ChatGPT aktarımı ve bağlantı bilgisi ekranları |
-| `server/app.mjs` | İstek doğrulama, şirket ve taslak işlemleri, görsel dönüştürme, dışa aktarma |
-| `server/store.mjs` | SQLite kalıcılığı ve şirket ilişkileri |
-| `server/platforms.mjs` | Platform ayarları, temel şablon, ChatGPT talimatı ve dışa aktarma uyarıları |
-| `scripts/dev.mjs` | Geliştirme sunucusu ile API sürecini birlikte çalıştırma |
-| `scripts/graph.mjs` | Graphify ile yerel kod grafı çıkarma |
+| `src/App.tsx`, `src/draftRecovery.ts` | Stüdyo, otomatik kayıt, sürüm çakışması ve kullanıcı/şirket kapsamlı kurtarma |
+| `src/DraftLibrary.tsx` | Arama, platform filtresi, sayfalama, arşiv, çöp kutusu ve sürüm geçmişi |
+| `src/StudioDetails.tsx` | Galeri, ürün/kampanya bağlantısı, içerik onayı ve platform kırpması |
+| `src/ContentWorkspace.tsx` | Kampanya, ürün, takvim, ölçüm, deney ve kalite karşılaştırması |
+| `src/BackupManager.tsx`, `shared/zip.mjs` | Bounded ZIP parçaları, bütünlük denetimi ve geri yükleme |
+| `src/media-worker.ts`, `src/prepareMedia.ts` | Tarayıcı işçisinde metadata temiz JPEG boyutları ve ilerleme |
+| `worker/draft-store.mjs` | D1/SQLite için ortak atomik sürüm kontrolü ve sınırlı geçmiş |
+| `worker/editorial.mjs`, `worker/content-backup.mjs` | Şirket kapsamlı içerik/medya işlemleri ve yedek akışı |
+| `worker/workspace-access.mjs` | Yönetici/editör ve şirket erişimi |
+| `worker/knowledge.mjs` | Kaynak toplama ve kanıtlı bilgi onayı |
+| `worker/social-ai.mjs`, `worker/local-ai.mjs` | Bulut ve şirket bilgisayarındaki model yolu |
+| `worker/generation-trace.mjs` | Gerçek istek süresi, model/rehber ve kaynak sürümü izi |
+| `worker/publications.mjs` | Facebook pilotunun onay, tek yürütme ve sonuç doğrulaması |
+| `companion/` | Taşınabilir Firefox/Ollama, cihaz bağlantısı ve güvenli yama |
+| `shared/platform-catalog.mjs`, `shared/features.mjs` | Ortak platform düzenleme kuralları ve sürüm/model kaydı |
 
-Node.js 24'ün yerleşik SQLite sürücüsü kullanılır. Veritabanı `data/studio.sqlite`; işlenmiş görseller `data/media/` altındadır. Başka bir veritabanı sunucusu, Docker, harici model ya da API anahtarı gerekmez. Veri dizini Git'e dahil edilmez. Yerel disk verileri şifreli bir sır kasası olarak tasarlanmamıştır; hesap şifresi ve belirteç kabul eden bir alan yoktur.
+## Taslak ve medya
 
-## Mevcut sınırlar
+Taslak sürümü JSON içinde tutulur. Güncelleme, sunucudaki sürümle aynı sürüm numarasını gerektirir. SQL güncellemesi koşulludur; eşzamanlı eski yazma 409 olur. Son beş sürüm, şirket başına toplam 100 geçmiş kaydı korunur. Silme önce çöp kutusuna taşır; kalıcı silme yöneticiye aittir.
 
-- Toplu otomatik yayınlama, OAuth bağlantıları, zamanlama ve analitik uygulanmadı. Cloudflare sürümünde yöneticiye özel, şirketlere ayrı hesap kayıtları ve deneysel uzak tarayıcı girişi vardır. [Doğrulanan kapsam ve sınırlar](HESAP_GIRISI.md).
-- ChatGPT hesabına uygulama içinden giriş yapılmaz; iframe, oturum çerezi kopyalama veya tarayıcı otomasyonu kullanılmaz. API olmadan seçilen yöntem manuel aktarım olduğundan tüm işlem otomatik değildir.
-- Görsel boyutlandırma, beyaz dolgu veya merkezden kırpmadır. Yapay zekâ rötuşu, video yükleme, video üretimi ve çok görselli gönderi bu sürümde yoktur. YouTube için metin ve kapak hazırlamak tek başına video yayını sağlamaz.
-- Karakter sınırları düzenleme yardımcısıdır. X'in ağırlıklı Unicode ve bağlantı hesabı yaklaşık gösterilir. Gerçek yayınlama eklenince her sağlayıcının güncel doğrulaması ayrıca gerekir.
-- Uygulama `127.0.0.1` üzerinde çalışır. Dış kaynak ve geçersiz Host başlıkları reddedilir. Cloudflare sürümünde HTTPS, şifre özetiyle giriş ve iptal edilebilir güvenli oturum çerezleri vardır. Yönetici ve editör rolleri, yöneticiye özel kullanıcı oluşturma API’si uygulanmıştır. Yetkili kullanıcılar aynı şirket alanını paylaşır; şirket bazında kullanıcı yetkisi sonraki aşamadır.
+Stüdyo en fazla 10 görselli hazırlık paketi, platforma özgü medya/kırpma ve ayrı alt açıklamaları tutar. Medya şirketle ilişkilidir. Yeni taslak yazılırken görsel ilişkisinin geçerliliği SQL yazmasında da denetlenir. Taslaklar, geçmiş, içerik kayıtları, yayınlar ve AI kullanımı kaldırılmakta olan görsele bağlanamaz. Kısmi dosya silmede temizleme durumu korunur; tekrar silme temizliği tamamlayabilir.
 
-## Gerçek yayınlama için sonraki geliştirme
+R2/D1 medya akışı özgün JPEG ve dokuz platform için sığdırma/kırpma boyutlarını saklar. Node sürümü aynı görsel boyutlarını Sharp ile yerelde üretir. Dosya türü/boyut sınırları, metadata temizliği ve şirket sahipliği korunur.
 
-Kullanıcı, geliştirici uygulaması yerine normal hesap oturumlarıyla ve yalnızca web panelinden çalışmayı seçti. Bu nedenle Cloudflare Browser Run + Live View ile insanın giriş yaptığı ayrı tarayıcı oturumları eklendi. Şirket–platform–hesap ilişkisi D1'de, çerezler AES-256-GCM ile şifreli saklanır; anahtar Worker secret'tır. Şifre ve doğrulama kodları uygulamanın veri modeline girmez. Bu yöntem platform erişimini veya kalıcı giriş garantisini sağlamaz. Instagram giriş ekranı gerçek Cloudflare tarayıcısıyla doğrulandı; X ilk denemede erişimi reddetti.
+## İçerik kayıtları
 
-Metin aktarımı, kullanıcının tıkladığı textarea/contenteditable alanına yazma ile sınırlıdır ve paylaş düğmesine basmaz. Toplu yayın için her sağlayıcıda gerçek hesaplarla test edilmiş yayın adımları, medya aktarımı, hedef sayfa/kanal doğrulaması, önizleme/onay, iş durumu, yeniden deneme ve yinelenen gönderi engeli gerekir. Başarı ancak gerçek gönderi kimliği/bağlantısı doğrulandığında kaydedilmelidir. API seçeneğine geçilirse resmi geliştirici uygulamaları, OAuth ve sağlayıcı izinleri ayrıca gerekir.
+`0013_editorial_workspace.sql`, mevcut veriyi silmeden `draft_versions`, `editorial_records`, tercihler, inceleme arşivleri, geri yükleme kayıtları, üretim izleri ve kısa süreli medya kullanım kayıtlarını ekler. Üretim verisi aynı D1 veritabanında kalır.
 
-## Doğrulama
+İçerik türleri kampanya, ürün, fikir, deney, düzeltme, ölçüm, model değerlendirmesi ve editoryal plandır. Tür başına şirket sınırı 100, kayıt başına sınır 16 KB'tır. Şirket ilişkileri sunucuda doğrulanır. Ürün ve örnek onayı yöneticiye aittir; ürün için kanıt/kaynak ve geçerlilik tarihi gerekir.
 
-`npm test` gerçek HTTP istekleri ve geçici SQLite veritabanıyla çalışır; sekiz görsel boyutunu, şirket ayrımını, JSON doğrulamasını, yeniden başlatmada kalıcılığı ve kaynak kısıtlarını sınar. `npm run test:e2e` ayrı bir geçici veri dizininde masaüstü ve mobil Türkçe kullanıcı akışlarını çalıştırır. Kullanıcının `data/` dizini bu testlerde kullanılmaz. `npm run build` TypeScript denetimi ve üretim derlemesidir. `npm run skills:verify` kaynak kopyalarının özetlerini denetler. Graphify grafı ve bütünlük kontrolü bu testlerin yerine geçmez.
+Editoryal takvim manuel plan ile yayın işini ayrı tutar. Tarih düzenlemek onaylı yayın işini değiştirmez. Ölçümler platform/gönderi/kampanya/varyant ve ölçüm penceresine bağlıdır. Boş değer sıfır sayılmaz; kümülatif anlık görüntüler toplanmaz.
+
+## AI bağlamı ve değerlendirme
+
+Cloudflare Gemma 4 ve özel yerel Qwen3.5:9b yolları vardır. Yerel model 4-bit, 16K bağlam ve mevcut GPU bellek ölçümüyle çalışır. Model/rehber sürümleri ortak kayıttan gelir; yeni rehber eski ara işlerle karıştırılmaz.
+
+Şirket hafızası, geçerli kaynak bilgileri ve geçerli onaylı ürün kartları referans verisidir. Şirket metni araç veya sistem talimatına dönüşmez. Görsel gözlemi yalnız şirkete ait medyadan hazırlanır. Onaylı editör örnekleri mevcut hafıza sınırları içinde kullanılabilir; model ağırlığı eğitimi yapılmaz.
+
+Üretim izi, sunucudaki toplam istek süresini ve kaynak özetini kaydeder; GPU süre ölçümü değildir. Karşılaştırma ekranında gerçek yanıt, kaynak/rehber sürümü, insan puanı, düzeltme süresi ve uydurma bilgi işareti tutulur. Gerçek donanım kalitesi emülatör sonucundan çıkarılmaz.
+
+Gece araştırması seçili platformları ve geçerliliği yaklaşan kaynakları önceliklendirir. İnsan onayı, toplam 20 deneme/gece, URL/gece tek deneme, 7 günlük plan ve 14 günlük not sınırları korunur. Site araştırmasındaki DNS/IP, yönlendirme, robots ve boyut/süre denetimleri değişmez.
+
+## Yedek ve geri yükleme
+
+İçerik yedeği manifest, kaynak paketleri ve JPEG'lerden oluşur; büyük indirme yaklaşık 12 MB içerikli parçalara ayrılır. ZIP yolları, boyutları, CRC ve SHA-256 denetlenir. Yedek alırken içerik düzenlemeleri durdurulmalıdır; parçalar ayrı isteklerle okunur.
+
+Geri yükleme yalnız yeni şirket kopyasına yapılır. Medya kimlikleri yeniden eşlenir. Kaynak/ürün onayları yeniden inceleme ister. Eski yayın ve hafıza kayıtları inceleme arşividir; yürütülmez veya otomatik model bağlamına girmez. Geri yükleme kesilirse aynı yedekle devam edilir. Oturumlar, cihaz anahtarları, Firefox profilleri, özel sohbetler, model dosyaları ve çalışan süreçler içerik ZIP'ine girmez.
+
+## Yayınlama ve sınırlar
+
+İlk otomatik adaptör Facebook Firefox pilotudur. Açık onay, sabit içerik/hesap, atomik tek yürütme, geçerli kaynaklar ve yeni gönderi bağlantısı kanıtı gerekir. Çoklu görsel pilotta reddedilir. Değişen ürün/kaynak sürümü işi durdurur. Belirsiz sonuç otomatik tekrarlanmaz.
+
+Resmî OAuth/API yayın servisi ve diğer platformların otomatik yayın adaptörleri bu yama kapsamında etkin değildir. Google İşletme Profili ve WhatsApp Business için manuel içerik planlanabilir. Kısa video alanı çekim/metin hazırlığıdır; video dosyası oluşturmaz.
+
+Şirket/kullanıcı/medya sınırları, D1 400 MB güvenli yazma eşiği, R2 bütçeleri, bulut AI rezervasyonu ve yerel AI sınırları korunur. Yerel testler ve emülatör gerçek hesap yayını, model/GPU başarısı veya ücretsiz sağlayıcı onayı sayılmaz.

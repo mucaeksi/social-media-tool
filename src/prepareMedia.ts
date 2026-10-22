@@ -1,6 +1,11 @@
 import type { Platform } from "./types.ts";
 
-function encode(canvas: HTMLCanvasElement, quality = 0.88): Promise<Blob> {
+function encode(
+  canvas: HTMLCanvasElement | OffscreenCanvas,
+  quality = 0.88,
+): Promise<Blob> {
+  if ("convertToBlob" in canvas)
+    return canvas.convertToBlob({ type: "image/jpeg", quality });
   return new Promise((resolve, reject) =>
     canvas.toBlob(
       (blob) =>
@@ -16,8 +21,56 @@ function encode(canvas: HTMLCanvasElement, quality = 0.88): Promise<Blob> {
 export async function prepareCloudMedia(
   file: File,
   platforms: Platform[],
-  options: { originalMaxSide?: number; originalQuality?: number } = {},
+  options: {
+    originalMaxSide?: number;
+    originalQuality?: number;
+    worker?: boolean;
+    onProgress?: (done: number, total: number) => void;
+  } = {},
 ): Promise<FormData> {
+  if (
+    options.worker !== false &&
+    typeof document !== "undefined" &&
+    typeof Worker === "function" &&
+    typeof OffscreenCanvas === "function"
+  ) {
+    return new Promise<FormData>((resolve, reject) => {
+      const worker = new Worker(new URL("./media-worker.ts", import.meta.url), {
+        type: "module",
+      });
+      worker.onmessage = (event) => {
+        const m = event.data;
+        if (m.type === "progress") options.onProgress?.(m.done, m.total);
+        else {
+          worker.terminate();
+          if (m.type === "error") reject(new Error(m.message));
+          else {
+            const form = new FormData();
+            for (const entry of m.entries)
+              form.append(entry.key, entry.blob, `${entry.key}.jpg`);
+            resolve(form);
+          }
+        }
+      };
+      worker.onerror = () => {
+        worker.terminate();
+        reject(
+          new Error(
+            "Görsel hazırlama işçisi başlatılamadı. Güncel tarayıcıyla yeniden deneyin.",
+          ),
+        );
+      };
+      worker.postMessage({
+        file,
+        platforms,
+        options: {
+          originalMaxSide: options.originalMaxSide,
+          originalQuality: options.originalQuality,
+          worker: false,
+        },
+      });
+    });
+  }
   if (typeof createImageBitmap !== "function")
     throw new Error(
       "Bu tarayıcı görsel hazırlamayı desteklemiyor. Güncel bir tarayıcı deneyin.",
@@ -56,10 +109,17 @@ export async function prepareCloudMedia(
     ];
     let total = 0;
     for (const target of targets) {
-      const canvas = document.createElement("canvas");
-      canvas.width = target.width;
-      canvas.height = target.height;
-      const ctx = canvas.getContext("2d");
+      const canvas =
+        typeof OffscreenCanvas === "function"
+          ? new OffscreenCanvas(target.width, target.height)
+          : Object.assign(document.createElement("canvas"), {
+              width: target.width,
+              height: target.height,
+            });
+      const ctx = canvas.getContext("2d") as
+        | CanvasRenderingContext2D
+        | OffscreenCanvasRenderingContext2D
+        | null;
       if (!ctx) throw new Error("Tarayıcı görsel hazırlamayı desteklemiyor.");
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -88,6 +148,7 @@ export async function prepareCloudMedia(
           "Hazırlanan görseller çok büyük. Daha küçük bir kaynak görsel deneyin.",
         );
       form.append(target.key, blob, `${target.key}.jpg`);
+      options.onProgress?.(targets.indexOf(target) + 1, targets.length);
     }
     return form;
   } finally {

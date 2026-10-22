@@ -1,6 +1,6 @@
 {
   "name": "sosyal-studio",
-  "version": "0.1.0",
+  "version": "1.8.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -19,12 +19,12 @@
     "cf:build": "node scripts/wrangler.mjs deploy --dry-run --outdir .worker-build",
     "cf:migrate:local": "node scripts/wrangler.mjs d1 migrations apply DB --local",
     "cf:dev": "node scripts/wrangler.mjs dev --local --ip 127.0.0.1 --port 8787",
-    "test:cloud": "npm run cf:build && node --test tests/cloud/*.test.mjs",
+    "test:cloud": "npm run cf:build && node --test --test-concurrency=2 tests/cloud/*.test.mjs",
     "test:e2e:cloud": "playwright test --config playwright.cloudflare.config.mjs",
     "test:deploy": "node --test tests/deploy/*.test.mjs",
     "test:e2e:d1": "STUDIO_MEDIA_STORAGE=d1 playwright test --config playwright.cloudflare.config.mjs",
     "test:e2e:auth": "STUDIO_AUTH=password playwright test --config playwright.auth.config.mjs",
-    "test:companion": "node --test --test-reporter=spec --test-reporter=./scripts/action-test-reporter.mjs --test-reporter-destination=stdout --test-reporter-destination=stdout tests/companion/*.test.mjs"
+    "test:companion": "node --test --test-concurrency=2 --test-reporter=spec --test-reporter=./scripts/action-test-reporter.mjs --test-reporter-destination=stdout --test-reporter-destination=stdout tests/companion/*.test.mjs"
   },
   "dependencies": {
     "@cloudflare/puppeteer": "1.4.0",

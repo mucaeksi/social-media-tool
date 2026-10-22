@@ -1,3 +1,5 @@
+import { approvedProductContext } from "./editorial.mjs";
+import { generationTrace } from "./generation-trace.mjs";
 import { z } from "zod";
 import { bodyLimit } from "hono/body-limit";
 import { selectedSchema } from "../shared/schemas.mjs";
@@ -60,7 +62,8 @@ export function registerLocalAI(app) {
     c.json((await call(c, { action: "cancel" })).status),
   );
   const nightCompany = async (c, id) => {
-    if (c.get("identity")?.role !== "admin") throw computerError(403, "Gece öğrenmesi için yönetici yetkisi gerekli.");
+    if (c.get("identity")?.role !== "admin")
+      throw computerError(403, "Gece öğrenmesi için yönetici yetkisi gerekli.");
     const profile = await c.get("store").company(id);
     if (!profile) throw computerError(404, "Şirket bulunamadı.");
     return profile;
@@ -68,20 +71,76 @@ export function registerLocalAI(app) {
   app.get("/api/computer/ai/night", async (c) => {
     const companyId = z.uuid().parse(c.req.query("companyId"));
     await nightCompany(c, companyId);
-    return c.json((await call(c, { action: "night-status", companyId })).learning);
+    return c.json(
+      (await call(c, { action: "night-status", companyId })).learning,
+    );
   });
   app.post("/api/computer/ai/night", async (c) => {
-    const input = z.object({ companyId: z.uuid(), enabled: z.boolean().optional() }).parse(await c.req.json());
+    const input = z
+      .object({ companyId: z.uuid(), enabled: z.boolean().optional() })
+      .parse(await c.req.json());
     const profile = await nightCompany(c, input.companyId);
-    const { results } = await c.env.DB.prepare("SELECT s.final_url AS url,MAX(f.valid_until) AS validUntil FROM research_facts f JOIN research_sources s ON s.id=f.source_id WHERE f.company_id=? AND s.state='approved' AND f.retired_at IS NULL AND f.valid_until>? GROUP BY s.final_url ORDER BY validUntil DESC LIMIT 11").bind(input.companyId, new Date().toISOString()).all();
-    return c.json((await call(c, { action: "night-sync", ...input, companyName: profile.name, sources: results })).learning);
+    const { results } = await c.env.DB.prepare(
+      "SELECT s.final_url AS url,MAX(f.valid_until) AS validUntil FROM research_facts f JOIN research_sources s ON s.id=f.source_id WHERE f.company_id=? AND s.state='approved' AND f.retired_at IS NULL AND f.valid_until>? GROUP BY s.final_url ORDER BY validUntil ASC LIMIT 11",
+    )
+      .bind(input.companyId, new Date().toISOString())
+      .all();
+    const now = new Date().toISOString();
+    const priorities = await c.env.DB.prepare(
+      "SELECT json_extract(p.data,'$.sourceUrl') url,CASE WHEN EXISTS(SELECT 1 FROM editorial_records ca WHERE ca.company_id=p.company_id AND ca.kind='campaign' AND json_extract(ca.data,'$.productId')=p.id AND json_extract(ca.data,'$.startsAt')<=? AND json_extract(ca.data,'$.endsAt')>=?) THEN 2 ELSE 1 END priority FROM editorial_records p WHERE p.company_id=? AND p.kind='product' AND json_extract(p.data,'$.state')='approved' AND json_extract(p.data,'$.validUntil')>? AND (p.updated_at>=? OR EXISTS(SELECT 1 FROM editorial_records ca WHERE ca.company_id=p.company_id AND ca.kind='campaign' AND json_extract(ca.data,'$.productId')=p.id AND json_extract(ca.data,'$.startsAt')<=? AND json_extract(ca.data,'$.endsAt')>=?))",
+    )
+      .bind(
+        new Date(Date.now() + 14 * 86400000).toISOString(),
+        now,
+        input.companyId,
+        now,
+        new Date(Date.now() - 7 * 86400000).toISOString(),
+        new Date(Date.now() + 14 * 86400000).toISOString(),
+        now,
+      )
+      .all();
+    const priorityByUrl = new Map(
+      priorities.results.map((p) => [p.url, p.priority]),
+    );
+    const preference = await c.env.DB.prepare(
+      "SELECT data FROM editorial_preferences WHERE company_id=?",
+    )
+      .bind(input.companyId)
+      .first();
+    const channels = preference
+      ? JSON.parse(preference.data).platforms
+      : profile.preferredPlatforms;
+    return c.json(
+      (
+        await call(c, {
+          action: "night-sync",
+          ...input,
+          companyName: profile.name,
+          sources: results.map((source) =>
+            priorityByUrl.has(source.url)
+              ? { ...source, priority: priorityByUrl.get(source.url) }
+              : source,
+          ),
+          ...(channels ? { platforms: channels } : {}),
+        })
+      ).learning,
+    );
   });
   app.post("/api/computer/ai/night/review", async (c) => {
-    const input = z.object({ companyId: z.uuid(), noteId: z.uuid(), state: z.enum(["approved", "rejected"]) }).parse(await c.req.json());
+    const input = z
+      .object({
+        companyId: z.uuid(),
+        noteId: z.uuid(),
+        state: z.enum(["approved", "rejected"]),
+      })
+      .parse(await c.req.json());
     await nightCompany(c, input.companyId);
-    return c.json((await call(c, { action: "night-review", ...input })).learning);
+    return c.json(
+      (await call(c, { action: "night-review", ...input })).learning,
+    );
   });
   const ask = async (c, suppliedInput, resumeJob) => {
+    const started = Date.now();
     const input = z
       .object({
         companyId: z.uuid(),
@@ -115,6 +174,8 @@ export function registerLocalAI(app) {
     )
       .bind(input.companyId)
       .all();
+    const products = await approvedProductContext(c.env.DB, input.companyId);
+
     const { name, handle, website, tone, audience, keywords, regional } =
       profile;
     const sourceRefs = await evidenceFor(
@@ -136,6 +197,7 @@ export function registerLocalAI(app) {
           keywords,
           regional,
           sourceRefs,
+          ...(products.length ? { products } : {}),
         },
         entries: rows,
         question: input.question,
@@ -313,7 +375,19 @@ export function registerLocalAI(app) {
         jobId,
       )
       .run();
+    const trace = await generationTrace(c.env.DB, {
+      id,
+      companyId: input.companyId,
+      model: LOCAL_MODEL,
+      expertVersion: LOCAL_EXPERT_VERSION,
+      sourceRefs,
+      mediaId: input.mediaId,
+      started,
+      products,
+      context: { profile: payload.profile, entries: payload.entries },
+    });
     return c.json({
+      trace,
       id,
       jobId,
       sourceRefs,

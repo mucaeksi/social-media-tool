@@ -1,8 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { ClaimReview } from "./ClaimReview.tsx";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { prepareCloudMedia } from "./prepareMedia.ts";
 import type { FormEvent } from "react";
 import { Modal } from "./Modal.tsx";
-import { api } from "./api.ts";
+import { api, ApiError } from "./api.ts";
+import {
+  rememberDraft,
+  recoverDraft,
+  forgetDraft,
+  workspacePreference,
+} from "./draftRecovery.ts";
+import { DraftLibrary } from "./DraftLibrary.tsx";
+import { StudioDetails } from "./StudioDetails.tsx";
+const ContentWorkspace = lazy(() =>
+  import("./ContentWorkspace.tsx").then((m) => ({
+    default: m.ContentWorkspace,
+  })),
+);
+import { downloadDraftPackage } from "./packages.ts";
 import { SocialAccounts } from "./SocialAccounts.tsx";
 import { SocialAI } from "./SocialAI.tsx";
 import {
@@ -151,7 +166,23 @@ export default function App({
     | "research"
     | "publications"
     | "settings"
-  >("studio");
+    | "content"
+  >(() => {
+    const p = new URL(location.href).searchParams.get("page");
+    return [
+      "studio",
+      "drafts",
+      "companies",
+      "connections",
+      "ai",
+      "research",
+      "publications",
+      "settings",
+      "content",
+    ].includes(p || "")
+      ? (p as "studio")
+      : "studio";
+  });
   const [loading, setLoading] = useState(true);
   const [fatalError, setFatalError] = useState("");
   const [busy, setBusy] = useState("");
@@ -169,6 +200,21 @@ export default function App({
     text: string;
     action: () => void;
   } | null>(null);
+  const [aiProposal, setAIProposal] = useState<AITurn | null>(null);
+  const [compact, setCompact] = useState(false);
+  const routeReady = useRef(false);
+  const [routeLoading, setRouteLoading] = useState(true);
+  const initialSearch = useRef(new URLSearchParams(location.search));
+  const [revision, setRevision] = useState(0);
+  const revisionRef = useRef(0);
+  revisionRef.current = revision;
+  const [details, setDetails] = useState<Partial<DraftInput>>({});
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [saveError, setSaveError] = useState("");
+  const [conflictDraft, setConflictDraft] = useState<Draft | null>(null);
+  const [recoveryMessage, setRecoveryMessage] = useState("");
+  const recoveredCompany = useRef("");
   const [draftId, setDraftId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("Yeni gönderi");
   const [text, setText] = useState("");
@@ -186,9 +232,15 @@ export default function App({
   const [prompt, setPrompt] = useState<string | null>(null);
   const [importDialog, setImportDialog] = useState(false);
   const [importText, setImportText] = useState("");
+  const [mediaProgress, setMediaProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [dropActive, setDropActive] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const company = companies.find((item) => item.id === companyId);
+  const editorEpoch = useRef(0);
+  const renderedEpoch = editorEpoch.current;
   const currentCompanyId = useRef(companyId);
   currentCompanyId.current = companyId;
   const activePost = posts.find((post) => post.platform === activePlatform);
@@ -219,7 +271,12 @@ export default function App({
       );
       setMediaStorage(health.storage ?? "local");
       setPlatforms(configs);
-      setCompanyId(list[0]?.id ?? "");
+      const requested =
+        new URL(location.href).searchParams.get("company") ||
+        workspacePreference(user.id);
+      setCompanyId(
+        list.find((c) => c.id === requested)?.id || list[0]?.id || "",
+      );
     } catch (error) {
       setFatalError((error as Error).message);
     } finally {
@@ -229,6 +286,37 @@ export default function App({
   useEffect(() => {
     void initialize();
   }, []);
+  useEffect(() => {
+    const changed = (event: Event) => {
+      const value = (
+        event as CustomEvent<{
+          companyId: string;
+          platforms: PlatformId[];
+          compact: boolean;
+        }>
+      ).detail;
+      if (!value) return;
+      setCompanies((rows) =>
+        rows.map((c) =>
+          c.id === value.companyId
+            ? { ...c, preferredPlatforms: value.platforms }
+            : c,
+        ),
+      );
+      if (currentCompanyId.current === value.companyId) {
+        setCompact(value.compact);
+        if (
+          !currentPayload.current.text &&
+          !currentPayload.current.posts.length
+        )
+          setSelected(value.platforms);
+      }
+    };
+    window.addEventListener("studio:preferences-changed", changed);
+    return () =>
+      window.removeEventListener("studio:preferences-changed", changed);
+  }, []);
+
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(
@@ -251,9 +339,11 @@ export default function App({
       return;
     }
     let valid = true;
-    api<Draft[]>(`/api/drafts?companyId=${companyId}`)
-      .then((list) => {
-        if (valid) setDrafts(list);
+    api<{ items: Draft[] }>(
+      `/api/content/drafts?companyId=${companyId}&limit=100`,
+    )
+      .then((result) => {
+        if (valid) setDrafts(result.items);
       })
       .catch((error) => {
         if (valid) setNotice({ text: error.message, error: true });
@@ -274,11 +364,17 @@ export default function App({
       setBusy("");
     }
   }
-  function reset() {
+  function reset(preserveRecovery = false) {
+    editorEpoch.current++;
+    if (companyId && !preserveRecovery) forgetDraft(user.id, companyId);
+    setRevision(0);
+    setDetails({});
+    setSaveError("");
+    setConflictDraft(null);
     setDraftId(null);
     setDraftName("Yeni gönderi");
     setText("");
-    setSelected(initialPlatforms);
+    setSelected(company?.preferredPlatforms || initialPlatforms);
     setPosts([]);
     setSourceRefs([]);
     setMedia(null);
@@ -307,6 +403,14 @@ export default function App({
       });
   }
   function changed() {
+    setDetails((d) => ({
+      ...d,
+      review: {
+        state: "draft",
+        owner: d.review?.owner || "",
+        comment: d.review?.comment || "",
+      },
+    }));
     setDirty(true);
     if (posts.length) setStale(true);
   }
@@ -315,6 +419,8 @@ export default function App({
   }
   function draftInput(): DraftInput {
     return {
+      ...details,
+      revision,
       sourceRefs,
       companyId,
       name: draftName,
@@ -325,16 +431,158 @@ export default function App({
       mediaFit,
     };
   }
-  async function saveCurrent() {
-    const saved = await api<Draft>(
-      draftId ? `/api/drafts/${draftId}` : "/api/drafts",
-      { method: draftId ? "PUT" : "POST", body: JSON.stringify(draftInput()) },
-    );
-    setDraftId(saved.id);
-    setDirty(false);
-    setDrafts((list) => [saved, ...list.filter((d) => d.id !== saved.id)]);
-    return saved;
+  const currentPayload = useRef<DraftInput>(draftInput());
+  currentPayload.current = draftInput();
+  const payloadKey = (value: DraftInput) =>
+    JSON.stringify({ ...value, revision: undefined });
+  async function saveCurrent(asCopy = false) {
+    if (savingRef.current)
+      throw new Error(
+        "Kaydetme sürüyor. Tamamlandıktan sonra yeniden deneyin.",
+      );
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError("");
+    const input: DraftInput = {
+      ...currentPayload.current,
+      revision: revisionRef.current,
+    };
+    if (asCopy) {
+      delete input.revision;
+      input.name = (input.name + " — kopya").slice(0, 120);
+      input.review = {
+        state: "draft",
+        owner: input.review?.owner || "",
+        comment: "",
+      };
+    }
+    const targetCompany = input.companyId;
+    try {
+      const saved = await api<Draft>(
+        !asCopy && draftId ? `/api/drafts/${draftId}` : "/api/drafts",
+        {
+          method: !asCopy && draftId ? "PUT" : "POST",
+          body: JSON.stringify(input),
+        },
+      );
+      if (targetCompany === currentCompanyId.current) {
+        setDraftId(saved.id);
+        setRevision(saved.revision || 0);
+        revisionRef.current = saved.revision || 0;
+        if (asCopy) {
+          setDraftName(saved.name);
+          setDetails((current) => ({ ...current, review: saved.review }));
+        }
+        const unchanged =
+          payloadKey(currentPayload.current) === payloadKey(input);
+        setDirty(!unchanged && !asCopy);
+        if (unchanged || asCopy) forgetDraft(user.id, targetCompany);
+        setDrafts((list) => [saved, ...list.filter((d) => d.id !== saved.id)]);
+        setConflictDraft(null);
+      }
+      return saved;
+    } catch (e) {
+      if (targetCompany === currentCompanyId.current) {
+        setSaveError((e as Error).message);
+        if (e instanceof ApiError && e.status === 409 && draftId) {
+          const latest = await api<Draft>(`/api/drafts/${draftId}`).catch(
+            () => null,
+          );
+          if (targetCompany === currentCompanyId.current)
+            setConflictDraft(latest);
+        }
+      }
+      throw e;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   }
+  useEffect(() => {
+    if (!companyId) return;
+    workspacePreference(user.id, companyId);
+    if (dirty && !rememberDraft(user.id, draftId, currentPayload.current))
+      setSaveError(
+        "Bu sekmede kurtarma kaydı tutulamadı. Taslağı sunucuya kaydedin veya paketi indirin.",
+      );
+  }, [companyId, draftId, dirty, JSON.stringify(currentPayload.current)]);
+  useEffect(() => {
+    if (!dirty || !companyId || isBusy || saving || saveError || conflictDraft)
+      return;
+    const timer = setTimeout(() => {
+      void saveCurrent().catch(() => {});
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [
+    dirty,
+    companyId,
+    isBusy,
+    saving,
+    saveError,
+    conflictDraft,
+    JSON.stringify(currentPayload.current),
+  ]);
+  useEffect(() => {
+    if (!companyId || recoveredCompany.current === companyId) return;
+    recoveredCompany.current = companyId;
+    const recovery = recoverDraft(user.id, companyId);
+    if (recovery) {
+      const d = recovery.input;
+      setDraftId(recovery.draftId);
+      setRevision(d.revision || 0);
+      setDraftName(d.name);
+      setText(d.text);
+      setSelected(d.selected);
+      setPosts(d.posts);
+      setSourceRefs(d.sourceRefs || []);
+      setMediaFit(d.mediaFit);
+      setDetails(d);
+      setDirty(true);
+      setRecoveryMessage(
+        "Bu sekmedeki kaydedilmemiş çalışma geri getirildi. Sunucudaki sürüm kontrol edilerek kaydedilecek.",
+      );
+      if (d.mediaId)
+        void api<Media>(`/api/media/${d.mediaId}`)
+          .then((image) => {
+            if (
+              currentCompanyId.current === companyId &&
+              image.companyId === companyId
+            )
+              setMedia(image);
+          })
+          .catch(() => {
+            if (currentCompanyId.current === companyId)
+              setSaveError(
+                "Kurtarılan görsele erişilemiyor. Görseli yeniden seçin.",
+              );
+          });
+    } else {
+      void api<{ platforms: PlatformId[]; compact: boolean }>(
+        `/api/content/preferences?companyId=${companyId}`,
+      )
+        .then((p) => {
+          if (currentCompanyId.current === companyId) {
+            setCompact(p.compact);
+            if (
+              !currentPayload.current.text &&
+              !currentPayload.current.posts.length
+            )
+              setSelected(p.platforms);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [companyId, user.id]);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (companyId && !savingRef.current) save();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  });
   function save() {
     void run("save", async () => {
       await saveCurrent();
@@ -402,8 +650,14 @@ export default function App({
       });
     });
   }
-  function applyAI(turn: AITurn) {
-    guard(
+  function applyAI(turn: AITurn, reviewed = false) {
+    if (posts.length && !reviewed) {
+      setAIProposal(turn);
+      return;
+    }
+    const choose = (action: () => void) =>
+      reviewed ? action() : guard(action);
+    choose(
       () =>
         void run("ai-apply", async () => {
           if (
@@ -427,6 +681,19 @@ export default function App({
               "AI görseli veya seçili şirket değişti. Aktarım yapılmadı.",
             );
           reset();
+          setDetails({
+            originalPosts: turn.posts,
+            productRefs: turn.trace?.products || [],
+            generation: {
+              turnId: turn.id,
+              model: turn.model || "",
+              expertVersion: turn.expertVersion || "",
+              sourceVersion: turn.trace?.sourceVersion || "",
+              ...(turn.trace?.durationMs !== undefined
+                ? { durationMs: turn.trace.durationMs }
+                : {}),
+            },
+          });
           setSourceRefs(turn.sourceRefs || []);
           setMedia(image);
           setText(turn.question);
@@ -454,6 +721,14 @@ export default function App({
         post.platform === activePlatform ? { ...post, [field]: value } : post,
       ),
     );
+    setDetails((d) => ({
+      ...d,
+      review: {
+        state: "draft",
+        owner: d.review?.owner || "",
+        comment: d.review?.comment || "",
+      },
+    }));
     setDirty(true);
   }
   async function upload(file?: File) {
@@ -469,42 +744,60 @@ export default function App({
       return;
     }
     await run("upload", async () => {
-      const payload = cloud ? await prepareCloudMedia(file, platforms) : file;
+      setMediaProgress({ done: 0, total: 19 });
+      const payload = cloud
+        ? await prepareCloudMedia(file, platforms, {
+            onProgress: (done, total) => setMediaProgress({ done, total }),
+          })
+        : file;
       const uploaded = await api<Media>(`/api/media?companyId=${companyId}`, {
         method: "POST",
         headers: cloud ? {} : { "Content-Type": file.type },
         body: payload,
       });
+      if (uploaded.companyId !== currentCompanyId.current) return;
       setMedia(uploaded);
+      setMediaProgress(null);
       changed();
       setNotice({
         text: "Görsel hazır. Platform boyutları önizlemede uygulanır.",
       });
     });
+    setMediaProgress(null);
   }
-  function openDraft(draft: Draft) {
-    guard(
-      () =>
-        void run("open", async () => {
-          const image = draft.mediaId
-            ? await api<Media>(`/api/media/${draft.mediaId}`)
-            : null;
-          setDraftId(draft.id);
-          setDraftName(draft.name);
-          setText(draft.text);
-          setSelected(draft.selected);
-          setPosts(draft.posts);
-          setSourceRefs(draft.sourceRefs || []);
-          setPostRevision((v) => v + 1);
-          setMedia(image);
-          setMediaFit(draft.mediaFit);
-          setActivePlatform(draft.selected[0]);
-          setDirty(false);
-          setStale(false);
-          setSource("saved");
-          setPage("studio");
-        }),
-    );
+  async function loadDraft(draft: Draft, navigate = true) {
+    const epoch = editorEpoch.current;
+    const image = draft.mediaId
+      ? await api<Media>(`/api/media/${draft.mediaId}`)
+      : null;
+    if (
+      draft.companyId !== currentCompanyId.current ||
+      epoch !== editorEpoch.current
+    )
+      return;
+    editorEpoch.current++;
+    setRevision(draft.revision || 0);
+    setDetails(draft);
+    setSaveError("");
+    setDraftId(draft.id);
+    setDraftName(draft.name);
+    setText(draft.text);
+    setSelected(draft.selected);
+    setPosts(draft.posts);
+    setSourceRefs(draft.sourceRefs || []);
+    setPostRevision((v) => v + 1);
+    setMedia(image);
+    setMediaFit(draft.mediaFit);
+    setActivePlatform(draft.selected[0]);
+    setDirty(false);
+    setStale(false);
+    setSource("saved");
+    if (navigate) setPage("studio");
+  }
+  function openDraft(draft: Draft, skipGuard = false, navigate = true) {
+    const choose = (action: () => void) =>
+      skipGuard ? action() : guard(action);
+    choose(() => void run("open", () => loadDraft(draft, navigate)));
   }
   function exportDraft() {
     void run("export", async () => {
@@ -523,6 +816,79 @@ export default function App({
       });
     });
   }
+  useEffect(() => {
+    if (loading || routeReady.current) return;
+    routeReady.current = true;
+    const id = initialSearch.current.get("draft");
+    if (companyId && id && !recoverDraft(user.id, companyId))
+      void api<Draft>(`/api/drafts/${id}`)
+        .then((d) => {
+          if (d.companyId === currentCompanyId.current)
+            return loadDraft(d, false);
+          else
+            setNotice({
+              text: "Taslak seçili şirkete ait değil.",
+              error: true,
+            });
+        })
+        .catch((e) => setNotice({ text: e.message, error: true }))
+        .finally(() => setRouteLoading(false));
+    else setRouteLoading(false);
+  }, [loading, companyId]);
+  useEffect(() => {
+    if (loading || routeLoading || !companyId || !routeReady.current) return;
+    const u = new URL(location.href);
+    u.searchParams.set("company", companyId);
+    u.searchParams.set("page", page);
+    if (draftId) u.searchParams.set("draft", draftId);
+    else u.searchParams.delete("draft");
+    if (u.href !== location.href) history.pushState({}, "", u);
+  }, [loading, routeLoading, companyId, page, draftId]);
+  useEffect(() => {
+    const pop = () => {
+      const u = new URL(location.href),
+        id = u.searchParams.get("company"),
+        target = u.searchParams.get("page") || "studio";
+      if (!id || !companies.some((c) => c.id === id)) return;
+      if (
+        dirty &&
+        !window.confirm(
+          "Kaydedilmemiş çalışma bu sekmede korunuyor. Bağlantıdaki ekrana geçilsin mi?",
+        )
+      )
+        return;
+      const d = u.searchParams.get("draft");
+      if (id !== companyId || !d) reset(true);
+      setCompanyId(id);
+      if (d) {
+        setRouteLoading(true);
+        void api<Draft>(`/api/drafts/${d}`)
+          .then((value) => {
+            if (value.companyId === id) return loadDraft(value, false);
+          })
+          .catch((e) => setNotice({ text: e.message, error: true }))
+          .finally(() => setRouteLoading(false));
+      }
+      if (
+        [
+          "studio",
+          "drafts",
+          "companies",
+          "connections",
+          "ai",
+          "research",
+          "publications",
+          "settings",
+          "content",
+        ].includes(target)
+      )
+        setPage(target as typeof page);
+    };
+    window.addEventListener("popstate", pop);
+    return () => window.removeEventListener("popstate", pop);
+  }, [companies, companyId, dirty]);
+  const previewId = details.platformMedia?.[activePlatform] || media?.id;
+  const previewFit = details.platformFits?.[activePlatform] || mediaFit;
   const canPrepare = Boolean(
     company && text.trim() && selected.length && !isBusy,
   );
@@ -530,6 +896,7 @@ export default function App({
     { id: "studio", name: "İçerik stüdyosu", icon: PenLine },
     { id: "ai", name: "AI asistanı", icon: Sparkles },
     { id: "drafts", name: "Taslaklar", icon: Layers3 },
+    { id: "content", name: "İçerik planı", icon: FileText },
     { id: "companies", name: "Şirketler", icon: Building2 },
     { id: "connections", name: "Hesap bağlantıları", icon: Link2 },
     { id: "research", name: "KKTC ve kaynaklar", icon: FileText },
@@ -539,6 +906,7 @@ export default function App({
   const pageTitles = {
     studio: "İçerik stüdyosu",
     drafts: "Taslaklar",
+    content: "İçerik planı",
     companies: "Şirketler",
     connections: "Hesap bağlantıları",
     ai: "AI asistanı",
@@ -547,7 +915,7 @@ export default function App({
     settings: "Ekip ve ayarlar",
   };
 
-  if (loading || fatalError)
+  if (loading || routeLoading || fatalError)
     return (
       <div className="loading-screen">
         <div className="logo-mark">
@@ -571,7 +939,176 @@ export default function App({
     );
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${compact ? "compact-mode" : ""}`}>
+      {company && (
+        <div className="workspace-save-status" role="status">
+          <strong>{company.name}</strong>
+          <span>{draftName}</span>
+          <span>
+            {saving
+              ? "Kaydediliyor…"
+              : saveError
+                ? "Kayıt kontrol edilmeli"
+                : dirty
+                  ? "Değişiklikler bu sekmede korunuyor"
+                  : draftId
+                    ? "Sunucu kaydı güncel"
+                    : "Yeni taslak"}
+          </span>
+          {dirty && (
+            <button
+              className="secondary"
+              disabled={isBusy || saving}
+              onClick={save}
+            >
+              Kaydet · Ctrl/Cmd+S
+            </button>
+          )}
+        </div>
+      )}
+      {recoveryMessage && (
+        <div className="recovery-banner" role="status">
+          {recoveryMessage}
+          <button onClick={() => setRecoveryMessage("")}>Kapat</button>
+        </div>
+      )}
+      {saveError && (
+        <div className="recovery-banner error" role="alert">
+          {saveError}
+          <button
+            onClick={() => {
+              setSaveError("");
+              save();
+            }}
+          >
+            Yeniden kaydet
+          </button>
+          <button
+            onClick={() =>
+              void run("copy", async () => {
+                await saveCurrent(true);
+              })
+            }
+          >
+            Kopya kaydet
+          </button>
+        </div>
+      )}
+      {aiProposal && (
+        <Modal
+          title="AI düzenlemelerini karşılaştır"
+          wide
+          onClose={() => setAIProposal(null)}
+        >
+          <p>
+            Yeni platform metinlerini onayladığınızda mevcut paket değişir.
+            Kaynaklar ve görsel yeni yanıttan alınır.
+          </p>
+          {aiProposal.posts?.map((p) => (
+            <div className="form-two" key={p.platform}>
+              <label className="field">
+                {p.platform} · mevcut
+                <textarea
+                  readOnly
+                  value={
+                    posts.find((old) => old.platform === p.platform)?.caption ||
+                    ""
+                  }
+                />
+              </label>
+              <label className="field">
+                {p.platform} · yeni
+                <textarea readOnly value={p.caption} />
+              </label>
+            </div>
+          ))}
+          <div className="modal-actions">
+            <button className="secondary" onClick={() => setAIProposal(null)}>
+              Vazgeç
+            </button>
+            <button
+              className="primary"
+              onClick={() => {
+                const proposal = aiProposal;
+                setAIProposal(null);
+                applyAI(proposal, true);
+              }}
+            >
+              Yeni paketi stüdyoya aktar
+            </button>
+          </div>
+        </Modal>
+      )}
+      {conflictDraft && (
+        <Modal
+          title="Taslak sürümlerini karşılaştır"
+          wide
+          onClose={() => setConflictDraft(null)}
+        >
+          <p>
+            Çalışmanız korunuyor. Güncel sürümü açabilir veya kendi çalışmanızı
+            ayrı kaydedebilirsiniz.
+          </p>
+          <div className="form-two">
+            <label className="field">
+              Sizin metniniz
+              <textarea readOnly value={text} />
+            </label>
+            <label className="field">
+              Sunucudaki metin
+              <textarea readOnly value={conflictDraft.text} />
+            </label>
+          </div>
+          <details>
+            <summary>Platform düzenlemelerini karşılaştır</summary>
+            <pre>
+              {JSON.stringify(
+                { sizin: posts, sunucu: conflictDraft.posts },
+                null,
+                2,
+              )}
+            </pre>
+          </details>
+          <div className="modal-actions">
+            <button
+              className="secondary"
+              onClick={() => {
+                const d = conflictDraft;
+                setConflictDraft(null);
+                setDirty(false);
+                setDraftId(d.id);
+                setRevision(d.revision || 0);
+                setDetails(d);
+                setDraftName(d.name);
+                setText(d.text);
+                setPosts(d.posts);
+                setSelected(d.selected);
+                setSourceRefs(d.sourceRefs || []);
+                setMediaFit(d.mediaFit);
+                setSaveError("");
+                forgetDraft(user.id, companyId);
+                if (d.mediaId)
+                  void api<Media>(`/api/media/${d.mediaId}`).then(setMedia);
+                else setMedia(null);
+              }}
+            >
+              Sunucudaki sürümü aç
+            </button>
+            <button
+              className="primary"
+              disabled={saving}
+              onClick={() =>
+                void run("copy", async () => {
+                  await saveCurrent(true);
+                })
+              }
+            >
+              Çalışmamı kopya kaydet
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {mobileMenu && (
         <button
           className="mobile-overlay"
@@ -733,7 +1270,9 @@ export default function App({
                       ? "Her şirketin kimliği, anlatımı ve içerikleri kendi alanında."
                       : page === "ai"
                         ? "Markanızın bilgileriyle düşünün, platformlara uygun içerik hazırlayın."
-                        : "Şirketinizi seçin, sosyal hesaplarınıza uzak tarayıcıdan giriş yapın."}
+                        : page === "content"
+                          ? "Kampanyaları planlayın, ürün bilgilerini doğrulayın ve sonuçları izleyin."
+                          : "Şirketinizi seçin, sosyal hesaplarınıza uzak tarayıcıdan giriş yapın."}
               </p>
             </div>
             <div className="company-picker">
@@ -874,6 +1413,16 @@ export default function App({
                         </span>
                       </div>
                     </div>
+                    {mediaProgress && (
+                      <p role="status">
+                        Görsel hazırlanıyor: {mediaProgress.done}/
+                        {mediaProgress.total}{" "}
+                        <progress
+                          value={mediaProgress.done}
+                          max={mediaProgress.total}
+                        />
+                      </p>
+                    )}
                     <div
                       className={`upload-zone ${dropActive ? "drag-active" : ""} ${media ? "has-media" : ""}`}
                       onDragOver={(e) => {
@@ -1140,6 +1689,58 @@ export default function App({
                   </section>
                 </aside>
               </div>
+              {company && (
+                <StudioDetails
+                  key={company.id}
+                  company={company}
+                  user={user}
+                  platforms={platforms}
+                  draftId={draftId}
+                  disabled={isBusy}
+                  details={details}
+                  posts={posts}
+                  sourceText={text}
+                  media={media}
+                  activePlatform={activePlatform}
+                  onMedia={(m) => {
+                    setMedia(m);
+                    changed();
+                  }}
+                  onChange={(value) => {
+                    if (
+                      currentCompanyId.current !== company.id ||
+                      editorEpoch.current !== renderedEpoch
+                    )
+                      return;
+                    setDetails((current) => ({
+                      ...current,
+                      ...value,
+                      ...(!value.review &&
+                      ["approved", "planned"].includes(
+                        current.review?.state || "",
+                      )
+                        ? {
+                            review: {
+                              state: "draft",
+                              owner: current.review?.owner || "",
+                              comment: current.review?.comment || "",
+                            },
+                          }
+                        : {}),
+                    }));
+                    setDirty(true);
+                  }}
+                  onUpload={upload}
+                  cloud={cloud}
+                />
+              )}
+              {company && posts.length > 0 && (
+                <ClaimReview
+                  companyId={company.id}
+                  sourceRefs={sourceRefs}
+                  posts={posts}
+                />
+              )}
               <section className="card results-card">
                 <div className="card-heading">
                   <div>
@@ -1370,9 +1971,9 @@ export default function App({
                             <div className="preview-image-wrap">
                               <img
                                 src={mediaPath(
-                                  media.id,
+                                  previewId!,
                                   activePlatform,
-                                  mediaFit,
+                                  previewFit,
                                 )}
                                 alt={
                                   activePost.alt ||
@@ -1398,12 +1999,18 @@ export default function App({
                             <label htmlFor="media-fit">Boyutlandırma</label>
                             <select
                               id="media-fit"
-                              value={mediaFit}
+                              value={previewFit}
                               disabled={!media || isBusy}
                               onChange={(e) => {
-                                setMediaFit(
-                                  e.target.value as "contain" | "cover",
-                                );
+                                setDetails((d) => ({
+                                  ...d,
+                                  platformFits: {
+                                    ...d.platformFits,
+                                    [activePlatform]: e.target.value as
+                                      | "contain"
+                                      | "cover",
+                                  },
+                                }));
                                 setDirty(true);
                               }}
                             >
@@ -1418,7 +2025,7 @@ export default function App({
                           {media && (
                             <a
                               className="secondary download-image"
-                              href={`${mediaPath(media.id, activePlatform, mediaFit)}&download=1`}
+                              href={`${mediaPath(previewId!, activePlatform, previewFit)}&download=1`}
                               download
                             >
                               <ArrowDownToLine size={15} /> Görseli indir
@@ -1438,6 +2045,28 @@ export default function App({
                   </>
                 )}
                 <div className="save-bar">
+                  <button
+                    className="secondary"
+                    disabled={!company || saving || isBusy}
+                    onClick={() =>
+                      void run("package", async () => {
+                        const d = await saveCurrent();
+                        await downloadDraftPackage(d);
+                      })
+                    }
+                  >
+                    Metin ve görselleri ZIP indir
+                  </button>
+                  {aiEnabled && (
+                    <button
+                      className="secondary"
+                      disabled={isBusy}
+                      onClick={() => setPage("ai")}
+                    >
+                      Seçili içerikle AI asistanını aç
+                    </button>
+                  )}
+
                   <div>
                     <span className={dirty ? "unsaved-dot" : "saved-dot"} />
                     <span>
@@ -1562,112 +2191,39 @@ export default function App({
                 </button>
               </div>
             </>
-          ) : page === "drafts" ? (
-            <>
-              <div className="section-toolbar">
-                <span>
-                  {company?.name} · {drafts.length} kayıtlı taslak
-                </span>
-                <button
-                  className="primary"
-                  disabled={isBusy}
-                  onClick={() =>
-                    guard(() => {
-                      reset();
-                      setPage("studio");
-                    })
-                  }
-                >
-                  <Plus size={17} /> Yeni gönderi
-                </button>
-              </div>
-              {!drafts.length ? (
-                <section className="card empty-page">
-                  <Layers3 size={40} />
-                  <h2>Fikirlerinize burada yer var.</h2>
-                  <p>
-                    Kaydettiğiniz taslaklar seçili şirket altında listelenir.
-                  </p>
-                  <button
-                    className="secondary"
-                    onClick={() => setPage("studio")}
-                  >
-                    İçerik stüdyosuna git <ArrowRight size={16} />
-                  </button>
-                </section>
-              ) : (
-                <div className="draft-list">
-                  {drafts.map((draft) => (
-                    <article key={draft.id} className="card draft-card">
-                      <div className="draft-thumb">
-                        {draft.mediaId ? (
-                          <img src={mediaPath(draft.mediaId)} alt="" />
-                        ) : (
-                          <FileText size={25} />
-                        )}
-                      </div>
-                      <div className="draft-details">
-                        <h2>{draft.name}</h2>
-                        <p>{draft.text || "Kaynak metin eklenmedi."}</p>
-                        <div>
-                          <span>{compactDate(draft.updatedAt)}</span>
-                          <span className="draft-platforms">
-                            {draft.selected.map((id) => (
-                              <span
-                                key={id}
-                                title={platforms.find((p) => p.id === id)?.name}
-                                style={{ color: platformColors[id] }}
-                              >
-                                <PlatformIcon id={id} size={14} />
-                              </span>
-                            ))}
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        className="secondary"
-                        disabled={isBusy}
-                        onClick={() => openDraft(draft)}
-                      >
-                        Düzenle <ArrowUpRight size={15} />
-                      </button>
-                      <button
-                        className="icon-button danger"
-                        disabled={isBusy}
-                        aria-label={`${draft.name} taslağını sil`}
-                        onClick={() =>
-                          setConfirm({
-                            title: "Taslak silinsin mi?",
-                            text: `“${draft.name}” kaydı kalıcı olarak silinir.`,
-                            action: () => {
-                              if (draft.id === draftId && dirty) {
-                                setNotice({
-                                  text: "Önce açık taslağın değişikliklerini kaydedin veya yeni gönderiye geçin.",
-                                  error: true,
-                                });
-                                return;
-                              }
-                              void run("delete-draft", async () => {
-                                await api(`/api/drafts/${draft.id}`, {
-                                  method: "DELETE",
-                                });
-                                setDrafts((list) =>
-                                  list.filter((d) => d.id !== draft.id),
-                                );
-                                if (draft.id === draftId) reset();
-                                setNotice({ text: "Taslak silindi." });
-                              });
-                            },
-                          })
-                        }
-                      >
-                        <Trash2 size={17} />
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </>
+          ) : page === "drafts" && company ? (
+            <DraftLibrary
+              company={company}
+              platforms={platforms}
+              user={user}
+              onOpen={(d) => openDraft(d)}
+              onNew={() =>
+                guard(() => {
+                  reset();
+                  setPage("studio");
+                })
+              }
+            />
+          ) : page === "content" && company ? (
+            <Suspense fallback={<p role="status">İçerik planı açılıyor…</p>}>
+              <ContentWorkspace
+                key={company.id}
+                company={company}
+                user={user}
+                platforms={platforms}
+                onOpen={(d) => openDraft(d)}
+                onBrief={(brief) =>
+                  guard(() => {
+                    reset();
+                    setText(brief.text);
+                    setDetails(brief.details);
+                    setSelected(brief.selected);
+                    setDirty(true);
+                    setPage("studio");
+                  })
+                }
+              />
+            </Suspense>
           ) : page === "research" && company ? (
             <ResearchWorkspace key={company.id} company={company} user={user} />
           ) : page === "publications" && company ? (
@@ -1692,6 +2248,7 @@ export default function App({
               cloud={cloud}
               localAvailable={companyComputer}
               initialText={text}
+              initialSelected={selected}
               initialMedia={media}
               onApply={applyAI}
             />
@@ -1778,6 +2335,22 @@ export default function App({
             <button className="secondary" onClick={() => setConfirm(null)}>
               Vazgeç
             </button>
+            {confirm.title === "Kaydedilmemiş değişiklikler var" && (
+              <button
+                className="primary"
+                disabled={saving || isBusy}
+                onClick={() => {
+                  const action = confirm.action;
+                  void run("save-and-go", async () => {
+                    await saveCurrent();
+                    setConfirm(null);
+                    action();
+                  });
+                }}
+              >
+                Kaydet ve devam et
+              </button>
+            )}
             <button
               className="primary"
               onClick={() => {

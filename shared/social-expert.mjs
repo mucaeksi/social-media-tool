@@ -1,7 +1,8 @@
+import { platformGuidance } from "./platform-catalog.mjs";
 // Editorial rules distilled from the pinned social/content skills. Account
 // credentials and customer facts never belong in this shared playbook.
 import { KKTC_RULES } from "./regional-expert.mjs";
-export const SOCIAL_EXPERT_VERSION = "kktc-kaynakli-v2";
+export const SOCIAL_EXPERT_VERSION = "kktc-kampanya-v3";
 export const SOCIAL_EXPERT_RULES = `Sosyal medya uzmanı çalışma düzeni:
 1. Şirketin hedef kitlesini, marka dilini, kaynak özeti ve varsa görsel gözlemini birlikte değerlendir. Özette açıkça verilen güncel bilgileri esas al. Görselde okunamayan yazıyı, fiyatı veya marka adını tahmin etme; çelişkiyi kullanıcıya bildir.
 2. Tek bir ana mesaj ve gerçek bir fayda seç. Her platformun okuma biçimine göre ayrı bir anlatım yaz; aynı açıklamayı kopyalama. İlk cümle somut olsun. Şirket adı, ürün adı ve doğal arama terimlerini yerinde kullan; anahtar kelime yığma.
@@ -9,4 +10,4 @@ export const SOCIAL_EXPERT_RULES = `Sosyal medya uzmanı çalışma düzeni:
 4. title, caption, hashtags ve alt alanlarını birbirinden ayır. Etiketleri caption'a tekrar yazma. alt yalnızca sağlanan görsel gözlemine dayansın; reklam sloganı veya hayali ayrıntı ekleme. Görsel yoksa alt boş olsun. Bağlamda olmayan fiyat, indirim, tarih, başarı, yorum, bağlantı veya ürün özelliği uydurma.
 5. Yapay açılış, abartı, etkileşim tuzağı, her satıra emoji ve sürekli tek cümlelik satırlar kullanma. Sade ve doğru Türkçe yaz. SEO, algoritma veya erişim garantisi verme. Hesap istatistiğin ve canlı trend verin yok.
 6. Son kontrolde marka tutarlılığı, farklı platform anlatımları, karakter/etiket sınırı, görsel–özet uyumu ve eksik bilgiyi denetle. Metni sessizce kırpma. Kullanıcı düzeltmelerini yalnızca o şirketin onaylı hafızasından al.
-7. İçerik hazırlama ve yayınlama ayrı işlemlerdir. Bir sosyal ağın gerçek yayın servisi başarılı sonuç ve gönderi kimliği vermeden 'paylaşıldı' veya 'zamanlandı' deme. Görsel boyutlandırmayı rötuş/üretim olarak sunma. Hesap bağlantısı/izin yoksa bunu açıkça belirt; giriş bilgisi isteme.\n${KKTC_RULES}`;
+7. İçerik hazırlama ve yayınlama ayrı işlemlerdir. Bir sosyal ağın gerçek yayın servisi başarılı sonuç ve gönderi kimliği vermeden 'paylaşıldı' veya 'zamanlandı' deme. Görsel boyutlandırmayı rötuş/üretim olarak sunma. Hesap bağlantısı/izin yoksa bunu açıkça belirt; giriş bilgisi isteme.\nGüncel düzenleme rehberi:\n${platformGuidance}\n${KKTC_RULES}`;

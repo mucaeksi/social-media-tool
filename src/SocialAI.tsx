@@ -15,7 +15,11 @@ import { LocalAIStatus } from "./LocalAIStatus.tsx";
 import { NightLearning } from "./NightLearning.tsx";
 import { LocalAIJobs } from "./LocalAIJobs.tsx";
 import { FirefoxConnection } from "./FirefoxConnection.tsx";
-import { firefoxQuestion, firefoxRequest, firefoxTarget } from "./firefoxBridge.ts";
+import {
+  firefoxQuestion,
+  firefoxRequest,
+  firefoxTarget,
+} from "./firefoxBridge.ts";
 import type { FirefoxBinding, FirefoxPage } from "./firefoxBridge.ts";
 import { api } from "./api.ts";
 import type {
@@ -38,6 +42,19 @@ type Memory = {
   createdAt: string;
 };
 export type AITurn = {
+  trace?: {
+    model: string;
+    expertVersion: string;
+    sourceVersion: string;
+    durationMs: number;
+    modelDigest: string | null;
+    products?: {
+      id: string;
+      revision: number;
+      sourceUrl: string;
+      validUntil: string;
+    }[];
+  };
   sourceRefs?: SourceRef[];
   id: string;
   companyId: string;
@@ -81,6 +98,7 @@ export function SocialAI({
   cloud,
   localAvailable = false,
   initialText,
+  initialSelected,
   initialMedia,
   onApply,
 }: {
@@ -90,6 +108,7 @@ export function SocialAI({
   cloud: boolean;
   localAvailable?: boolean;
   initialText: string;
+  initialSelected?: PlatformId[];
   initialMedia?: Media | null;
   onApply: (turn: AITurn) => void;
 }) {
@@ -106,7 +125,7 @@ export function SocialAI({
     [question, setQuestion] = useState(initialText);
   const [mode, setMode] = useState<"chat" | "posts">("posts"),
     [selected, setSelected] = useState<PlatformId[]>(
-      platforms.map((p) => p.id),
+      initialSelected?.length ? initialSelected : platforms.map((p) => p.id),
     );
   const [attachment, setAttachment] = useState<Media | null>(
     initialMedia?.companyId === company.id ? initialMedia : null,
@@ -123,6 +142,20 @@ export function SocialAI({
   const memoryTitle = useRef<HTMLInputElement>(null),
     replyEnd = useRef<HTMLDivElement>(null);
   const admin = user.role === "admin";
+  useEffect(() => {
+    if (initialSelected?.length) return;
+    let valid = true;
+    void api<{ platforms: PlatformId[] }>(
+      `/api/content/preferences?companyId=${company.id}`,
+    )
+      .then((p) => {
+        if (valid) setSelected(p.platforms);
+      })
+      .catch(() => {});
+    return () => {
+      valid = false;
+    };
+  }, [company.id]);
   async function refresh() {
     const [data, status] = await Promise.all([
       api<{ memory: Memory[]; turns: AITurn[] }>(
@@ -184,8 +217,14 @@ export function SocialAI({
       try {
         let requestQuestion = question;
         if (engine === "local" && includeFirefox) {
-          if (!activeFirefox) throw new Error("Bu şirkete ait Firefox sekmesini bağlayın veya sekme ekleme seçimini kaldırın.");
-          const result = await firefoxRequest<{ page: FirefoxPage }>("read", firefoxTarget(activeFirefox));
+          if (!activeFirefox)
+            throw new Error(
+              "Bu şirkete ait Firefox sekmesini bağlayın veya sekme ekleme seçimini kaldırın.",
+            );
+          const result = await firefoxRequest<{ page: FirefoxPage }>(
+            "read",
+            firefoxTarget(activeFirefox),
+          );
           requestQuestion = firefoxQuestion(question, result.page);
         }
         const turn = await api<AITurn>(
@@ -218,12 +257,24 @@ export function SocialAI({
   }
   async function prepareInFirefox(post: Post) {
     await run(async () => {
-      if (!activeFirefox || activeFirefox.platform !== post.platform) throw new Error("Taslağın platformuna ait şirket sekmesini bağlayın.");
-      const { page } = await firefoxRequest<{ page: FirefoxPage }>("read", firefoxTarget(activeFirefox));
+      if (!activeFirefox || activeFirefox.platform !== post.platform)
+        throw new Error("Taslağın platformuna ait şirket sekmesini bağlayın.");
+      const { page } = await firefoxRequest<{ page: FirefoxPage }>(
+        "read",
+        firefoxTarget(activeFirefox),
+      );
       if (!page.canPrepare) throw new Error(page.reason);
-      const text = [post.caption, post.hashtags.join(" ")].filter(Boolean).join("\n\n");
-      await firefoxRequest("prepare", { ...firefoxTarget(activeFirefox), snapshotId: page.id, text });
-      setNotice("Firefox araç çubuğundaki Sosyal Studio simgesini açıp hedefi ve taslağı onaylayın. Metin yalnız doğrulanan hedefin boş alanına yerleştirilir. Son paylaşımı Firefox'ta siz yaparsınız; henüz yayın yapılmadı.");
+      const text = [post.caption, post.hashtags.join(" ")]
+        .filter(Boolean)
+        .join("\n\n");
+      await firefoxRequest("prepare", {
+        ...firefoxTarget(activeFirefox),
+        snapshotId: page.id,
+        text,
+      });
+      setNotice(
+        "Firefox araç çubuğundaki Sosyal Studio simgesini açıp hedefi ve taslağı onaylayın. Metin yalnız doğrulanan hedefin boş alanına yerleştirilir. Son paylaşımı Firefox'ta siz yaparsınız; henüz yayın yapılmadı.",
+      );
     });
   }
   async function upload(file?: File) {
@@ -292,9 +343,9 @@ export function SocialAI({
         </p>
         <small>
           Şirket hafızası modelin ağırlıklarını değiştirmez. Yanıtları inceleyip
-          düzenleyin. Görsel tanıma içeriği anlamaya yardımcı olur. Canlı
-          hesap analitiği ve görsel rötuş bu asistanda yoktur. Yerel AI'a
-          Firefox eklentisiyle seçtiğiniz sekmenin anlık metnini ekleyebilirsiniz.
+          düzenleyin. Görsel tanıma içeriği anlamaya yardımcı olur. Canlı hesap
+          analitiği ve görsel rötuş bu asistanda yoktur. Yerel AI'a Firefox
+          eklentisiyle seçtiğiniz sekmenin anlık metnini ekleyebilirsiniz.
         </small>
       </section>
       {!cloud && (
@@ -322,10 +373,32 @@ export function SocialAI({
           </select>
         </label>
       )}
-      {engine === "local" && <LocalAIStatus onReady={setLocalReady} />}
-      {engine === "local" && user.role === "admin" && <NightLearning key={`night-${company.id}`} companyId={company.id} />}
+      {engine === "local" && (
+        <>
+          <LocalAIStatus onReady={setLocalReady} />
+          <p>
+            Seçili {selected.length} platform. Yerel modelin bağlamı 16K ile
+            sınırlıdır; uzun özet ve hafızada daha az platform seçin. Şirket ve
+            istek metni:{" "}
+            {new TextEncoder()
+              .encode(JSON.stringify({ company, question, entries }))
+              .length.toLocaleString("tr-TR")}{" "}
+            bayt (token ölçümü değildir).
+          </p>
+        </>
+      )}
+      {engine === "local" && user.role === "admin" && (
+        <NightLearning key={`night-${company.id}`} companyId={company.id} />
+      )}
       {cloud && admin && engine === "local" && (
-        <FirefoxConnection key={`firefox-${company.id}`} companyId={company.id} companyName={company.name} disabled={busy} modelReady={localReady} onBinding={setFirefox} />
+        <FirefoxConnection
+          key={`firefox-${company.id}`}
+          companyId={company.id}
+          companyName={company.name}
+          disabled={busy}
+          modelReady={localReady}
+          onBinding={setFirefox}
+        />
       )}
       {engine === "local" && (
         <LocalAIJobs
@@ -492,7 +565,11 @@ export function SocialAI({
                               bağlantıları bölümünden açabilirsiniz.
                             </p>
                             {activeFirefox?.platform === post.platform && (
-                              <button className="secondary" disabled={busy} onClick={() => void prepareInFirefox(post)}>
+                              <button
+                                className="secondary"
+                                disabled={busy}
+                                onClick={() => void prepareInFirefox(post)}
+                              >
                                 Taslağı ana Firefox'ta onaya gönder
                               </button>
                             )}
@@ -657,11 +734,31 @@ export function SocialAI({
               <label htmlFor="ai-question">Asistandan ne istersiniz?</label>
               {engine === "local" && activeFirefox && (
                 <label className="expert-check">
-                  <input type="checkbox" checked={includeFirefox} disabled={busy} onChange={(e) => setIncludeFirefox(e.target.checked)} />
-                  {activeFirefox.identityLabel || activeFirefox.label} sekmesini bu istekte oku. Anlık sayfa metni AI'a iletilir ve sohbet kaydına eklenir; onaylı şirket hafızasına eklenmez.
+                  <input
+                    type="checkbox"
+                    checked={includeFirefox}
+                    disabled={busy}
+                    onChange={(e) => setIncludeFirefox(e.target.checked)}
+                  />
+                  {activeFirefox.identityLabel || activeFirefox.label} sekmesini
+                  bu istekte oku. Anlık sayfa metni AI'a iletilir ve sohbet
+                  kaydına eklenir; onaylı şirket hafızasına eklenmez.
                 </label>
               )}
-              {engine === "local" && includeFirefox && !activeFirefox && <p role="status">Sekme bağlantısı yok. Yeniden bağlayın veya <button type="button" className="secondary" disabled={busy} onClick={() => setIncludeFirefox(false)}>Sekmeyi bu istekten çıkar</button>.</p>}
+              {engine === "local" && includeFirefox && !activeFirefox && (
+                <p role="status">
+                  Sekme bağlantısı yok. Yeniden bağlayın veya{" "}
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={busy}
+                    onClick={() => setIncludeFirefox(false)}
+                  >
+                    Sekmeyi bu istekten çıkar
+                  </button>
+                  .
+                </p>
+              )}
               <textarea
                 id="ai-question"
                 value={question}
@@ -698,8 +795,9 @@ export function SocialAI({
               </div>
               <div className="ai-composer-footer">
                 <small>
-                  {question.length.toLocaleString("tr-TR")} / {engine === "local" && includeFirefox ? "2.000" : "6.000"} karakter ·
-                  Taslak üretir, paylaşmaz.
+                  {question.length.toLocaleString("tr-TR")} /{" "}
+                  {engine === "local" && includeFirefox ? "2.000" : "6.000"}{" "}
+                  karakter · Taslak üretir, paylaşmaz.
                 </small>
                 <button
                   className="primary"

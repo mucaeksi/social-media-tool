@@ -1,3 +1,6 @@
+import { registerEditorial } from "./editorial.mjs";
+import { STUDIO_VERSION } from "../shared/features.mjs";
+import { validateDraftRelations } from "./draft-store.mjs";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
@@ -133,9 +136,11 @@ app.use("*", async (c, next) => {
   c.set("store", scopedStore(c.get("store"), c.env.DB, identity));
   if (
     ["POST", "PUT"].includes(c.req.method) &&
-    /^\/api\/(?:ai\/ask|computer\/ai\/ask|knowledge\/research|drafts(?:\/[^/]+)?|media|companies(?:\/[^/]+)?|quality|metrics|publications|workspace\/restore)$/.test(
-      c.req.path,
-    )
+    ((/^\/api\/content\//.test(c.req.path) &&
+      c.req.path !== "/api/content/evidence/check") ||
+      /^\/api\/(?:ai\/ask|computer\/ai\/ask|knowledge\/research|drafts(?:\/[^/]+)?|media|companies(?:\/[^/]+)?|quality|metrics|publications|workspace\/restore)$/.test(
+        c.req.path,
+      ))
   ) {
     const usage = await databaseUsage(c.env.DB);
     if (usage.bytes !== null && usage.bytes >= usage.textWarningAt)
@@ -164,6 +169,7 @@ registerPasswordRoutes(app);
 registerWorkspaceAccess(app);
 registerKnowledge(app);
 registerWorkspaceOperations(app);
+registerEditorial(app);
 registerPublications(app);
 app.use(
   "/api/computer/enroll",
@@ -181,6 +187,7 @@ app.get("/api/health", async (c) => {
   await c.env.DB.prepare("SELECT 1").first();
   return c.json({
     ok: true,
+    version: STUDIO_VERSION,
     database: "d1",
     storage: storageMode(c),
     mediaProcessing: "browser",
@@ -330,6 +337,7 @@ async function saveDraft(c) {
   const id = c.req.param("id");
   await company(c, input.companyId);
   await media(c, input.mediaId, input.companyId);
+  await validateDraftRelations(store(c), c.env.DB, input, c.get("identity"));
   validatePosts(input.posts, input.selected);
   if (id) {
     const previous = await store(c).draft(id);
@@ -428,6 +436,7 @@ app.get("/api/media/:id", async (c) => {
 app.get("/api/media/:id/:target", async (c) => {
   const image = await store(c).media(c.req.param("id"));
   if (!image) fail(404, "Görsel bulunamadı.");
+  if (image.deleting) fail(409, "Görsel temizliği sürüyor; yeniden seçin.");
   const target = c.req.param("target").replace(/\.jpg$/, ""),
     p = platformMap[target];
   if (target !== "original" && !p) fail(404, "Görsel boyutu bulunamadı.");
