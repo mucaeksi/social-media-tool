@@ -1,8 +1,8 @@
 {
   "status": "success",
-  "source_commit": "ed68fd7a98b03e4b5f3121854962e7d6940dccf4",
-  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39432492529",
-  "updated_at": "2026-10-20T13:45:47.742Z",
+  "source_commit": "cb7a0959298fbfe5ebfa3879d004d911bda68762",
+  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39746235823",
+  "updated_at": "2026-10-22T08:22:17.983Z",
   "url": "https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev",
   "zero_trust": {
     "plan": "Teams Free Base",
@@ -15,7 +15,7 @@
       "serviceTokens": 50,
       "policiesPerApp": 1000
     },
-    "checkedAt": "2026-10-20T13:45:49.534Z",
+    "checkedAt": "2026-10-22T08:22:19.242Z",
     "seatEnforcement": "Cloudflare Free planı girişte 50 aktif koltuğu uygular"
   },
   "workers_ai": {
@@ -23,7 +23,7 @@
     "price": 0,
     "dailyNeurons": 10000,
     "applicationBudget": 9000,
-    "checkedAt": "2026-10-20T13:45:50.037Z",
+    "checkedAt": "2026-10-22T08:22:19.621Z",
     "paidSubscriptionFound": false
   },
   "social_profiles": {
@@ -35,7 +35,7 @@
       "qualityCases": 30,
       "publicationQueueReady": true,
       "companyScopesVerified": true,
-      "databaseBytes": 372736
+      "databaseBytes": 446464
     }
   },
   "verified": true,
@@ -45,7 +45,7 @@
     "media": "Cloudflare R2",
     "login": "Kullanıcı adı ve şifre — D1 oturumları",
     "socialBrowser": "Cloudflare Browser Run — deneysel hesap girişi",
-    "companyComputer": "Windows Firefox 1.4 — şirket başına tek pencere, sosyal ağ sekmeleri, kalıcı profiller ve yerel AI; gerçek hesap/model kontrolü bilgisayarda yapılmalı",
+    "companyComputer": "Windows Firefox 1.8.0 — şirket başına tek pencere, sosyal ağ sekmeleri, kalıcı profiller ve yerel AI; gerçek hesap/model kontrolü bilgisayarda yapılmalı",
     "ai": "Cloudflare Workers AI — görsel + özet, platform metinleri ve şirket hafızası",
     "knowledge": "KKTC profili, kanıtlı kaynak onayı, şirket erişimleri ve kalite defteri",
     "publishing": "Facebook Firefox pilotu — onaylı kuyruk ve kalıcı bağlantı doğrulaması; gerçek sosyal hesapta henüz doğrulanmadı"
