@@ -21,7 +21,7 @@ const target = {
   companyName: "Kurgu",
   profileUrl: "https://www.facebook.com/kurgu",
 };
-async function fixture() {
+async function fixture({ publication } = {}) {
   let listener,
     removed,
     updated,
@@ -125,7 +125,8 @@ async function fixture() {
         update: async (id, value) => Object.assign(tabs.get(id), value),
         executeScript: async () => {},
         sendMessage: async (id, m) => {
-          if (m.source === "studio-auth-check") return { userId };
+          if (m.source === "studio-auth-check") return { userId, companyId };
+          if (m.source === "studio-tab-publication" && publication) return publication(m);
           if (m.action === "fill") {
             fills++;
             return { ok: true, published: false };
@@ -186,6 +187,47 @@ async function fixture() {
     fills: () => fills,
   };
 }
+test("Toplu onayın sonraki hedefinde hata olursa daha önce onaylanan işler yürütme listesinde kalır", async () => {
+  let failSecond = true, failPreflight = true, firstAuthorizations = 0;
+  const secondId = "33333333-3333-4333-8333-333333333333";
+  const jobs = [accountId, secondId].map((id) => ({
+    id: crypto.randomUUID(), company_id: companyId, account_id: id, created_by: "admin", state: "draft",
+    fingerprint: "a".repeat(64), scheduled_at: new Date().toISOString(),
+    snapshot: { transport: "firefox-tabs", platform: "facebook", profileUrl: target.profileUrl, identityLabel: "Kurgu", text: "Kurgu metni", media: [] },
+  }));
+  const f = await fixture({ publication: async (m) => {
+    const job = jobs.find((j) => j.id === m.jobId);
+    if (m.action === "get" && job.account_id === secondId && failPreflight)
+      return { ok: true, value: { ...structuredClone(job), fingerprint: "b".repeat(64) } };
+    if (m.action === "authorize") {
+      if (job.account_id === secondId && failSecond) return { ok: false, error: "İkinci hedefin kaynağı değişti." };
+      if (job.account_id === accountId) firstAuthorizations++;
+      job.state = "queued"; job.snapshot.executor = m.executor;
+    }
+    return { ok: true, value: structuredClone(job) };
+  } });
+  await f.connect(); await f.connect({ ...target, accountId: secondId });
+  await f.call({ action: "publish-batch", companyId, companyName: "Kurgu", jobs: structuredClone(jobs) });
+  const request = (await f.popupCall({ action: "popup-state" })).requests[0];
+  assert.equal((await f.popupCall({ action: "approve", id: request.id })).ok, false);
+  assert.equal(firstAuthorizations, 0, "Önizleme denetimi geçmeden hiçbir hedef yetkilendirilmez");
+  assert.equal((await f.call({ action: "status" })).publishing.queued.length, 0);
+  assert.match((await f.call({ action: "status" })).publishing.error, /önizlemesi değişti/);
+  failPreflight = false;
+  const approved = await f.popupCall({ action: "approve", id: request.id });
+  assert.equal(approved.ok, false);
+  assert.equal(jobs[0].state, "queued");
+  const status = await f.call({ action: "status" });
+  assert.deepEqual(Array.from(status.publishing.queued), [jobs[0].id], "Onaylanan ilk hedef sessizce kaybolmaz");
+  assert.equal(jobs[1].state, "draft");
+  assert.deepEqual(Array.from(status.publishing.pendingJobs), [jobs[1].id]);
+  assert.match(status.publishing.error, /1 hedef yayın sırasına alındı; 1 hedef onaylanamadı/);
+  failSecond = false;
+  assert.equal((await f.popupCall({ action: "approve", id: request.id })).ok, true);
+  assert.equal(firstAuthorizations, 1, "İlk hedef ikinci kez yetkilendirilmez");
+  assert.equal((await f.call({ action: "status" })).publishing.queued.length, 2);
+  assert.equal((await f.popupCall({ action: "popup-state" })).requests.length, 0);
+});
 test("Eklenti yalnız ana panelin üst çerçevesini kabul eder; LinkedIn kişisel hedefi ve özel mesaj reddedilir", async () => {
   const f = await fixture();
   for (const sender of [
@@ -240,6 +282,56 @@ test("Eklenti yalnız ana panelin üst çerçevesini kabul eder; LinkedIn kişis
     false,
     "Sayfa kendi sekmesini onaylayamaz",
   );
+});
+
+test("Toplu bağlantı profilleri otomatik önerir, tek onayla bütün hesapları bağlar ve mevcut hesapları korur", async () => {
+  const f = await fixture();
+  const otherId = "33333333-3333-4333-8333-333333333333";
+  const other = { ...target, accountId: otherId, platform: "youtube", profileUrl: "https://www.youtube.com/@kurgu" };
+  const queued = await f.call({ action: "connect-workspace", companyId, companyName: "Kurgu", targets: [target, other] });
+  assert.equal(queued.pending, true);
+  assert.equal((await f.call({ action: "status" })).bindings.length, 0);
+  const r = (await f.popupCall({ action: "popup-state" })).requests[0];
+  assert.equal(r.accounts[0].suggestedTabId, 2);
+  assert.deepEqual(Array.from(r.accounts[0].choices, (t) => t.id), [2]);
+  assert.equal(r.accounts[1].suggestedTabId, 5);
+  const result = await f.popupCall({ action: "approve", id: r.id, selections: [
+    { accountId, tabId: 2, identityLabel: "Kurgu" },
+    { accountId: otherId, tabId: 5, identityLabel: "Kurgu Kanalı" },
+  ] });
+  assert.equal(result.ok, true, result.error);
+  assert.equal((await f.call({ action: "status" })).bindings.length, 2);
+  assert.equal((await f.call({ action: "read", companyId, accountId: otherId })).ok, true);
+  assert.equal((await f.connect()).ok, true);
+  assert.equal((await f.call({ action: "status" })).bindings.length, 2);
+});
+
+test("Toplu bağlantı başka pencereyi, özel sayfayı ve karışık şirketi reddeder; kısmi izin bırakmaz", async () => {
+  const f = await fixture();
+  const otherId = "33333333-3333-4333-8333-333333333333";
+  const second = { ...target, accountId: otherId, profileUrl: "https://www.facebook.com/ikinci" };
+  assert.equal((await f.call({ action: "connect-workspace", companyId, companyName: "Kurgu", targets: [{ ...target, companyId: otherId }] })).ok, false);
+  await f.call({ action: "connect-workspace", companyId, companyName: "Kurgu", targets: [target, second] });
+  const r = (await f.popupCall({ action: "popup-state" })).requests[0];
+  for (const tabId of [3, 4, 5]) {
+    const denied = await f.popupCall({ action: "approve", id: r.id, selections: [
+      { accountId, tabId: 2, identityLabel: "Kurgu" },
+      { accountId: otherId, tabId, identityLabel: "Diğer" },
+    ] });
+    assert.equal(denied.ok, false);
+    assert.equal((await f.call({ action: "status" })).bindings.length, 0);
+  }
+  f.setUser("another-admin");
+  assert.equal((await f.popupCall({ action: "approve", id: r.id, selections: [{ accountId, tabId: 2, identityLabel: "Kurgu" }] })).ok, false);
+});
+
+test("Aynı platformda birden fazla hesap varken genel akış sekmesi otomatik hesap eşleşmesi sayılmaz", async () => {
+  const f = await fixture();
+  f.tabs.get(2).url = "https://www.facebook.com/";
+  await f.call({ action: "connect-workspace", companyId, companyName: "Kurgu", targets: [target, { ...target, accountId: "33333333-3333-4333-8333-333333333333", profileUrl: "https://www.facebook.com/ikinci" }] });
+  const r = (await f.popupCall({ action: "popup-state" })).requests[0];
+  assert.equal(r.accounts.every((row) => row.suggestedTabId === null), true);
+  assert.equal((await f.popupCall({ action: "approve", id: r.id, selections: r.accounts.map((row) => ({ accountId: row.target.accountId, tabId: 2, identityLabel: "Kurgu" })) })).ok, false);
 });
 test("Okuma ve yazma yalnız açık sekme onayından sonra çalışır; şirket ve kullanıcı değişimi yetki vermez", async () => {
   const f = await fixture(),

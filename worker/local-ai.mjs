@@ -61,6 +61,22 @@ export function registerLocalAI(app) {
   app.post("/api/computer/ai/cancel", async (c) =>
     c.json((await call(c, { action: "cancel" })).status),
   );
+  app.post("/api/computer/ai/self-test", async (c) =>
+    c.json((await call(c, { action: "self-test" })).status, 202),
+  );
+  app.post("/api/computer/ai/select-tab", async (c) => {
+    let input;
+    try { input = localInput({ ...(await c.req.json()), action: "select-tab" }); }
+    catch { throw computerError(400, "Sekme listesi geçersiz veya çok uzun (en fazla 80 sekme)."); }
+    if (!(await c.get("store").company(input.companyId))) throw computerError(404, "Şirket bulunamadı.");
+    const result = await call(c, input);
+    let choice;
+    try { choice = JSON.parse(result.answer); } catch { throw computerError(502, "Qwen sekme yanıtı doğrulanamadı."); }
+    if (result.companyId !== input.companyId || !choice || Object.keys(choice).length !== 1 ||
+      (choice.tabId !== null && !input.tabs.some((t) => t.tabId === choice.tabId)))
+      throw computerError(502, "Qwen yalnız mevcut sekmelerden birini seçebilir.");
+    return c.json({ answer: JSON.stringify(choice) });
+  });
   const nightCompany = async (c, id) => {
     if (c.get("identity")?.role !== "admin")
       throw computerError(403, "Gece öğrenmesi için yönetici yetkisi gerekli.");

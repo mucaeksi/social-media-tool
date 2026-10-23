@@ -464,6 +464,9 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
             ? "Kırmızı sentetik test karesi."
             : null,
       };
+    if (m.input.action === "self-test") result.status = { ...result.status, diagnosticVersion: "local-ai-check-v1", selfTest: { state: "running", startedAt: new Date().toISOString(), finishedAt: null, code: null, steps: [] } };
+    if (m.input.action === "select-tab") result = { ok: true, companyId: m.input.companyId,
+      answer: JSON.stringify({ tabId: mode === "unknown-tab" ? 999 : m.input.tabs[0].tabId }), posts: [] };
     agent.send(JSON.stringify({ type: "ai-result", id: m.id, result }));
   };
   agent.addEventListener("message", listener);
@@ -650,6 +653,25 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
     });
     assert.equal(oldAdvertising.status, 409);
     assert.match((await oldAdvertising.json()).error, /1\.9/);
+    assert.equal((await request("/api/computer/ai/self-test", { method: "POST" })).status, 409, "Eski yardımcıya tanılama gönderilmez");
+    assert.equal((await request("/api/computer/ai/self-test", { method: "POST", role: "editor" })).status, 403);
+    const upgraded = new Promise((resolve) => {
+      const receive = (e) => { if (JSON.parse(e.data).type === "pong") { agent.removeEventListener("message", receive); resolve(); } };
+      agent.addEventListener("message", receive);
+    });
+    agent.send(JSON.stringify({ type: "hello", capabilities: ["local-ai-v1", "local-ai-check-v1"] }));
+    agent.send(JSON.stringify({ type: "ping" })); await upgraded;
+    assert.equal((await request("/api/computer/ai/self-test", { method: "POST" })).status, 202);
+    const choose = { companyId, question: "Instagram sekmesine geç", tabs: [{ tabId: 42, title: "Kurgu Instagram", site: "instagram.com" }] };
+    mode = "good";
+    const chosen = await request("/api/computer/ai/select-tab", { method: "POST", body: choose });
+    assert.equal(chosen.status, 200);
+    assert.deepEqual(await chosen.json(), { answer: '{"tabId":42}' });
+    assert.equal(captured.profile, undefined, "Sekme seçiminde şirket hafızası modele gönderilmez");
+    mode = "unknown-tab";
+    assert.equal((await request("/api/computer/ai/select-tab", { method: "POST", body: choose })).status, 502);
+    assert.equal((await request("/api/computer/ai/select-tab", { method: "POST", body: { ...choose, tabs: [] } })).status, 400);
+    assert.equal((await db.prepare("SELECT COUNT(*) AS total FROM ai_turns").first()).total, 2, "Tanılama ve sekme seçimi sohbet geçmişine girmez");
   } finally {
     agent.removeEventListener("message", listener);
   }

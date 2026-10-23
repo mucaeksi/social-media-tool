@@ -35,6 +35,11 @@ export const localErrors = {
     "Modelin boyutu, özeti veya 4-bit biçimi doğrulanamadı. Kurulum düğmesiyle yeniden doğrulayın.",
   OFFLINE:
     "Yerel AI çalıştırıcısı yanıt vermiyor. Bilgisayardaki yardımcıyı ve AI kurulumunu kontrol edin.",
+  TIMEOUT: "Qwen yanıtı süre sınırını aştı. GPU ölçümünü kontrol edin; yarım kalan platformlar Üretime devam et ile sürdürülebilir.",
+  GPU_MEMORY: "Ollama GPU belleği ayıramadı. Diğer GPU uygulamalarını kapatıp Modeli yeniden doğrula ile tekrar deneyin.",
+  RUNTIME_INCOMPATIBLE: "Ollama bu modelin istek biçimini desteklemedi. Yardımcı ve kendi AI çalıştırıcısının sürümünü kontrol edin.",
+  OUTPUT_LIMIT: "Qwen yanıtı tamamlanmadan çıktı sınırına ulaştı. Daha kısa bir istekle tekrar deneyin.",
+  TEST_MISMATCH: "Qwen test yanıtı beklenen sonucu karşılamadı. Başarısız adımı tanılama raporundan kontrol edin.",
   BUSY: "Yerel AI başka bir işlem yapıyor. Bitmesini bekleyin.",
   INVALID_OUTPUT:
     "Küçük model geçerli içerik hazırlayamadı. Önceki içerik korundu; daha kısa bir özetle tekrar deneyin.",
@@ -60,9 +65,21 @@ export function localInput(input) {
   }
   if (
     !input ||
-    !["status", "setup", "generate", "cancel"].includes(input.action)
+    !["status", "setup", "generate", "cancel", "self-test", "select-tab"].includes(input.action)
   )
     localFail("FAILED");
+  if (input.action === "select-tab") {
+    if (!/^[a-f0-9-]{36}$/i.test(input.companyId || "") ||
+      typeof input.question !== "string" || !input.question.trim() || input.question.length > 500 ||
+      !Array.isArray(input.tabs) || !input.tabs.length || input.tabs.length > 80 ||
+      input.tabs.some((t) => !Number.isSafeInteger(t.tabId) || t.tabId < 0 ||
+        typeof t.title !== "string" || t.title.length > 120 || typeof t.site !== "string" || t.site.length > 200) ||
+      new Set(input.tabs.map((t) => t.tabId)).size !== input.tabs.length)
+      localFail("FAILED");
+    const tabs = input.tabs.map(({ tabId, title, site }) => ({ tabId, title, site }));
+    if (JSON.stringify(tabs).length > 6000) localFail("CONTEXT_TOO_LONG");
+    return { action: "select-tab", companyId: input.companyId, question: input.question, tabs };
+  }
   if (input.action !== "generate") return { action: input.action };
   const { companyId, profile, entries, question, mode, selected, image } =
     input;
@@ -188,6 +205,7 @@ export function validLocalResult(value) {
           : value.status
             ? typeof value.status.phase === "string" &&
               value.status.model === LOCAL_MODEL &&
+              validDiagnostics(value.status) &&
               (value.status.runtime == null ||
                 (typeof value.status.runtime.loaded === "boolean" &&
                   ["gpuBytes", "modelBytes", "context"].every(
@@ -201,4 +219,25 @@ export function validLocalResult(value) {
               Array.isArray(value.posts) &&
               value.posts.length <= 9))
   );
+}
+function validDiagnostics(status) {
+  const code = (v) => v === null || Object.hasOwn(localErrors, v);
+  const duration = (v) => v === null || (Number.isSafeInteger(v) && v >= 0 && v <= 600000);
+  const date = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v) && Number.isFinite(Date.parse(v));
+  const keys = (v, allowed) => Object.keys(v).every((k) => allowed.includes(k));
+  const test = status.selfTest;
+  if (test != null) {
+    const order = ["model", "text", "posts", "vision"];
+    if (status.diagnosticVersion !== "local-ai-check-v1" || !keys(test, ["state", "startedAt", "finishedAt", "code", "steps"]) ||
+      !["running", "passed", "failed"].includes(test.state) || !date(test.startedAt) ||
+      (test.finishedAt !== null && !date(test.finishedAt)) || !code(test.code) ||
+      !Array.isArray(test.steps) || test.steps.length > 4 ||
+      test.steps.some((s, i) => !s || !keys(s, ["id", "state", "durationMs", "code"]) || s.id !== order[i] ||
+        !["running", "passed", "failed"].includes(s.state) || !duration(s.durationMs) || !code(s.code)) ||
+      (test.state === "passed" && (test.steps.length !== 4 || test.steps.some((s) => s.state !== "passed") || test.code !== null || !date(test.finishedAt)))) return false;
+  }
+  const run = status.lastRun;
+  return run == null || (keys(run, ["state", "at", "stage", "code", "durationMs"]) &&
+    ["running", "passed", "failed"].includes(run.state) && date(run.at) &&
+    typeof run.stage === "string" && run.stage.length <= 150 && code(run.code) && duration(run.durationMs));
 }

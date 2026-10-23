@@ -12,12 +12,14 @@ export function DraftLibrary({
   user,
   onOpen,
   onNew,
+  onPublish,
 }: {
   company: Company;
   platforms: Platform[];
   user: AuthUser;
   onOpen: (d: Draft) => void;
   onNew: () => void;
+  onPublish?: (d: Draft) => void;
 }) {
   const [data, setData] = useState<{ items: Draft[]; total: number }>({
       items: [],
@@ -246,6 +248,12 @@ export function DraftLibrary({
           <div className="content-actions">
             {mode !== "trash" && (
               <>
+                {onPublish && user.role === "admin" && mode !== "archive" && (
+                  <button className="primary" disabled={busy}
+                    onClick={() => void run(async () => onPublish(await api<Draft>(`/api/drafts/${d.id}`)))}>
+                    Yayına hazırla
+                  </button>
+                )}
                 <button
                   className="secondary"
                   disabled={busy}

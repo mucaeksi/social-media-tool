@@ -254,7 +254,7 @@ test(
       // No installExtension call: the dedicated profile loads the extension on startup.
       const panel = await browser.newPage();
       panel.on("pageerror", (e) => console.error("Panel fixture:", e.message));
-      await panel.goto(origin + "/panel");
+      await panel.goto(origin + "/panel?company=" + companyId);
       const social = await browser.newPage();
       await social.goto(origin + "/kurgu");
       const rpc = (action, extra = {}) =>
@@ -298,7 +298,7 @@ test(
         () => document.querySelector("#status").textContent.length > 0,
       );
       stage = "ilk hesabı bağlama";
-      assert.equal((await rpc("status")).version, "1.3.0");
+      assert.equal((await rpc("status")).version, "1.4.0");
       assert.equal((await rpc("read", { companyId, accountId })).ok, false);
       assert.equal(
         (
@@ -369,6 +369,15 @@ test(
         true,
       );
       assert.equal((await rpc("status")).binding.accountId, accountId);
+      stage = "açık hesap sekmelerini tek popup onayıyla bağlama";
+      assert.equal((await rpc("connect-workspace", { companyId, companyName: "Kurgu" })).pending, true);
+      await popup.evaluate(() => refresh());
+      await popup.waitForFunction(() => document.querySelectorAll("section select").length === 2);
+      assert.deepEqual(await popup.$$eval("section select", (els) => els.map((el) => el.value)),
+        [String((await rpc("status")).bindings.find((b) => b.accountId === accountId).tabId), String(secondTab.id)]);
+      await popup.evaluate(() => [...document.querySelectorAll("section button")].find((b) => b.textContent === "Seçili hesap sekmelerini birlikte bağla").click());
+      await popup.waitForFunction(() => document.querySelector("#status").textContent.includes("1 panel bağlantısı etkin"));
+      assert.equal((await rpc("status")).bindings.length, 2);
       stage = "şirket kimliği ve taslak";
       const outside = await popup.evaluate(
         (url) => browser.windows.create({ url }),

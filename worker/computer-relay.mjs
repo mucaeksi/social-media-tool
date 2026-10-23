@@ -351,6 +351,8 @@ export class CompanyComputer {
             409,
             "Yardımcı güncellenmeli. Açık hesap ekranlarını kapatın; otomatik güncellemeden sonra tekrar deneyin.",
           );
+        if (["self-test", "select-tab"].includes(input.input.action) && !socket.deserializeAttachment().localAICheck)
+          throw computerError(409, "Gerçek Qwen testi için yardımcı 1.11 veya üzeri gerekli. Yardımcı güncellemesini tamamlayın.");
         if (
           input.input.requireAdvertising &&
           !socket.deserializeAttachment().advertising
@@ -368,8 +370,9 @@ export class CompanyComputer {
           );
           const count = budget.day === day ? budget.count : 0;
           const setups = budget.day === day ? budget.setups : 0;
+          const inference = ["generate", "self-test", "select-tab"].includes(input.input.action);
           if (
-            (input.input.action === "generate" &&
+            (inference &&
               (count >= LOCAL_AI_LIMITS.dailyRequests ||
                 requests.filter((r) => r.userId === input.userId).length >=
                   LOCAL_AI_LIMITS.hourlyRequests)) ||
@@ -381,10 +384,10 @@ export class CompanyComputer {
             );
           await this.ctx.storage.put("local-ai-budget", {
             day,
-            count: count + (input.input.action === "generate" ? 1 : 0),
+            count: count + (inference ? 1 : 0),
             setups: setups + (input.input.action === "setup" ? 1 : 0),
             requests:
-              input.input.action === "generate"
+              inference
                 ? [...requests, { userId: input.userId, at: now }]
                 : requests,
           });
@@ -398,7 +401,7 @@ export class CompanyComputer {
         { input: input.input },
         {
           type: "ai-command",
-          timeout: input.input.action === "generate" ? 280000 : 12000,
+          timeout: input.input.action === "generate" ? 280000 : input.input.action === "select-tab" ? 120000 : 12000,
           validate: validLocalResult,
           onProgress: input.input.jobId
             ? async (progress) => {
@@ -544,6 +547,8 @@ export class CompanyComputer {
         localAI:
           Array.isArray(value.capabilities) &&
           value.capabilities.includes("local-ai-v1"),
+        localAICheck:
+          Array.isArray(value.capabilities) && value.capabilities.includes("local-ai-check-v1"),
         advertising:
           Array.isArray(value.capabilities) &&
           value.capabilities.includes("advertising-v1"),

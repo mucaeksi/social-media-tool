@@ -7,7 +7,7 @@ async function call(message) {
     throw new Error(value?.error || "Eklenti bağlantısı kurulamadı.");
   return value;
 }
-async function act(message) {
+async function act(message, refreshAfterError = false) {
   if (busy) return;
   busy = true;
   for (const b of document.querySelectorAll("button")) b.disabled = true;
@@ -15,6 +15,7 @@ async function act(message) {
     await call(message);
     await refresh();
   } catch (e) {
+    if (refreshAfterError) await refresh().catch(() => {});
     state.textContent = e.message;
   } finally {
     busy = false;
@@ -36,6 +37,7 @@ async function refresh() {
   for (const r of data.requests) {
     const section = node("section", "", container);
     node("strong", r.target.companyName, section);
+    if (r.error) node("p", r.error, section).setAttribute("role", "alert");
     node(
       "p",
       "Yalnız panelin bulunduğu Firefox penceresindeki tüm sekmeleri listeleme ve aralarında geçiş izni verilir. Başka pencereler kullanılmaz.",
@@ -48,8 +50,26 @@ async function refresh() {
       link.target = "_blank";
       link.rel = "noreferrer";
     }
-    let tabs, identity, identityId;
-    if (r.action === "connect") {
+    let tabs, identity, identityId, workspace;
+    if (r.action === "connect-workspace") {
+      node("p", "Açık hesap sekmeleri birlikte bulundu. Önerileri ve ekranda görünen şirket adlarını kontrol edip tek seferde bağlayın. Bu onay paylaşım yapmaz.", section);
+      workspace = [];
+      for (const row of r.accounts) {
+        const group = node("div", "", section);
+        node("strong", `${row.target.label} · ${row.target.platform}`, group);
+        const link = node("a", row.target.profileUrl, group);
+        link.href = row.target.profileUrl; link.target = "_blank"; link.rel = "noreferrer";
+        const label = node("label", "Açık hesap sekmesi", group);
+        const select = node("select", "", label);
+        node("option", row.choices.length ? "Bu hesabı atla / sekme seç" : "Uygun açık sekme bulunamadı", select).value = "";
+        for (const t of row.choices) node("option", `${t.title} · ${t.url}`, select).value = String(t.id);
+        select.value = row.suggestedTabId === null ? "" : String(row.suggestedTabId);
+        const nameLabel = node("label", "Sayfanın ekranda görünen tam adı", group);
+        const name = node("input", "", nameLabel);
+        name.value = row.identityLabel; name.maxLength = 100;
+        workspace.push({ accountId: row.target.accountId, select, name });
+      }
+    } else if (r.action === "connect") {
       node("label", "Kullanılacak açık sekme", section);
       tabs = node("select", "", section);
       for (const t of r.choices) {
@@ -132,6 +152,8 @@ async function refresh() {
       "button",
       r.action === "connect-window"
         ? "Bu Firefox penceresini bağla"
+        : r.action === "connect-workspace"
+          ? "Seçili hesap sekmelerini birlikte bağla"
         : r.action === "connect"
           ? "Bu sekmeyi bağla"
           : r.action === "publish-batch"
@@ -144,6 +166,7 @@ async function refresh() {
       void act({
         action: "approve",
         id: r.id,
+        ...(workspace ? { selections: workspace.filter((r) => r.select.value).map((r) => ({ accountId: r.accountId, tabId: Number(r.select.value), identityLabel: r.name.value })) } : {}),
         ...(tabs
           ? {
               tabId: Number(tabs.value),
@@ -151,7 +174,7 @@ async function refresh() {
               ...(identityId ? { identityId: identityId.value } : {}),
             }
           : {}),
-      });
+      }, r.action === "publish-batch");
     const reject = node("button", "Reddet", section);
     reject.onclick = () => void act({ action: "reject", id: r.id });
   }

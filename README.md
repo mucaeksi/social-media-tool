@@ -2,6 +2,8 @@
 
 Türkçe, çok şirketli sosyal medya içerik hazırlama ve çalışma paneli. Facebook, Instagram, X, Threads, Pinterest, YouTube, TikTok, LinkedIn ve Tumblr için içerik hazırlanır.
 
+**1.11 yaması:** Firefox hesap sekmelerini tek onayla topluca bağlama, görevle sekme seçip inceleme, gerçek Qwen metin/JSON/görsel testi ve taslaktan yayın ekranına doğrudan geçiş eklendi. Kısmi toplu onayda başarılı hedeflerin yürütme listesi korunur. [Kullanım ve güncelleme rehberi](docs/FIREFOX_QWEN_1_11.md).
+
 **1.10 yaması:** Aynı Firefox penceresinde dokuz platform için onaylı fotoğraf/metin yayın kuyruğu, hesap ve sayfa eşleştirmesi, toplu önizleme, zamanlama ve yeni gönderi bağlantısı denetimi eklendi. [Otomatik yayın rehberi](docs/OTOMATIK_YAYIN.md).
 
 **1.9 yaması:** KKTC reklam planı, manuel reklam ölçümleri, yedi sağlayıcının reklam panelini aynı Firefox penceresinde açma, onaylı metin hazırlama ve reklam çalışma notları eklendi. [Reklam kullanım rehberi](docs/REKLAM_KULLANIM.md).
@@ -25,7 +27,7 @@ Otomatik kayıt yayınlama yapmaz. Taslak çakışmasında eski kopya yeni düze
 
 Windows yardımcısı ayrı taşınabilir Firefox ve özel Ollama üzerinden çalışır. Model `qwen3.5:9b`, 4-bit ve 16K bağlamdır. Kurulum, eşleştirme, model dosyaları ve Firefox profilleri mevcut taşınabilir klasörde korunur. Yardımcı güncellemesi mevcut otomatik yama akışından gelir.
 
-Eklenti 1.3 fotoğraf/metin gönderilerini aynı onaylı Firefox penceresinde sırayla yürütür; hesap, içerik ve yeni gönderi bağlantısı kanıtı arar. YouTube topluluk ve TikTok fotoğraf biçimi ilgili web hesabında sunulmalıdır. Tanınmayan formda işlem durur; gerçek hesap davranışı kullanıcı bilgisayarında doğrulanmalıdır. Resmî OAuth/API yayıncısı kullanılmaz. Video hazırlığı çekim/metin planıdır; video dosyası üretmez.
+Eklenti 1.4 fotoğraf/metin gönderilerini aynı onaylı Firefox penceresinde sırayla yürütür; hesap, içerik ve yeni gönderi bağlantısı kanıtı arar. YouTube topluluk ve TikTok fotoğraf biçimi ilgili web hesabında sunulmalıdır. Tanınmayan formda işlem durur; gerçek hesap davranışı kullanıcı bilgisayarında doğrulanmalıdır. Resmî OAuth/API yayıncısı kullanılmaz. Video hazırlığı çekim/metin planıdır; video dosyası üretmez.
 
 D1 tek veritabanı ücretsiz sınırı 500 MB; uygulamanın güvenli yazma eşiği 400 MB'tır. R2 için 10 GB uygulama depolama sınırı ayrıdır. Bulut AI rezervasyon bütçesi günlük 9.000 Neuron, yerel AI günlük 50 üretimdir. Bunlar hesap genelinde fatura kilidi değildir. Ücretli servis veya X API kredisi otomatik açılmaz.
 

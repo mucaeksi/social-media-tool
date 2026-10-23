@@ -3,8 +3,18 @@ import { AD_GUIDE_VERSION } from "../shared/advertising.mjs";
 import { useEffect, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { api } from "./api.ts";
+import { localErrors } from "../shared/local-ai.mjs";
 
 type Status = {
+  diagnosticVersion?: string;
+  selfTest?: {
+    state: string;
+    startedAt: string;
+    finishedAt: string | null;
+    code: string | null;
+    steps: { id: string; state: string; durationMs: number | null; code: string | null }[];
+  } | null;
+  lastRun?: { state: string; at: string; stage: string; code: string | null; durationMs: number | null } | null;
   advertisingVersion?: string;
   memory?: { sources: number; generations: number; bytes: number };
   runtime?: {
@@ -22,7 +32,7 @@ type Status = {
 };
 const labels: Record<string, string> = {
   unknown: "Durum kontrol ediliyor",
-  ready: "Yerel model hazır",
+  ready: "Model dosyası doğrulandı",
   runtime_missing: "İlk kurulum gerekli",
   model_missing: "Küçük model indirilmeli",
   stopped: "AI çalıştırıcısı kapalı",
@@ -30,8 +40,13 @@ const labels: Record<string, string> = {
   downloading: "Küçük model indiriliyor",
   generating: "İçerikler hazırlanıyor",
   learning: "Gece çalışma notu hazırlanıyor",
+  testing: "Qwen yanıtları test ediliyor",
   error: "Kurulum kontrol edilmeli",
 };
+const testLabels: Record<string, string> = { model: "Model ve özet", text: "Gerçek metin yanıtı", posts: "Gönderi JSON biçimi", vision: "Görseli anlama" };
+const testStates: Record<string, string> = { running: "Çalışıyor", passed: "Geçti", failed: "Başarısız" };
+const errorText = (code: string | null | undefined) =>
+  code && Object.hasOwn(localErrors, code) ? localErrors[code as keyof typeof localErrors] : "Tanılama raporunu kontrol edin.";
 export function LocalAIStatus({
   onReady,
   advertising = false,
@@ -89,6 +104,12 @@ export function LocalAIStatus({
       setPending(false);
     }
   }
+  async function testModel() {
+    setPending(true); setError(""); onReady(false);
+    try { setStatus(await api<Status>("/api/computer/ai/self-test", { method: "POST" })); }
+    catch (e) { setError((e as Error).message); }
+    finally { setPending(false); }
+  }
   return (
     <section className="card local-ai-status" aria-label="Yerel AI durumu">
       <div className="ai-section-heading">
@@ -124,6 +145,28 @@ export function LocalAIStatus({
         />
       )}
       {status?.stage && <p role="status">{status.stage}</p>}
+      <p>
+        {status?.selfTest?.state === "passed"
+          ? "Bu yardımcı oturumunda Qwen metin, gönderi biçimi ve görsel testlerini geçti. İçerik kalitesini ilk gerçek taslakta ayrıca inceleyin."
+          : "Model dosyasının bulunması yanıt ürettiğini kanıtlamaz. Gerçek Qwen testi metin, gönderi biçimi ve sabit bir test görseliyle çalışır."}
+      </p>
+      <button className="secondary"
+        disabled={pending || status?.busy || status?.diagnosticVersion !== "local-ai-check-v1"}
+        onClick={() => void testModel()}>
+        Qwen'i gerçekten test et
+      </button>
+      {status && status.diagnosticVersion !== "local-ai-check-v1" && <small>Gerçek yanıt testi için yardımcı 1.11 veya üzeri gerekli.</small>}
+      {status?.selfTest && <div aria-label="Qwen test sonucu">
+        <p role="status">Qwen testi: {testStates[status.selfTest.state] || "Bilinmiyor"}</p>
+        <ul>{status.selfTest.steps.map((step) => <li key={step.id}>
+          {testLabels[step.id] || "Kontrol"}: {testStates[step.state] || "Bekliyor"}
+          {step.durationMs !== null ? ` · ${(step.durationMs / 1000).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} sn` : ""}
+        </li>)}</ul>
+        {status.selfTest.code && <p role="alert">{errorText(status.selfTest.code)} ({status.selfTest.code})</p>}
+      </div>}
+      {status?.lastRun?.state === "failed" && <p role="alert">
+        Son üretim başarısız · {status.lastRun.stage}: {errorText(status.lastRun.code)} ({status.lastRun.code})
+      </p>}
       {status?.memory && (
         <p>
           Yerel hafıza: {status.memory.sources} kaynak,{" "}
@@ -144,7 +187,7 @@ export function LocalAIStatus({
             : "Ollama bellek ölçümü alınamadı; tüketim sıfır varsayılmadı."}
         </p>
       )}
-      {status?.phase === "generating" && (
+      {(status?.phase === "generating" || status?.phase === "testing") && (
         <button
           className="secondary"
           disabled={pending}
@@ -156,7 +199,7 @@ export function LocalAIStatus({
               .finally(() => setPending(false));
           }}
         >
-          Üretimi iptal et
+          {status.phase === "testing" ? "Qwen testini iptal et" : "Üretimi iptal et"}
         </button>
       )}
       {status?.phase === "error" && (
@@ -210,6 +253,8 @@ export function LocalAIStatus({
               ilerleme: status?.progress ?? null,
               gpuBellekBayt: status?.runtime?.gpuBytes ?? null,
               baglam: status?.runtime?.context ?? null,
+              qwenTesti: status?.selfTest ?? null,
+              sonUretim: status?.lastRun ?? null,
             },
             null,
             2,

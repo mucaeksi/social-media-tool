@@ -78,6 +78,7 @@
         "connect",
         "open-ad-portal",
         "connect-window",
+        "connect-workspace",
         "tabs",
         "select-tab",
         "select-target",
@@ -128,7 +129,20 @@
           }),
         );
       }
-      let target;
+      let target, targets;
+      if (m.action === "connect-workspace") {
+        const companyId = new URL(location.href).searchParams.get("company");
+        if (companyId !== m.companyId)
+          throw new Error("Paneldeki seçili şirket değişti. Yeniden deneyin.");
+        const res = await fetch(
+          location.origin + "/api/social/accounts?" + new URLSearchParams({ companyId }),
+          { credentials: "include", cache: "no-store", redirect: "error" },
+        );
+        if (!res.ok) throw new Error("Şirket hesapları doğrulanamadı.");
+        const accounts = await res.json();
+        targets = accounts.filter((a) => a.companyId === companyId && a.profileUrl)
+          .map((a) => ({ ...a, accountId: a.id, companyName: String(m.companyName || "").slice(0, 150) }));
+      }
       if (m.action === "connect" || m.action === "open-ad-portal") {
         const params = new URLSearchParams({
           companyId: m.target?.companyId || "",
@@ -171,6 +185,7 @@
         jobs,
         userId: auth.user.id,
         target,
+        targets,
         companyName: m.companyName,
         tabId: m.tabId,
         text: m.text,

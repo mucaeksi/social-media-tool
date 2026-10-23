@@ -2091,6 +2091,21 @@ export default function App({
                     </span>
                   </div>
                   <div>
+                    {cloud && user.role === "admin" && (
+                      <button className="primary"
+                        disabled={!company || !draftName.trim() || !posts.length || isBusy || saving}
+                        onClick={() => void run("publish-prepare", async () => {
+                          const before = payloadKey(currentPayload.current);
+                          const saved = await saveCurrent();
+                          if (saved.companyId !== currentCompanyId.current) return;
+                          if (before !== payloadKey(currentPayload.current))
+                            throw new Error("Kaydetme sırasında içerik değişti. Güncel içeriği tekrar kaydedip yayına hazırlayın.");
+                          setPage("publications");
+                          setNotice({ text: "Taslak kaydedildi. Hedef hesapları seçip yayın önizlemesini oluşturun." });
+                        })}>
+                        Kaydet ve yayına hazırla
+                      </button>
+                    )}
                     <button
                       className="secondary"
                       disabled={!company || !posts.length || isBusy}
@@ -2210,6 +2225,14 @@ export default function App({
               platforms={platforms}
               user={user}
               onOpen={(d) => openDraft(d)}
+              onPublish={cloud && user.role === "admin" ? (d) => guard(() => {
+                void run("open", async () => {
+                  const expectedEpoch = editorEpoch.current + 1;
+                  await loadDraft(d, false);
+                  if (d.companyId === currentCompanyId.current && editorEpoch.current === expectedEpoch)
+                    setPage("publications");
+                });
+              }) : undefined}
               onNew={() =>
                 guard(() => {
                   reset();
@@ -2255,6 +2278,7 @@ export default function App({
               company={company}
               user={user}
               drafts={drafts}
+              initialDraftId={draftId || ""}
             />
           ) : page === "settings" ? (
             <WorkspaceSettings

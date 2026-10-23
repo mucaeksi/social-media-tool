@@ -5,13 +5,13 @@ import type { FirefoxBinding } from "./firefoxBridge.ts";
 import { FirefoxConnection } from "./FirefoxConnection.tsx";
 import { zonedTime } from "./scheduleTime.ts";
 import { tabPublishing } from "../shared/tab-publishing.mjs";
-import type { AuthUser, Company, Draft } from "./types.ts";
+import type { AuthUser, Company, Draft, PlatformId } from "./types.ts";
 
 type Account = {
   id: string;
   label: string;
   companyId: string;
-  platform: string;
+  platform: PlatformId;
   profileUrl: string;
 };
 type Job = {
@@ -25,6 +25,7 @@ type Job = {
   result_url: string | null;
   snapshot: {
     platform: string;
+    draftId?: string;
     post: { title: string };
     text: string;
     identityLabel: string;
@@ -36,7 +37,7 @@ type Status = {
   version: string;
   window: { companyId: string } | null;
   bindings: FirefoxBinding[];
-  publishing?: { activeJob: string | null; queued: string[]; error: string };
+  publishing?: { activeJob: string | null; queued: string[]; error: string; pendingJobs?: string[] };
 };
 const names: Record<string, string> = {
   draft: "Önizleme · eklenti onayı bekliyor",
@@ -57,16 +58,18 @@ export function TabPublishingWorkspace({
   company,
   user,
   drafts,
+  initialDraftId = "",
 }: {
   company: Company;
   user: AuthUser;
   drafts: Draft[];
+  initialDraftId?: string;
 }) {
   const [accounts, setAccounts] = useState<Account[]>([]),
     [jobs, setJobs] = useState<Job[]>([]),
     [status, setStatus] = useState<Status | null>(null);
   const [loadedDraft, setLoadedDraft] = useState<Draft | null>(null);
-  const [draftId, setDraftId] = useState(""),
+  const [draftId, setDraftId] = useState(initialDraftId),
     [chosen, setChosen] = useState<string[]>([]),
     [selectedJobs, setSelectedJobs] = useState<string[]>([]),
     [time, setTime] = useState("");
@@ -87,6 +90,30 @@ export function TabPublishingWorkspace({
     /^1\.(?:[3-9]|[1-9]\d+)\./.test(status.version) &&
     status.window?.companyId === company.id,
   );
+  function targetIssue(a: Account) {
+    if (!draft) return "Önce kaydedilmiş taslağı seçin.";
+    if (!a.profileUrl) return "Önce hedef profil/sayfa adresini kaydedin.";
+    if (!compatible) return "Bu şirketin Firefox penceresini bağlayın (eklenti 1.3 veya üzeri).";
+    const b = binding(a.id);
+    if (!b) return "Bu hesabın açık sekmesini eklentide bağlayın.";
+    if (b.platform !== a.platform || b.profileUrl !== a.profileUrl || !b.identityLabel)
+      return "Eklentideki hedef adresini ve görünen şirket adını kontrol edin.";
+    if (!draft.posts.some((p) => p.platform === a.platform)) return "Bu platformun metni taslakta yok.";
+    const count = draft.gallery && draft.gallery.length > 1 ? draft.gallery.length
+      : draft.platformMedia?.[a.platform] || draft.gallery?.[0]?.mediaId || draft.mediaId ? 1 : 0;
+    if (["instagram", "pinterest", "tiktok"].includes(a.platform) && !count)
+      return "Bu platform için taslağa fotoğraf ekleyin.";
+    if (count > (tabPublishing.platforms[a.platform]?.images ?? 0))
+      return `Bu platform en fazla ${tabPublishing.platforms[a.platform]?.images || 0} fotoğraf kabul eder.`;
+    return "";
+  }
+  const readyAccounts = accounts.filter((a) => !targetIssue(a));
+  const pendingDraftJobs = jobs.filter((j) => j.created_by === user.id && j.snapshot.draftId === draftId &&
+    (j.state === "draft" || (j.state === "queued" && status?.publishing &&
+      !status.publishing.queued.includes(j.id) && status.publishing.activeJob !== j.id)));
+  useEffect(() => {
+    if (initialDraftId) { setDraftId(initialDraftId); setChosen([]); setConfirmed(false); }
+  }, [initialDraftId]);
   async function refresh() {
     const rows = await api<Job[]>(
       `/api/tab-publications?companyId=${company.id}`,
@@ -127,7 +154,10 @@ export function TabPublishingWorkspace({
     if (draftId)
       void api<Draft>(`/api/drafts/${draftId}`)
         .then((d) => {
-          if (active && alive.current) setLoadedDraft(d);
+          if (active && alive.current) {
+            if (d.companyId !== company.id) throw new Error("Yayın taslağı seçili şirkete ait değil.");
+            setLoadedDraft(d);
+          }
         })
         .catch((e) => {
           if (active && alive.current) setError(e.message);
@@ -172,6 +202,12 @@ export function TabPublishingWorkspace({
       style={{ gridColumn: "1 / -1" }}
     >
       <h2>Firefox'ta toplu otomatik yayın</h2>
+      <ol aria-label="Yayın adımları">
+        <li>Kaydedilmiş taslağı ve hedef hesapları seçin.</li>
+        <li>Yayın önizlemelerini oluşturup fotoğraf ve metinleri kontrol edin.</li>
+        <li>Gönderileri eklentiye iletip Firefox simgesinden toplu yayını onaylayın.</li>
+      </ol>
+      <p>Taslağa kaydetmek paylaşımı başlatmaz. Gönderim son eklenti onayından sonra başlar.</p>
       <p>
         Siteyi ve şirketin bütün hesap/sayfa sekmelerini eklentinin kurulu
         olduğu tek Firefox penceresinde açık bırakın. Seçilen hesaplarda
@@ -197,9 +233,8 @@ export function TabPublishingWorkspace({
           companyName={company.name}
           disabled={busy}
           modelReady={false}
-          onBinding={() => {
-            setStatus(null);
-          }}
+          onBinding={() => {}}
+          onStatus={(next) => setStatus(next ? { ...next, bindings: next.bindings || [] } : null)}
         />
       </details>
       <div className="content-actions">
@@ -273,14 +308,12 @@ export function TabPublishingWorkspace({
       </div>
       <fieldset disabled={busy}>
         <legend>Yayınlanacak hesaplar ve sayfalar</legend>
+        <button type="button" className="secondary" disabled={!readyAccounts.length}
+          onClick={() => { setChosen(readyAccounts.map((a) => a.id)); setConfirmed(false); }}>
+          Uygun tüm hesapları seç ({readyAccounts.length})
+        </button>
         {accounts.map((a) => {
-          const b = binding(a.id),
-            ready =
-              compatible &&
-              b?.platform === a.platform &&
-              b.profileUrl === a.profileUrl &&
-              Boolean(b.identityLabel) &&
-              Boolean(draft?.posts?.some((p) => p.platform === a.platform));
+          const b = binding(a.id), issue = targetIssue(a), ready = !issue;
           return (
             <label className="tab-publish-target" key={a.id}>
               <input
@@ -301,13 +334,7 @@ export function TabPublishingWorkspace({
                   {b?.identityLabel || a.label}
                 </strong>
                 <small>
-                  {ready
-                    ? a.profileUrl
-                    : !a.profileUrl
-                      ? "Önce hedef profil/sayfa adresini kaydedin."
-                      : !b
-                        ? "Bu hesabın açık sekmesini eklentide bağlayın."
-                        : "Taslağı, pencereyi ve hedef adresini kontrol edin."}
+                  {issue || a.profileUrl}
                 </small>
               </span>
             </label>
@@ -361,6 +388,12 @@ export function TabPublishingWorkspace({
       {jobs.length > 0 && (
         <>
           <h3>Hedeflere göre gönderiler</h3>
+          <button className="secondary" disabled={busy || !pendingDraftJobs.length}
+            onClick={() => { setSelectedJobs(pendingDraftJobs.slice(0, 20).map((j) => j.id)); setConfirmed(false); }}>
+            Bu taslağın bekleyen gönderilerini seç ({pendingDraftJobs.length})
+          </button>
+          <p>{selectedJobs.length} gönderi seçili. Gönderime iletmek için aşağıdaki paylaşım onayını işaretleyip eklentiye gönderin.</p>
+          {selectedJobs.length > 20 && <p role="alert">Tek toplu onayda en fazla 20 hedef gönderilebilir. Seçimi azaltıp kalan hedefleri sonraki grupta onaylayın.</p>}
           {jobs.map((j) => (
             <article className="expert-item" key={j.id}>
               <label className="expert-check">
@@ -392,6 +425,15 @@ export function TabPublishingWorkspace({
                   timeZone: zone,
                 })}
               </p>
+              {j.state === "draft" && <p role="status">
+                {status?.publishing?.pendingJobs?.includes(j.id)
+                  ? "Yayın isteği eklentiye ulaştı. Firefox araç çubuğundaki Sosyal Studio simgesinden toplu onayı tamamlayın."
+                  : "Henüz gönderime iletilmedi. Bu önizlemeyi seçip aşağıdaki paylaşım onayından sonra eklentiye gönderin."}
+              </p>}
+              {j.state === "queued" && compatible && status?.publishing &&
+                status.publishing.activeJob !== j.id && !status.publishing.queued.includes(j.id) && <p role="status">
+                  Bu iş eklentinin yürütme listesinde görünmüyor. Gönderim başlamadıysa hedef sekmesini kontrol edip bu işi seçerek yeniden eklenti onayına gönderin.
+                </p>}
               <a href={j.snapshot.profileUrl} target="_blank" rel="noreferrer">
                 {j.snapshot.profileUrl}
               </a>

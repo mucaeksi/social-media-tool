@@ -14,8 +14,12 @@ test("AI paneli ana Firefox sekmesini güncel okur, taslağı eklenti onayına y
   await page.route("**/api/computer/ai/jobs?*", (route) => route.fulfill({ json: [] }));
   await page.route("**/api/computer/ai/ask", async (route) => {
     sent = route.request().postDataJSON();
-    if (sent.mode === "chat") { await route.fulfill({ json: { answer: '{"tabId":14}' } }); return; }
+    if (sent.mode === "chat") { await route.fulfill({ json: { answer: "Kurgu sayfası için inceleme önerisi." } }); return; }
     await route.fulfill({ json: { id: crypto.randomUUID(), companyId: sent.companyId, question: sent.question, answer: "Sekme referansından kurgu taslaklar hazırlandı.", posts: sent.selected.map((p) => ({ platform: p, title: "Kurgu", caption: `${p} için kurgu şirket taslağı`, hashtags: [], alt: "" })), createdAt: new Date().toISOString(), engine: "local" } });
+  });
+  await page.route("**/api/computer/ai/select-tab", async (route) => {
+    sent = route.request().postDataJSON();
+    await route.fulfill({ json: { answer: JSON.stringify({ tabId: sent.question.includes("Video") ? 14 : 12 }) } });
   });
   await page.addInitScript(({ companyId, accountId, secondAccountId }) => {
     window.fixtureFirefox = { reads: 0, prepare: null, selectedTab: null };
@@ -28,7 +32,8 @@ test("AI paneli ana Firefox sekmesini güncel okur, taslağı eklenti onayına y
       if (e.source !== window || m?.source !== "sosyal-studio-panel-v1") return;
       let value = {};
       if (m.action === "select-target") active = bindings.find((b) => b.accountId === m.accountId) || null;
-      if (m.action === "status") value = { version: "1.1.0", bindings, binding: active, window: { companyId, windowId: 7 }, pending: false };
+      if (m.action === "status") value = { version: "1.4.0", bindings, binding: active, window: { companyId, windowId: 7 }, pending: false };
+      if (m.action === "select-tab") active = bindings.find((b) => b.tabId === m.tabId) || null;
       if (m.action === "tabs" || m.action === "select-tab") value = { tabs: [{ id: 12, title: "Kurgu sosyal sekme", url: binding.profileUrl, active: true, pinned: true, panel: false }, { id: 14, title: "Video", url: "https://youtube.com/", active: false, pinned: false, panel: false }] };
       if (m.action === "select-tab") window.fixtureFirefox.selectedTab = m.tabId;
       if (m.action === "read") { window.fixtureFirefox.reads++; value = { page: { id: "fixture-snapshot", title: "Kurgu şirket sayfası", url: binding.profileUrl, text: "KKTC için güncel kurgu sayfa bilgisi", canPrepare: true, reason: "Kurgu hedefi doğrulandı" } }; }
@@ -40,9 +45,9 @@ test("AI paneli ana Firefox sekmesini güncel okur, taslağı eklenti onayına y
     await page.goto("/");
     await page.getByRole("combobox", { name: "Aktif şirket" }).selectOption(company.id);
     await page.getByRole("button", { name: "AI asistanı", exact: true }).click();
-    await expect(page.getByText("Yerel model hazır", { exact: true })).toBeVisible();
+    await expect(page.getByText("Model dosyası doğrulandı", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Eklenti bağlantısını kontrol et" }).click();
-    await expect(page.getByText("Eklenti 1.1.0 · 2 hesap sekmesi bağlı", { exact: true })).toBeVisible();
+    await expect(page.getByText("Eklenti 1.4.0 · 2 hesap sekmesi bağlı", { exact: true })).toBeVisible();
     const targets = page.getByRole("combobox", { name: "Çalışılacak bağlı hesap sekmesi" });
     await expect(targets.locator("option")).toHaveCount(3);
     await targets.selectOption(secondAccountId);
@@ -68,7 +73,11 @@ test("AI paneli ana Firefox sekmesini güncel okur, taslağı eklenti onayına y
     await page.getByRole("button", { name: "AI ile sekmeye geç", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Seçilen sekmeye geçildi: Video" })).toBeVisible();
     expect(await page.evaluate(() => window.fixtureFirefox.selectedTab)).toBe(14);
-    expect(sent.mode).toBe("chat");
+    expect(sent.tabs.map((t) => t.tabId)).toEqual([12, 14]);
+    await page.getByLabel("AI hangi sekmeye geçsin?").fill("Facebook şirket sayfasını incele");
+    await page.getByRole("button", { name: "Sekmeyi seç ve AI ile incele", exact: true }).click();
+    await expect(page.getByLabel("Firefox görev yanıtı")).toHaveText("Kurgu sayfası için inceleme önerisi.");
+    expect(sent.question).toContain("KKTC için güncel kurgu sayfa bilgisi");
     await page.getByRole("combobox", { name: "Aktif şirket" }).selectOption(other.id);
     await page.getByRole("button", { name: "Eklenti bağlantısını kontrol et" }).click();
     await expect(page.getByRole("checkbox", { name: /sekmesini bu istekte oku/ })).toHaveCount(0);

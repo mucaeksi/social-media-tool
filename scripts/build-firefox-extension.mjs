@@ -96,6 +96,10 @@ export async function buildFirefoxExtension(destination = "dist/indir") {
     join(destination, "FIREFOX_EKLENTISI.md"),
     await readFile(new URL("../docs/FIREFOX_EKLENTISI.md", import.meta.url)),
   );
+  await writeFile(join(destination, "FIREFOX_QWEN_1_11.md"),
+    await readFile(new URL("../docs/FIREFOX_QWEN_1_11.md", import.meta.url)));
+  await writeFile(join(destination, "OTOMATIK_YAYIN.md"),
+    await readFile(new URL("../docs/OTOMATIK_YAYIN.md", import.meta.url)));
   return { bytes: zip.length, sha256: sha256(zip) };
 }
 if (

@@ -12,7 +12,7 @@ test("Toplu yayın önizlemesi gerçek D1 işlerini oluşturur; iki hedef yalnı
   ).json();
   try {
     const accounts = [];
-    for (const platform of ["facebook", "x"]) {
+    for (const platform of ["facebook", "x", "instagram"]) {
       const r = await request.post("/api/social/accounts", {
         data: {
           companyId: company.id,
@@ -21,7 +21,7 @@ test("Toplu yayın önizlemesi gerçek D1 işlerini oluşturur; iki hedef yalnı
           profileUrl:
             platform === "facebook"
               ? "https://www.facebook.com/fixture"
-              : "https://x.com/fixture",
+              : platform === "x" ? "https://x.com/fixture" : "https://www.instagram.com/fixture/",
         },
       });
       expect(r.status()).toBe(201);
@@ -32,8 +32,8 @@ test("Toplu yayın önizlemesi gerçek D1 işlerini oluşturur; iki hedef yalnı
         companyId: company.id,
         name: "İlk paylaşım kurgu",
         text: "Girne kurgu",
-        selected: ["facebook", "x"],
-        posts: ["facebook", "x"].map((platform) => ({
+        selected: ["facebook", "x", "instagram"],
+        posts: ["facebook", "x", "instagram"].map((platform) => ({
           platform,
           title: "Kurgu",
           caption: "Girne için kurgu ürün.",
@@ -56,7 +56,7 @@ test("Toplu yayın önizlemesi gerçek D1 işlerini oluşturur; iki hedef yalnı
           if (m.action === "status")
             result = {
               version: "1.3.0",
-              window: { companyId },
+              window: { companyId, windowId: 7 },
               bindings: accounts.map((a) => ({
                 ...a,
                 accountId: a.id,
@@ -66,6 +66,10 @@ test("Toplu yayın önizlemesi gerçek D1 işlerini oluşturur; iki hedef yalnı
               binding: null,
               pending: false,
             };
+          if (m.action === "tabs") result = { tabs: accounts.map((a) => ({
+            id: a.platform === "facebook" ? 2 : 3, title: a.label, url: a.profileUrl,
+            active: false, pinned: true, panel: false,
+          })) };
           if (m.action === "publish-batch") {
             window.publishFixture.jobIds = m.jobIds;
             result = { pending: true };
@@ -83,7 +87,17 @@ test("Toplu yayın önizlemesi gerçek D1 işlerini oluşturur; iki hedef yalnı
       },
       { companyId: company.id, accounts },
     );
-    await page.goto(`/?company=${company.id}&page=publications`);
+    await page.goto(`/?company=${company.id}&page=drafts`);
+    const savedCard = page.getByRole("article").filter({ has: page.getByRole("heading", { name: draft.name, exact: true }) });
+    await savedCard.getByRole("button", { name: "Yayına hazırla", exact: true }).click();
+    await expect(page.getByLabel("Toplu yayın için kaydedilmiş taslak")).toHaveValue(draft.id);
+    await expect(page.getByLabel("Yayın adımları")).toContainText("Firefox simgesinden toplu yayını onaylayın");
+    await page.getByRole("button", { name: "İçerik stüdyosu", exact: true }).click();
+    await page.getByLabel("Platform gönderi metni").fill("Kaydedilen son Facebook metni.");
+    await page.getByRole("button", { name: "Kaydet ve yayına hazırla", exact: true }).click();
+    await expect(page.getByLabel("Toplu yayın için kaydedilmiş taslak")).toHaveValue(draft.id);
+    expect((await (await request.get(`/api/drafts/${draft.id}`)).json()).posts.find((p) => p.platform === "facebook").caption).toBe("Kaydedilen son Facebook metni.");
+    expect(await (await request.get("/api/tab-publications?companyId=" + company.id)).json()).toEqual([]);
     await page
       .getByRole("button", {
         name: "Yayın penceresini kontrol et",
@@ -96,8 +110,11 @@ test("Toplu yayın önizlemesi gerçek D1 işlerini oluşturur; iki hedef yalnı
     const targets = page
       .getByRole("group", { name: "Yayınlanacak hesaplar ve sayfalar" })
       .getByRole("checkbox");
-    await targets.nth(0).check();
-    await targets.nth(1).check();
+    await page.getByRole("button", { name: "Uygun tüm hesapları seç (2)", exact: true }).click();
+    await expect(targets.nth(0)).toBeChecked();
+    await expect(targets.nth(1)).toBeChecked();
+    await expect(targets.nth(2)).toBeDisabled();
+    await expect(page.getByText("Bu platform için taslağa fotoğraf ekleyin.", { exact: true })).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath("toplu-yayin-masaustu.png"),
       fullPage: true,
@@ -113,6 +130,10 @@ test("Toplu yayın önizlemesi gerçek D1 işlerini oluşturur; iki hedef yalnı
     ).json();
     expect(rows).toHaveLength(2);
     expect(rows.every((j) => j.state === "draft")).toBe(true);
+    await expect(page.getByText("Henüz gönderime iletilmedi.", { exact: false })).toHaveCount(2);
+    await page.reload();
+    await expect(page.getByLabel("Toplu yayın için kaydedilmiş taslak")).toHaveValue(draft.id);
+    await page.getByRole("button", { name: "Bu taslağın bekleyen gönderilerini seç (2)", exact: true }).click();
     await page
       .getByLabel(
         "Seçtiğim hedefleri, fotoğrafları, metinleri ve zamanı kontrol ettim; bu hesaplarda gerçek paylaşımı onaylıyorum.",

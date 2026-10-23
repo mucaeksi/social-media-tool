@@ -30,13 +30,15 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
   ).json();
   let phase = "runtime_missing",
     sent,
-    modelCalls = 0;
+    modelCalls = 0, selfTest = null, testCalls = 0;
   const status = () => ({
     model: "qwen3.5:9b",
     phase,
     progress: phase === "downloading" ? 0.5 : null,
     busy: phase === "downloading",
     code: null,
+    diagnosticVersion: "local-ai-check-v1",
+    selfTest,
   });
   await page.route("**/api/health", async (route) => {
     const r = await route.fetch();
@@ -99,6 +101,13 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
   );
   await page.route("**/api/computer/ai/setup", (route) => {
     phase = "downloading";
+    return route.fulfill({ status: 202, json: status() });
+  });
+  await page.route("**/api/computer/ai/self-test", (route) => {
+    testCalls++;
+    selfTest = { state: testCalls === 1 ? "failed" : "passed", startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(),
+      code: testCalls === 1 ? "GPU_MEMORY" : null, steps: [{ id: "model", state: "passed", durationMs: 2, code: null },
+        { id: "text", state: testCalls === 1 ? "failed" : "passed", durationMs: 120, code: testCalls === 1 ? "GPU_MEMORY" : null }] };
     return route.fulfill({ status: 202, json: status() });
   });
   let nightEnabled = true,
@@ -203,8 +212,15 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
     ).toHaveAttribute("value", "0.5");
     phase = "ready";
     await expect(
-      page.getByText("Yerel model hazır", { exact: true }),
+      page.getByText("Model dosyası doğrulandı", { exact: true }),
     ).toBeVisible({ timeout: 10000 });
+    await page.getByRole("button", { name: "Qwen'i gerçekten test et" }).click();
+    await expect(page.getByText("Qwen testi: Başarısız", { exact: true })).toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: "GPU_MEMORY" })).toBeVisible();
+    await page.getByRole("button", { name: "Sorun raporunu kopyala" }).click();
+    await expect(page.getByLabel("Güvenli tanılama raporu")).toContainText("GPU_MEMORY");
+    await page.getByRole("button", { name: "Qwen'i gerçekten test et" }).click();
+    await expect(page.getByText("Qwen testi: Geçti", { exact: true })).toBeVisible();
     await page
       .getByLabel("Asistandan ne istersiniz?")
       .fill("Yeni ürünümüzü kaynak bilgilere bağlı kalarak tanıt.");

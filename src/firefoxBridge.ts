@@ -81,6 +81,8 @@ export function firefoxTabChoice(answer: string, tabs: { id: number }[]) {
   } catch {
     throw new Error("AI tek bir sekme seçemedi. Listeden kendiniz seçin.");
   }
+  if (value && Object.keys(value).length === 1 && value.tabId === null)
+    throw new Error("İsteğe uygun açık sekme bulunamadı veya seçim belirsiz. Platformu ya da hesap adını belirterek tekrar deneyin.");
   if (
     !value ||
     Object.keys(value).length !== 1 ||

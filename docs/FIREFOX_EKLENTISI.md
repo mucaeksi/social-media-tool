@@ -1,8 +1,10 @@
 # Ana Firefox ile Sosyal Studio
 
+1.11 güncellemesinde yardımcı 1.11 / eklenti 1.4 ile **Açık hesap sekmelerini topluca bağla**, kendiliğinden durum yenileme, biçimi sınırlandırılmış AI sekme seçimi ve **Sekmeyi seç ve AI ile incele** eklendi. [Yeni kullanım ve gerçek Qwen testi](FIREFOX_QWEN_1_11.md). Bu dosyadaki tek tek bağlama yolu alternatif olarak korunur.
+
 1.10 güncellemesinde onaylı toplu organik yayın da eklendi: [aynı pencerede otomatik yayın rehberi](OTOMATIK_YAYIN.md). Reklam bütçesi ve ödeme bu akıştan yürütülmez.
 
-## Windows'ta tam otomatik kurulum — yardımcı 1.6 / eklenti 1.1
+## Windows'ta tam otomatik kurulum — yardımcı 1.11 / eklenti 1.4
 
 Güncel `Baslat.cmd` açılınca Firefox Developer Edition Mozilla'nın resmî HTTPS adresinden indirilir. Windows Authenticode zinciri ve Mozilla Corporation yayıncı imzası doğrulanmadan kurucu çalıştırılmaz. Firefox `FirefoxDeveloper`, kendine ait profil `FirefoxProfil`, ek tarayıcı verileri `FirefoxVerileri` klasörüne hazırlanır; hepsi BAT dosyasının yanındadır. İşletim sistemindeki kişisel Firefox profili, varsayılan tarayıcı ve şifre kasası değiştirilmez.
 
@@ -27,11 +29,11 @@ Normal Firefox bu geçici yükleme için imza doğrulamasının kapatılmasını
 
 **1.1.0 düzeltmesi:** Yeni hesap sekmesi bağlamak önceki hesabın bağlantısını değiştirmez. Facebook, LinkedIn, Instagram ve diğer hesapların sekmelerini birer kez ekleyin; **Çalışılacak bağlı hesap sekmesi** listesinde hepsi birlikte kalır. Listeden seçim veya daha önce eşleştirilmiş sekmeye geçiş yeni eşleştirme istemez. Tek sekmeyi kapatmak diğer bağlantıları kaldırmaz. Aynı şirket/pencere bağlantısını tekrar onaylamak da hesap listesini sıfırlamaz. Firefox/eklenti tamamen yeniden başlatılırsa geçici izinler yeniden verilir.
 
-1.0.0 eklentisini kullanıyorsanız panelden güncel ZIP'i indirip aynı klasöre çıkarın; `about:debugging` ekranından eski eklentiyi kaldırıp güncel `manifest.json` dosyasını yükleyin ve paneli yenileyin. Panelde **Eklenti 1.1.0** görünmelidir. Mevcut sosyal medya girişleri etkilenmez.
+Eski eklentiyi kullanıyorsanız panelden güncel ZIP'i indirip aynı klasöre çıkarın; `about:debugging` ekranından eski eklentiyi kaldırıp güncel `manifest.json` dosyasını yükleyin ve paneli yenileyin. 1.11 panelinde **Eklenti 1.4.0** görünmelidir. Mevcut sosyal medya girişleri etkilenmez.
 
 Önce AI asistanı → Ana Firefox → **Bu Firefox penceresini bağla** düğmesine basın. Eklenti simgesinden pencereyi onaylayıp panelde **Eklenti bağlantısını kontrol et** seçeneğini kullanın. **Bu penceredeki tüm sekmeler** listesi açık ve sabitlenmiş sekmeleri gösterir; seçim yaparak aralarında dolaşabilirsiniz. Yeni sekme açıldığında listeyi yenileyin. Panel sekmesi başka pencereye taşınırsa bağlantı yeniden onay ister.
 
-**AI hangi sekmeye geçsin?** alanına örneğin “LinkedIn şirket sekmesine geç” yazıp **AI ile sekmeye geç** düğmesine basabilirsiniz. Yerel model bu pencerenin sekme başlıkları/site adları arasından tek bir sekme seçer; sayfaların içeriği bu seçimde okunmaz. Seçim yalnız bu pencerenin mevcut sekme kimliklerinden biriyse uygulanır. Belirsiz veya hatalı yanıt işlem yapmaz. Bu işlem normal yerel AI üretim kotasından bir istek kullanır; başlık ve site adları mevcut AI sohbet kaydına da girer. Sekme geçişi mevcut taslak yerleştirme onayını iptal eder.
+**AI hangi sekmeye geçsin?** alanına örneğin “LinkedIn şirket sekmesine geç” yazıp **AI ile sekmeye geç** düğmesine basabilirsiniz. Yerel model bu pencerenin sekme başlıkları/site adları arasından tek bir sekme seçer; sayfaların içeriği bu seçimde okunmaz. Seçim yalnız bu pencerenin mevcut sekme kimliklerinden biriyse uygulanır. Belirsiz veya hatalı yanıt işlem yapmaz. Bu işlem normal yerel AI üretim kotasından bir istek kullanır. 1.11'de seçim başlıkları/site adları şirket sohbet geçmişine veya yerel taslaklara kaydedilmez. Sekme geçişi mevcut taslak yerleştirme onayını iptal eder.
 
 Sekme listesi bütün sekmeler arasında gezinmek içindir. Sayfa içeriği okuma/taslak hazırlama bu ilk sürümde yalnız izin verilen dokuz sosyal ağ ve aşağıdaki şirket hedefi bağlantısıyla çalışır; `about:` sayfaları, giriş ve özel mesaj içerikleri okunmaz. Şirketin genel web sitesi araştırması mevcut KKTC ve kaynaklar akışında kalır.
 
@@ -49,13 +51,13 @@ Facebook'ta şirket sayfasının profiline geçin; LinkedIn'de şirket sayfasın
 
 AI'ın ilgili platform taslağındaki **Taslağı ana Firefox'ta onaya gönder** düğmesine basın. Eklenti simgesinden hedefi ve metni kontrol edip **Metni taslağa yerleştir** seçeneğine basın. Onay 60 saniyelik sayfa okumasına bağlıdır. Hedef veya alan değişmişse, kimlik doğrulanamıyorsa ya da alan doluysa işlem durur. Bazı sosyal ağ arayüzleri gerekli bağlantıyı göstermeyebilir; bu durumda metni panelden kopyalayıp Firefox'a kendiniz yerleştirin.
 
-**Bu eklenti sürümü yayın düğmesine basmaz, gönderi zamanlamaz veya yayın yapıldı demez.** Son paylaşımı hedef şirket kimliğini kontrol ederek Firefox'ta siz tamamlarsınız. Var olan Facebook yayın pilotu ayrı bir akıştır; eklentide seçtiğiniz sekme pilotun tarayıcısı değildir. Eklenti bağlantısı mevcut yayın işlerinin hedefini değiştirmez.
+**Taslağı forma yerleştirme eylemi yayın düğmesine basmaz.** Bu eylemden sonra paylaşımı hedef şirket kimliğini kontrol ederek Firefox'ta siz tamamlarsınız. Aynı pencerede otomatik paylaşım için **Yayın takvimi → Firefox'ta toplu otomatik yayın** akışını kullanın; sabit fotoğraf/metin ve eklentide ayrı toplu yayın onayı gerekir. Eski Facebook pilotu ayrı bir akıştır. [Otomatik yayın rehberi](OTOMATIK_YAYIN.md).
 
 ## Kapsam ve bağlantıyı kesme
 
 - Her panel sekmesinin gezinme izni tek bir şirket ve panelin bulunduğu Firefox penceresine bağlıdır. İçerik okuma/taslak hazırlama her hesap için ayrı onaylanmış sekmeyi kullanır. Başka sosyal ağa geçmek önceki hesabın sekmesini yeniden hedeflemez veya silmez. Şirket değiştirmek yeni şirkete otomatik erişim vermez; başka şirket için pencere onayı önceki şirketin bağlantılarını kaldırır.
 - Giriş, doğrulama, özel mesaj ekranları ve görünür parola alanları okunmaz. Sayfa metni hazırlanırken düzenlenebilir alanlar, girişler ve bilinen mesaj panelleri çıkarılır. Sosyal ağlar görünüm değiştirebildiği için gizli alanlara dayanan işlemler elle tamamlanmalıdır.
-- Eklenti rastgele kod/shell çalıştırmaz; yayın, silme, ödeme veya hesap ayarı değiştiren düğmelere basmaz. AI yanıtı çalıştırılacak kod olarak kullanılmaz.
+- Eklenti rastgele kod/shell çalıştırmaz. Yayın düğmesine yalnız önizlemesi ve toplu onayı tamamlanan organik yayın işi basabilir; silme, reklam harcaması, ödeme veya hesap ayarı değiştiren işlemler çalıştırılmaz. AI yanıtı çalıştırılacak kod olarak kullanılmaz.
 - Panelde bağlantıyı kesebilir veya eklenti simgesinden tüm bağlantıları iptal edebilirsiniz. Firefox ya da panel sekmesi kapanınca yeniden onay gerekir. Gizli pencereler desteklenmez.
 - Bağlantı bu tarayıcıdadır; başka bilgisayardan açılan panel bu Firefox'a eklenti üzerinden uzaktan erişemez. Eklentiyle çalışırken panel sekmesi açık olmalıdır; yerel AI için yardımcı da açık olmalıdır.
 - Eklenti güncellemesi, imzalı dağıtım kurulana kadar paketin yeniden indirilip geçici yüklenmesini gerektirir. Mevcut yardımcının patch güncelleyicisi Firefox imza kurallarını değiştirmez.

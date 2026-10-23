@@ -1,6 +1,8 @@
-# Aynı Firefox penceresinde otomatik yayın · 1.10
+# Aynı Firefox penceresinde otomatik yayın · 1.11
 
-Bu yama mevcut Sosyal Studio, şirketler, taslaklar, Firefox girişleri ve yerel model üzerinde çalışır. Yardımcı 1.10, eklenti 1.3 sürümünü mevcut yönetilen Firefox'a taşır. Model yeniden indirilmez; sosyal oturumlar ve kişisel Firefox profili silinmez. Yeni ücretli API veya reklam harcaması yoktur.
+**1.11 güncellemesi:** Taslaklar listesindeki **Yayına hazırla** ve stüdyodaki **Kaydet ve yayına hazırla** düğmeleri seçili taslağı doğrudan yayın ekranına taşır. **Uygun tüm hesapları seç** kullanılabilir; fotoğraf/metin/sekme eksiği varsa hedefin yanında açıkça yazılır. Önceden oluşturulmuş kayıtlar için **Bu taslağın bekleyen gönderilerini seç** kullanılır. Dağıtım sonucu deployment/cloudflare.json dosyasından doğrulanır.
+
+Bu yama mevcut Sosyal Studio, şirketler, taslaklar, Firefox girişleri ve yerel model üzerinde çalışır. Yardımcı 1.11, eklenti 1.4 sürümünü mevcut yönetilen Firefox'a taşır. Model yeniden indirilmez; sosyal oturumlar ve kişisel Firefox profili silinmez. Yeni ücretli API veya reklam harcaması yoktur.
 
 ## İlk hazırlık
 
@@ -17,6 +19,10 @@ Bu yama mevcut Sosyal Studio, şirketler, taslaklar, Firefox girişleri ve yerel
 **Seçili hesapların yayın önizlemelerini oluştur** her hedef için ayrı ve sabit bir iş kaydeder. Hedef adresini, metni, başlığı ve gerçek platform görsellerini kontrol edin. Bir platformda hata olursa daha önce oluşturulmuş önizlemeler korunur; oluşturulmamış hedefin başarılı olduğu söylenmez.
 
 İlgili önizlemeleri seçin, paylaşım onay kutusunu işaretleyin ve **Seçili gönderileri eklenti onayına gönder** deyin. Firefox araç çubuğundaki Sosyal Studio simgesinde hedefleri ve metinleri tekrar inceleyip **Bu hesaplarda otomatik yayını onayla** düğmesine basın. Bu onay gerçek paylaşımı yetkilendirir. Onaysız işler taslak olarak kalır.
+
+**Taslakta kalıyorsa:** AI ekranındaki **Taslağı ana Firefox'ta onaya gönder** yalnız açık forma metin yerleştiren ayrı bir işlemdir. Otomatik gönderim için yukarıdaki **Yayın takvimi** akışını kullanın. “Henüz gönderime iletilmedi” aşamasında işaretli önizleme ve paylaşım onayı gerekir; “Yayın isteği eklentiye ulaştı” aşamasında Firefox simgesindeki son onay gerekir. Panelin yalnız içerikleri kaydetmesi yayın onayı değildir.
+
+1.11 güncellemesinde toplu onayın bir hedefinde hata olursa önce onaylanan hedefler yürütme listesinde korunur ve diğer hedeflerin onayına devam edilir. Başarısız hedefler eklenti onay ekranında hata ayrıntısıyla kalır; yeniden onay yalnız kalan hedefleri işler. İlk onaylı hedef tekrar yetkilendirilmez. Bu düzeltme gerçek hesaplardaki önceki bir denemenin nedeninin tespit edildiği anlamına gelmez.
 
 Eklenti, onaylı işleri sırayla yürütür: şirket/yönetici/pencere/hedef kontrolü, güncel kaynak kontrolü, fotoğraf yükleme ve metin hazırlama, tekrar hesap/içerik denetimi, tek yayın tıklaması ve yeni gönderi bağlantısı denetimi. Aynı iş başka panel veya yeniden başlatma üzerinden tekrar gönderilmez. Yeni bağlantının yanında doğru yazar ve gönderi metni de görünmelidir. Eski bir gönderi bağlantısı veya yalnızca formun kapanması başarı sayılmaz.
 

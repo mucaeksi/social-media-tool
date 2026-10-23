@@ -52,6 +52,21 @@
     windows.set(r.panelTab, window);
     return window;
   }
+  async function workspaceChoices(r) {
+    const tabs = (await browser.tabs.query({ windowId: r.windowId }))
+      .filter((t) => t.id !== r.panelTab && !t.incognito && t.windowId === r.windowId);
+    return r.targets.map((target) => {
+      const choices = tabs.filter((t) => p.clean(t.url, target.platform) &&
+        !/^(?:ads|adsmanager|business)\./i.test(new URL(t.url).hostname))
+        .slice(0, 100).map((t) => ({ id: t.id, title: (t.title || "Sekme").slice(0, 150), url: p.clean(t.url, target.platform) }));
+      const exact = choices.filter((t) => p.canonical(t.url, target.platform) === p.canonical(target.profileUrl, target.platform));
+      const singleAccount = r.targets.filter((t) => t.platform === target.platform).length === 1;
+      const current = bindings.get(r.panelTab)?.get(p.key(target));
+      const suggestedTabId = choices.some((t) => t.id === current?.tabId) ? current.tabId
+        : exact.length === 1 ? exact[0].id : singleAccount && choices.length === 1 ? choices[0].id : null;
+      return { target, choices, suggestedTabId, identityLabel: current?.target.identityLabel || target.companyName };
+    });
+  }
   function cancelPreparation(panelTab) {
     for (const [id, r] of requests)
       if (r.panelTab === panelTab && r.action === "prepare")
@@ -326,6 +341,7 @@
                     : [];
                 return {
                   ...r,
+                  ...(r.action === "connect-workspace" ? { accounts: await workspaceChoices(r) } : {}),
                   choices: tabs
                     .filter(
                       (t) =>
@@ -382,7 +398,28 @@
           );
           if (auth?.userId !== r.userId)
             throw new Error("Panel oturumu değişti; yeniden bağlayın.");
-          if (r.action === "publish-batch") {
+          if (r.action === "connect-workspace") {
+            if (auth.companyId !== r.target.companyId)
+              throw new Error("Seçili şirket değişti; yeniden bağlayın.");
+            if (!Array.isArray(m.selections) || !m.selections.length || m.selections.length > r.targets.length ||
+              new Set(m.selections.map((s) => s.accountId)).size !== m.selections.length ||
+              new Set(m.selections.map((s) => s.tabId)).size !== m.selections.length)
+              throw new Error("Her hesap için farklı bir sekme seçin.");
+            const candidates = await workspaceChoices(r);
+            const approved = [];
+            for (const selection of m.selections) {
+              const row = candidates.find((c) => c.target.accountId === selection.accountId);
+              if (!row || !row.choices.some((t) => t.id === selection.tabId) ||
+                typeof selection.identityLabel !== "string" || !selection.identityLabel.trim() || selection.identityLabel.length > 100)
+                throw new Error("Hesap sekmesi veya görünen sayfa adı doğrulanamadı. Listeyi yenileyin.");
+              approved.push({ userId: r.userId, target: p.target({ ...row.target, identityLabel: selection.identityLabel }),
+                tabId: selection.tabId, windowId: r.windowId, panelTab: r.panelTab });
+            }
+            const w = grantWindow(r), accounts = bindings.get(r.panelTab) || new Map();
+            for (const b of approved) accounts.set(p.key(b.target), b);
+            bindings.set(r.panelTab, accounts);
+            if (!accounts.has(w.activeAccountId)) w.activeAccountId = p.key(approved[0].target);
+          } else if (r.action === "publish-batch") {
             for (const entry of r.entries) {
               await validBinding(
                 { tab: panelTab },
@@ -401,9 +438,25 @@
               )
                 throw new Error("Yayın önizlemesi değişti; yeniden inceleyin.");
             }
-            for (const entry of r.entries)
-              entry.job = await publicationAPI(entry, "authorize");
-            for (const entry of r.entries) autoJobs.set(entry.job.id, entry);
+            let approved = 0;
+            const failures = [];
+            for (const entry of [...r.entries]) {
+              try {
+                entry.job = await publicationAPI(entry, "authorize");
+                // Preserve each successful authorization before trying the next
+                // target. A later failure must not strand already queued jobs.
+                autoJobs.set(entry.job.id, entry);
+                r.entries = r.entries.filter((e) => e.job.id !== entry.job.id);
+                approved++;
+              } catch (e) {
+                failures.push(`${entry.target.platform}: ${e.message || "Onay tamamlanamadı."}`);
+              }
+            }
+            publicationError = failures.length
+              ? `${approved} hedef yayın sırasına alındı; ${failures.length} hedef onaylanamadı. ${failures.join(" ")}`.slice(0, 1000)
+              : "";
+            r.error = publicationError;
+            if (failures.length) throw new Error(publicationError);
           } else if (r.action === "connect-window") {
             grantWindow(r);
           } else if (r.action === "connect") {
@@ -464,6 +517,9 @@
           requests.delete(m.id);
           expire();
           return {};
+        } catch (e) {
+          if (r.action === "publish-batch") r.error = (e.message || "Yayın onayı tamamlanamadı.").slice(0, 1000);
+          throw e;
         } finally {
           working = false;
         }
@@ -505,7 +561,10 @@
           publishing: {
             activeJob,
             queued: [...autoJobs.keys()],
-            error: publicationError,
+            error: [...requests.values()].find((r) => r.panelTab === sender.tab.id && r.userId === m.userId && r.error)?.error || publicationError,
+            pendingJobs: [...requests.values()]
+              .filter((r) => r.panelTab === sender.tab.id && r.action === "publish-batch" && r.userId === m.userId)
+              .flatMap((r) => r.entries.map((e) => e.job.id)),
           },
           pending: [...requests.values()].some(
             (r) => r.panelTab === sender.tab.id,
@@ -579,7 +638,7 @@
         });
         return { tabId: tab.id };
       }
-      if (m.action === "connect" || m.action === "connect-window") {
+      if (m.action === "connect" || m.action === "connect-window" || m.action === "connect-workspace") {
         let target;
         if (m.action === "connect") target = p.target(m.target);
         else {
@@ -592,9 +651,19 @@
           target = { companyId: m.companyId, companyName: m.companyName };
         }
         const tab = await browser.tabs.get(sender.tab.id);
+        let targets;
+        if (m.action === "connect-workspace") {
+          if (!Array.isArray(m.targets) || !m.targets.length || m.targets.length > 25)
+            throw new Error("Hesap bağlantılarında en az bir hedef profil adresi kaydedin (en fazla 25).");
+          targets = m.targets.map((t) => p.target(t));
+          if (targets.some((t) => t.companyId !== target.companyId || p.advertising(t.platform)) ||
+            new Set(targets.map((t) => t.accountId)).size !== targets.length)
+            throw new Error("Şirket hesapları doğrulanamadı.");
+        }
         return queue({
           action: m.action,
           target,
+          ...(targets ? { targets } : {}),
           userId: m.userId,
           panelTab: sender.tab.id,
           windowId: tab.windowId,

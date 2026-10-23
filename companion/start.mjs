@@ -130,6 +130,7 @@ function connect(config) {
         type: "hello",
         capabilities: [
           "local-ai-v1",
+          "local-ai-check-v1",
           "advertising-v1",
           "research-v1",
           "browser-tasks-v1",

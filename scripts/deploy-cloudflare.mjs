@@ -78,7 +78,7 @@ try {
     knowledge:
       "KKTC profili, kanıtlı kaynak onayı, şirket erişimleri ve kalite defteri",
     publishing:
-      "Facebook Firefox pilotu — onaylı kuyruk ve kalıcı bağlantı doğrulaması; gerçek sosyal hesapta henüz doğrulanmadı",
+      "Aynı Firefox penceresinde dokuz platform için onaylı fotoğraf/metin kuyruğu ve yeni gönderi bağlantısı denetimi; gerçek sosyal hesapta henüz doğrulanmadı. Eski Facebook pilotu ayrıca korunur.",
   };
   if (process.env.GITHUB_STEP_SUMMARY)
     await appendFile(

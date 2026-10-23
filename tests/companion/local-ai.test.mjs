@@ -389,3 +389,95 @@ test("uzun bağlam modele gönderilmeden reddedilir; şirket verisi sessizce kes
   );
   assert.equal(f.calls.length, 0);
 });
+
+test("Gerçek model tanılaması arka planda metin, JSON ve görsel çağrılarını yapar; yanıtları rapora koymaz", async (t) => {
+  const f = await fixture(t, (url, body) => {
+    if (url.endsWith("tags")) return Response.json({ models: [model] });
+    const content = body.messages.some((m) => m.images) ? "Kırmızı" : body.format ? JSON.stringify(responseFor("instagram")) : "7";
+    return Response.json({ done: true, message: { content } });
+  });
+  const started = await f.ai.execute({ action: "self-test", model: "ignored", question: "must-not-be-used" });
+  assert.equal(started.status.busy, true);
+  assert.equal(validLocalResult(started), true);
+  await f.ai.testTask;
+  const status = await f.ai.status();
+  assert.equal(status.selfTest.state, "passed");
+  assert.deepEqual(status.selfTest.steps.map((s) => s.id), ["model", "text", "posts", "vision"]);
+  assert.equal(status.selfTest.steps.every((s) => s.state === "passed" && s.durationMs >= 0), true);
+  assert.equal(f.calls.filter((c) => c.url.endsWith("chat")).length, 3);
+  assert.equal(f.calls.some((c) => JSON.stringify(c.body).includes("must-not-be-used")), false);
+  assert.equal(JSON.stringify(status.selfTest).includes("Kurgu"), false);
+  assert.equal(status.memory.generations, 0, "Tanılama şirket taslağı/sohbeti oluşturmaz");
+});
+
+test("Kurulu model yanlış yanıt verirse tanılama başarısız kalır ve sonraki adımlar çalıştırılmaz", async (t) => {
+  const f = await fixture(t, (url) => url.endsWith("tags") ? Response.json({ models: [model] }) : Response.json({ done: true, message: { content: "8" } }));
+  assert.equal((await f.ai.status()).phase, "ready", "Model dosyası kurulu");
+  await f.ai.execute({ action: "self-test" }); await f.ai.testTask;
+  assert.equal(f.ai.selfTest.state, "failed");
+  assert.equal(f.ai.selfTest.code, "TEST_MISMATCH");
+  assert.equal(f.ai.selfTest.steps[1].state, "failed");
+  assert.equal(f.calls.filter((c) => c.url.endsWith("chat")).length, 1);
+});
+
+test("Model hataları GPU belleği, süre, uyumsuz çalıştırıcı ve kesilmiş çıktı olarak ayrılır; durum sorgusu hatayı gizlemez", async (t) => {
+  for (const [code, response] of [
+    ["GPU_MEMORY", () => Response.json({ error: "CUDA out of memory sensitive-fixture" }, { status: 500 })],
+    ["RUNTIME_INCOMPATIBLE", () => Response.json({ error: "model does not support thinking sensitive-fixture" }, { status: 400 })],
+    ["TIMEOUT", () => { throw new DOMException("sensitive-fixture", "TimeoutError"); }],
+    ["OUTPUT_LIMIT", () => Response.json({ done: true, done_reason: "length", message: { content: "sensitive-fixture" } })],
+  ]) {
+    const f = await fixture(t, (url) => url.endsWith("tags") ? Response.json({ models: [model] }) : response());
+    await assert.rejects(f.ai.execute({ ...input, mode: "chat" }), (e) => e.code === code);
+    const status = await f.ai.status();
+    assert.equal(status.lastRun.code, code);
+    assert.equal(status.lastRun.state, "failed");
+    assert.equal(JSON.stringify(status).includes("sensitive-fixture"), false);
+  }
+});
+
+test("AI sekme seçiminde sabit JSON şeması yalnız mevcut kimlikleri kabul eder ve şirket verisini isteme katmaz", async (t) => {
+  let result = '{"tabId":42}';
+  const f = await fixture(t, (url, body) => {
+    if (url.endsWith("tags")) return Response.json({ models: [model] });
+    assert.deepEqual(body.format.properties.tabId.enum, [null, 42, 43]);
+    assert.equal(body.options.num_predict, 64);
+    assert.equal(body.messages.length, 2);
+    assert.equal(JSON.stringify(body.messages).includes("Fiyat uydurma"), false);
+    return Response.json({ done: true, message: { content: result } });
+  });
+  const request = { action: "select-tab", companyId: input.companyId, question: "Şirketin Instagram sekmesine geç", tabs: [
+    { tabId: 42, title: "Kurgu Instagram", site: "instagram.com" },
+    { tabId: 43, title: "Kurgu Facebook", site: "facebook.com" },
+  ] };
+  assert.equal((await f.ai.execute(request)).answer, '{"tabId":42}');
+  result = '{"tabId":999}';
+  await assert.rejects(f.ai.execute(request), (e) => e.code === "INVALID_OUTPUT");
+  result = '{"tabId":null}';
+  assert.equal((await f.ai.execute(request)).answer, result);
+  result = '{"tabId":42,"command":"shell"}';
+  await assert.rejects(f.ai.execute(request), (e) => e.code === "INVALID_OUTPUT");
+});
+
+test("Qwen testinin iptali sonraki adımları çalıştırmaz; yanıt gövdesi süre aşımı da doğru raporlanır", async (t) => {
+  let entered;
+  const started = new Promise((r) => { entered = r; });
+  const f = await fixture(t, (url, _body, options) => {
+    if (url.endsWith("tags")) return Response.json({ models: [model] });
+    return new Promise((_resolve, reject) => {
+      options.signal.addEventListener("abort", () => reject(options.signal.reason), { once: true });
+      entered();
+    });
+  });
+  await f.ai.execute({ action: "self-test" }); await started;
+  await assert.rejects(f.ai.execute({ action: "self-test" }), (e) => e.code === "BUSY");
+  await f.ai.execute({ action: "cancel" }); await f.ai.testTask;
+  assert.equal(f.ai.selfTest.code, "CANCELLED");
+  assert.equal(f.ai.selfTest.steps.length, 2);
+  assert.equal(f.ai.busy, false);
+  const slow = await fixture(t, (url) => url.endsWith("tags") ? Response.json({ models: [model] }) : new Response(new ReadableStream({
+    start(controller) { queueMicrotask(() => controller.error(new DOMException("fixture timeout", "TimeoutError"))); },
+  })));
+  await assert.rejects(slow.ai.execute({ ...input, mode: "chat" }), (e) => e.code === "TIMEOUT");
+  assert.equal((await slow.ai.status()).lastRun.code, "TIMEOUT");
+});

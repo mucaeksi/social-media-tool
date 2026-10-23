@@ -539,10 +539,12 @@ export function PublicationWorkspace({
   company,
   user,
   drafts,
+  initialDraftId = "",
 }: {
   company: Company;
   user: AuthUser;
   drafts: Draft[];
+  initialDraftId?: string;
 }) {
   const [stateFilter, setStateFilter] = useState("");
   const [jobs, setJobs] = useState<Job[]>([]),
@@ -605,6 +607,7 @@ export function PublicationWorkspace({
         company={company}
         user={user}
         drafts={drafts}
+        initialDraftId={initialDraftId}
       />
       <section className="card expert-panel">
         <h2>Facebook · ayrı oturum pilotu</h2>

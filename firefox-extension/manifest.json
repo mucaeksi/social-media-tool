@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Sosyal Studio · Firefox bağlantısı",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Aynı Firefox penceresinde onayladığınız hesap ve sayfalarda metin ve fotoğrafları sırayla yayımlar; yeni gönderi bağlantısını doğrular.",
   "browser_specific_settings": {
     "gecko": {
