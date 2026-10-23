@@ -9,8 +9,10 @@ Bu yama mevcut Sosyal Studio, şirketler, taslaklar, Firefox girişleri ve yerel
 1. Açık eski eklenti bağlantılarını kesip yardımcının güncellenmesini tamamlayın. Gerekiyorsa yönetilen Firefox'u normal şekilde kapatıp yeniden açın. Klasör, profil veya model dosyası silmeyin. Eklenti bağlantıları açıkken otomatik eklenti yenilemesi bekleyebilir.
 2. Siteyi yönetici hesabınızla açın. Şirkete ait bütün sosyal hesapları ve sayfaları **aynı Firefox penceresinde**, ayrı sekmelerde açık bırakın. Giriş ve iki aşamalı doğrulamayı normal Firefox ekranında kendiniz tamamlayın.
 3. **Hesap bağlantıları** ekranında her hesap ve sayfa için ayrı kayıt ve gerçek profil adresi olmalı. LinkedIn hedefi `/company/…` şirket sayfasıdır. Bir şirkette en fazla 25 kayıt, tek toplu onayda en fazla 20 hedef kullanılabilir.
-4. **Yayın takvimi → Firefox'ta toplu otomatik yayın → Pencereyi ve hesap sekmelerini bağla** bölümünü açın. Pencereyi ve her hesabın açık sekmesini eklenti simgesinden onaylayın. Tam hedef adını kontrol edin. Yeni hedef eklemek önceki bağlantıları kaldırmaz. Reklam paneli bağlantıları organik yayın hedefi sayılmaz.
+4. **Hesap bağlantıları** veya **Yayın takvimi → Firefox'ta toplu otomatik yayın** ekranında **Açık hesap sekmelerini topluca bağla** düğmesine basın. Firefox araç çubuğundaki Sosyal Studio simgesinden sekmeleri birlikte onaylayın. Tam hedef adını kontrol edin. Yeni hedef eklemek önceki bağlantıları kaldırmaz. Reklam paneli bağlantıları organik yayın hedefi sayılmaz.
 5. Doğru hesabın gönderi oluşturma ekranı ve hesap seçicisi tanınabilir olmalı. Tanınmayan arayüzde araç rastgele düğmeye basmaz: ilgili sekmede boş bir gönderi formu açıp yeni önizleme hazırlayın. Mevcut yazı ve dosyaların üzerine yazılmaz.
+
+**Giriş açık ama hesap hazır görünmüyorsa:** Hesabın yanında bağlantı nedeni yazılır. Eklenti onayı bu panel sekmesi için verilir; Firefox yeniden başladığında veya site yeni sekmede açıldığında toplu bağlantı onayını yenileyin. **Firefox sekmesi bağlı** yazdığı halde seçim kapalıysa altındaki taslak/metin/fotoğraf eksiğini tamamlayın. Ayrı yardımcı profilinin giriş gözlemi bu bağlantıyı belirlemez. [Ayrıntılı bağlantı yardımı](FIREFOX_QWEN_1_11.md#firefoxta-giriş-açık-panel-bağlı-göstermiyorsa).
 
 ## Gönderimi başlatma
 

@@ -120,9 +120,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792764772.37528,
-    "seen": 1792764814.0498555,
-    "ast_hash": "d01ce3c6d509d6337f51b0311be2718f",
+    "mtime": 1792767934.1423764,
+    "seen": 1792768041.2900631,
+    "ast_hash": "6c922654059f40edf0b98d1e51e30a67",
     "semantic_hash": ""
   },
   "README.md": {
@@ -582,9 +582,9 @@
     "semantic_hash": ""
   },
   "src/CompanyAccounts.tsx": {
-    "mtime": 1792647351.8314688,
-    "seen": 1792655558.2373986,
-    "ast_hash": "834436e1a53f5f116cf7864474cbce83",
+    "mtime": 1792767744.9000201,
+    "seen": 1792768041.2899241,
+    "ast_hash": "f79a67f3760ef060dae1f62a703df3ac",
     "semantic_hash": ""
   },
   "tests/browser/company-computer.spec.mjs": {
@@ -978,15 +978,15 @@
     "semantic_hash": ""
   },
   "src/FirefoxConnection.tsx": {
-    "mtime": 1792761713.519248,
-    "seen": 1792761769.0760329,
-    "ast_hash": "ea78e3c0cc8e73c5bd096f72296f734b",
+    "mtime": 1792767931.9583952,
+    "seen": 1792768041.2899292,
+    "ast_hash": "b49f8a79a8a5c9b9faaca53a9f27fb3c",
     "semantic_hash": ""
   },
   "src/firefoxBridge.ts": {
-    "mtime": 1792761046.9216225,
-    "seen": 1792761556.615522,
-    "ast_hash": "4519855ce8dac5d0863c118afcb2fd93",
+    "mtime": 1792768004.3457932,
+    "seen": 1792768041.289945,
+    "ast_hash": "462f4bfd3bee95695437e4095894832e",
     "semantic_hash": ""
   },
   "tests/browser/firefox-extension.spec.mjs": {
@@ -1020,8 +1020,8 @@
     "semantic_hash": ""
   },
   "companion/extension-sources.json": {
-    "mtime": 1792764773.52727,
-    "seen": 1792764814.049597,
+    "mtime": 1792768030.5655684,
+    "seen": 1792768041.2897117,
     "ast_hash": "4ec81e6074b991ed17838eae5fd4dc2a",
     "semantic_hash": ""
   },
@@ -1404,9 +1404,9 @@
     "semantic_hash": ""
   },
   "src/TabPublishingWorkspace.tsx": {
-    "mtime": 1792764302.7558746,
-    "seen": 1792764414.7792737,
-    "ast_hash": "575ef0ca93ec87d83b567dcedc62e164",
+    "mtime": 1792768005.2777853,
+    "seen": 1792768041.2899394,
+    "ast_hash": "dd92ae941b8d5b38e4ad586b64e5924a",
     "semantic_hash": ""
   },
   "tests/browser/tab-publishing.spec.mjs": {
@@ -1434,9 +1434,9 @@
     "semantic_hash": ""
   },
   "docs/OTOMATIK_YAYIN.md": {
-    "mtime": 1792764772.3792799,
-    "seen": 1792764814.0498784,
-    "ast_hash": "d6363b82118368f997cb00b4d56a763e",
+    "mtime": 1792767933.386383,
+    "seen": 1792768041.2900815,
+    "ast_hash": "3408903c47de76d75037950ffbb35dcc",
     "semantic_hash": ""
   },
   "docs/DOGRULAMA_1_10.md": {
@@ -1458,9 +1458,15 @@
     "semantic_hash": ""
   },
   "docs/FIREFOX_QWEN_1_11.md": {
-    "mtime": 1792764772.37528,
-    "seen": 1792764814.0498645,
-    "ast_hash": "518ef29c7a57d5a93b88b6fdf8a1c692",
+    "mtime": 1792767932.6583893,
+    "seen": 1792768041.2900734,
+    "ast_hash": "b5a483b8179efb3e933cce21f5fca325",
+    "semantic_hash": ""
+  },
+  "tests/browser/firefox-readiness.spec.mjs": {
+    "mtime": 1792768005.9857793,
+    "seen": 1792768041.2899694,
+    "ast_hash": "535ea700f2171624c1374c01b11bc2dd",
     "semantic_hash": ""
   }
 }

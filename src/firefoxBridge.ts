@@ -9,6 +9,43 @@ export type FirefoxBinding = {
   profileUrl: string;
   tabId: number;
 };
+export type FirefoxStatus = {
+  version: string;
+  window: { companyId: string; windowId: number } | null;
+  bindings?: FirefoxBinding[];
+  binding: FirefoxBinding | null;
+  pending: boolean;
+  publishing?: {
+    activeJob: string | null;
+    queued: string[];
+    error: string;
+    pendingJobs?: string[];
+  };
+};
+// A browser login and the grant for this panel tab are separate observations.
+// Never infer a logged-in actor or permission to publish from this status.
+export function firefoxAccountIssue(
+  account: { id: string; companyId: string; platform: string; profileUrl: string },
+  status: FirefoxStatus | null,
+) {
+  if (!account.profileUrl) return "Hedef profil/sayfa adresi eksik. Hesap bağlantılarından kaydedin.";
+  if (!status) return "Eklenti bağlantısı doğrulanmadı. Siteyi eklentili Firefox penceresinde açıp bağlantıyı kontrol edin.";
+  if (!/^1\.(?:[3-9]|[1-9]\d+)\./.test(status.version))
+    return "Toplu yayın için Firefox eklentisini 1.3 veya üzerine güncelleyin.";
+  if (status.window?.companyId !== account.companyId)
+    return status.pending
+      ? "Pencere bağlantısı onay bekliyor. Firefox araç çubuğundaki Sosyal Studio simgesini açın."
+      : "Bu panel sekmesi için Firefox pencere onayı gerekli. Açık hesap sekmelerini topluca bağlayın.";
+  const binding = (status.bindings || (status.binding ? [status.binding] : []))
+    .find((b) => b.companyId === account.companyId && b.accountId === account.id && !b.platform.startsWith("ads-"));
+  if (!binding)
+    return status.pending
+      ? "Hesap sekmesi onay bekliyor. Firefox araç çubuğundaki Sosyal Studio simgesini açın."
+      : "Hesap sekmesi bağlı değil. Açık hesap sekmelerini topluca bağlayın.";
+  if (binding.platform !== account.platform || binding.profileUrl !== account.profileUrl || !binding.identityLabel?.trim())
+    return "Eklentideki hedef adresini ve görünen şirket adını kontrol edip hesabı yeniden bağlayın.";
+  return "";
+}
 export type FirefoxPage = {
   id: string;
   url: string;

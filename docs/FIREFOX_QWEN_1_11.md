@@ -11,11 +11,21 @@ Bir hedefin onayı hata verirse önce onaylanan hedefler artık sessizce kuyruk 
 ## Hesap sekmelerini birlikte bağlama
 
 1. Eklentili Firefox penceresinde paneli ve şirketin sosyal hesap/sayfa sekmelerini açık tutun. Hesap bağlantılarında her hedefin profil adresi kayıtlı olmalı.
-2. AI asistanı → Ana Firefox bölümünde **Açık hesap sekmelerini topluca bağla** düğmesine basın. Aynı düğme Yayın takvimi → Pencereyi ve hesap sekmelerini bağla içinde de bulunur.
+2. **Hesap bağlantıları**, **Yayın takvimi** veya **AI asistanı → Ana Firefox** bölümünde **Açık hesap sekmelerini topluca bağla** düğmesine basın.
 3. Araç çubuğundaki Sosyal Studio simgesini açın. Hesap başına sekme ve ekranda görünen şirket adı bir arada gösterilir. Profil adresi tam eşleşirse ya da o platformda yalnız bir hesap ve bir sekme varsa öneri seçilir. Birden fazla hesap belirsizse otomatik tahmin yapılmaz.
 4. Adları kontrol edip **Seçili hesap sekmelerini birlikte bağla** düğmesine bir kez basın. Sekmesi bulunamayan hesap atlanabilir. Eksik sosyal ağ sekmesini açtıktan sonra toplu bağlantıyı tekrar çalıştırabilirsiniz; diğer hesap bağlantıları korunur.
 
 Panel yaklaşık beş saniyede bir bağlantıyı ve sekmeleri yeniler; her hesap için paneli yeniden kontrol etmek gerekmez. Yayın takvimindeki bağlı hedefler de güncellenir. Bu bağlantı onayı kendi başına paylaşım başlatmaz. Organik yayın mevcut önizleme ve toplu yayın onayından yürür; reklam harcaması ve ödeme kapsam dışıdır.
+
+### Firefox'ta giriş açık, panel bağlı göstermiyorsa
+
+1. Siteyi ve hesapları eklentinin kurulu olduğu aynı Firefox penceresinde açın. Site bu pencerede farklı bir sekmede açıldıysa veya Firefox yeniden başlatıldıysa **Açık hesap sekmelerini topluca bağla** ile bu panel sekmesinin onayını yenileyin. Sosyal ağdan çıkış yapmanız gerekmez.
+2. **Sosyal Studio** araç çubuğu simgesinde **Seçili hesap sekmelerini birlikte bağla** ile onaylayın. Panel, odağa dönüldüğünde ve yaklaşık beş saniyede bir durumu yeniler.
+3. Hesap kartındaki **Firefox sekmesi bağlı**, bağlantı iznini gösterir. Yayın takviminde taslak seçimi veya fotoğraf eksikse ayrı satırda görünür. Etkin hesap/yayın yetkisi gerçek gönderim öncesinde sayfada denetlenir.
+
+**Ayrı yardımcı profilinin eski giriş gözlemi** eklentili Firefox'un oturumunu ölçmez. Yardımcı bağlantısındaki hata kayıtlı hedefleri gizlemez. Sekme listesinin yenilenememesi de başarılı eklenti durumunu silmez; eklentiye ulaşılamadığında bağlantı doğrulanmış gösterilmez ve hata ayrıca yazılır.
+
+Bu ekran düzeltmesi web yamasıdır. Yardımcı 1.11 ve eklenti 1.4 zaten kuruluysa siteyi **Ctrl+F5** ile yenilemek yeterlidir; model veya Firefox profilini yeniden kurmayın.
 
 ## İstekle sekme bulma ve inceleme
 

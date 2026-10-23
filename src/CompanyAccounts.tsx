@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import { api } from "./api.ts";
 import { BrowserTools } from "./BrowserTools.tsx";
+import { FirefoxConnection } from "./FirefoxConnection.tsx";
+import { firefoxAccountIssue } from "./firefoxBridge.ts";
+import type { FirefoxStatus } from "./firefoxBridge.ts";
 import type { PageRead, BrowserTab } from "./BrowserTools.tsx";
 import { Modal } from "./Modal.tsx";
 import type {
@@ -86,6 +89,7 @@ export function CompanyAccounts({
   const [accounts, setAccounts] = useState<Account[]>([]),
     [profiles, setProfiles] = useState<Profile[]>([]),
     [status, setStatus] = useState<ComputerStatus | null>(null);
+  const [firefoxStatus, setFirefoxStatus] = useState<FirefoxStatus | null>(null);
   const [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
@@ -120,7 +124,7 @@ export function CompanyAccounts({
   async function refresh() {
     if (!admin) return;
     const scope = company?.id;
-    const [next, list, saved] = await Promise.all([
+    const [next, list, saved] = await Promise.allSettled([
       api<ComputerStatus>("/api/computer/status"),
       scope
         ? api<Account[]>(`/api/social/accounts?companyId=${scope}`)
@@ -130,9 +134,13 @@ export function CompanyAccounts({
         : Promise.resolve([]),
     ]);
     if (mounted.current && currentCompany.current === scope) {
-      setStatus(next);
-      setAccounts(list);
-      setProfiles(saved);
+      if (next.status === "fulfilled") setStatus(next.value);
+      if (list.status === "fulfilled") setAccounts(list.value);
+      if (saved.status === "fulfilled") setProfiles(saved.value);
+      // The normal Firefox extension does not depend on the helper's profiles.
+      // A helper outage must not hide the registered targets or their grants.
+      for (const result of [list, next, saved])
+        if (result.status === "rejected") throw result.reason;
     }
   }
   useEffect(() => {
@@ -144,6 +152,7 @@ export function CompanyAccounts({
   useEffect(() => {
     setAccounts([]);
     setProfiles([]);
+    setFirefoxStatus(null);
     setError("");
     setNotice("");
     setAdding(null);
@@ -291,14 +300,25 @@ export function CompanyAccounts({
   const prepared = posts.find((p) => p.platform === account?.platform);
   return (
     <>
+      {company && admin && <FirefoxConnection
+        key={company.id}
+        companyId={company.id}
+        companyName={company.name}
+        registeredAccounts={accounts}
+        compact
+        disabled={busy}
+        modelReady={false}
+        onBinding={() => {}}
+        onStatus={setFirefoxStatus}
+      />}
       <section className="card computer-setup">
         <div className="computer-heading">
           <Monitor size={30} />
           <div>
             <h2>Şirket bilgisayarı</h2>
             <p>
-              Hesap girişleri bilgisayarınızdaki kalıcı Firefox profillerinde
-              korunur. Paneli webden kullanmaya devam edin.
+              Yardımcı yerel AI ve gece araştırması için açık kalmalıdır.
+              Eklentili Firefox'taki hesap bağlantılarını yukarıdan yönetin.
             </p>
           </div>
           <span className={`computer-status ${online ? "online" : ""}`}>
@@ -354,10 +374,11 @@ export function CompanyAccounts({
                 </button>
               </li>
               <li>
-                <strong>Hesaplara giriş yapın</strong>
+                <strong>Açık hesap sekmelerini bağlayın</strong>
                 <p>
-                  Yardımcı penceresini açık bırakın. Aşağıdan bir hesabı açın;
-                  giriş ve doğrulamayı sosyal ağın ekranında tamamlayın.
+                  Yardımcı penceresini açık bırakın. Giriş yaptığınız sosyal ağları
+                  ve siteyi aynı Firefox penceresinde tutun; yukarıdan sekmeleri
+                  topluca bağlayıp eklenti simgesinden onaylayın.
                 </p>
                 <a
                   href="https://github.com/mucaeksi/social-media-tool/blob/main/docs/SIRKET_BILGISAYARI.md"
@@ -435,11 +456,9 @@ export function CompanyAccounts({
       <div className="browser-limit-note">
         <ShieldCheck size={20} />
         <p>
-          Bu yöntem Cloudflare'in 10 dakikalık tarayıcı süresini kullanmaz. Tam
-          Firefox profilleri bilgisayarda tutulur; platform yeniden giriş veya
-          doğrulama isteyebilir. X'in bu bilgisayardan erişimi ve gerçek hesap
-          girişleri henüz doğrulanmadı. Toplu otomatik paylaşım henüz etkin
-          değil.
+          Eklentili Firefox bağlantısı açık sekmelere verilen izni gösterir.
+          Etkin hesap ve paylaşım yetkisi yayın öncesinde sayfada kontrol edilir.
+          Fotoğraf/metin ve son yayın onayı Yayın takvimi bölümünde tamamlanır.
         </p>
       </div>
       {error && (
@@ -464,10 +483,10 @@ export function CompanyAccounts({
       )}
       {company && admin && (
         <section className="card">
-          <h2>Tek pencerede sosyal ağlar</h2>
-          <p>Şirketin her sosyal ağdaki ilk hesabı aynı kalıcı Firefox profilini kullanır.
-            Açılan sekmelerde giriş yapıp sayfalarını sabitleyebilirsin.
-            Aynı ağdaki ek hesaplar ayrı profilde tutulur.</p>
+          <h2>Ayrı yardımcı profilleri · isteğe bağlı elle kontrol</h2>
+          <p>Aşağıdaki hesap ekranları yardımcının ayrı Firefox profillerini kullanır.
+            Bu profillerdeki eski giriş bilgisi, eklentili Firefox'taki açık oturumu ölçmez.
+            Hesaplarınız eklentili pencerede zaten açıksa yukarıdan topluca bağlayarak devam edin.</p>
           <p>Google girişte tarayıcıyı reddederse aşağıdaki YouTube hesabında
             <b> Normal Firefox’ta giriş yap</b> seçeneğini kullanın.
             Normal pencereyi kapattıktan sonra aynı profille panel kontrolüne dönebilirsiniz.</p>
@@ -509,14 +528,21 @@ export function CompanyAccounts({
                         Hesap / sayfa bağlantısı
                       </a>
                     )}
-                    <small>
+                    <small aria-label="Firefox hesap bağlantısı">
+                      {firefoxAccountIssue(a, firefoxStatus) || "Firefox sekmesi bağlı · Etkin hesap yayın öncesinde kontrol edilir."}
+                    </small>
+                    <details>
+                      <summary>Ayrı yardımcı profilinin eski giriş gözlemi</summary>
+                      <small>
                       {profiles.some((p) => p.accountId === a.id)
                         ? profiles.find((p) => p.accountId === a.id)
                             ?.authDetected === 1
                           ? "Giriş çerezi bulundu · Yeniden doğrulama gerekebilir"
                           : "Bu bilgisayarda profil açıldı · Giriş doğrulanmadı"
-                        : "İlk giriş bekleniyor"}
-                    </small>
+                        : "Bu ayrı profilde kayıtlı giriş gözlemi yok."}
+                      </small>
+                      <p>Bu gözlem eklentili Firefox'taki hesabın durumunu değiştirmez.</p>
+                    </details>
                     <div>
                       <button
                         className="secondary"

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api.ts";
-import { firefoxRequest } from "./firefoxBridge.ts";
-import type { FirefoxBinding } from "./firefoxBridge.ts";
+import { firefoxRequest, firefoxAccountIssue } from "./firefoxBridge.ts";
+import type { FirefoxStatus } from "./firefoxBridge.ts";
 import { FirefoxConnection } from "./FirefoxConnection.tsx";
 import { zonedTime } from "./scheduleTime.ts";
 import { tabPublishing } from "../shared/tab-publishing.mjs";
@@ -33,12 +33,6 @@ type Job = {
     media: { mediaId: string; fit: string }[];
   };
 };
-type Status = {
-  version: string;
-  window: { companyId: string } | null;
-  bindings: FirefoxBinding[];
-  publishing?: { activeJob: string | null; queued: string[]; error: string; pendingJobs?: string[] };
-};
 const names: Record<string, string> = {
   draft: "Önizleme · eklenti onayı bekliyor",
   queued: "Onaylı · yayın sırasını bekliyor",
@@ -67,7 +61,7 @@ export function TabPublishingWorkspace({
 }) {
   const [accounts, setAccounts] = useState<Account[]>([]),
     [jobs, setJobs] = useState<Job[]>([]),
-    [status, setStatus] = useState<Status | null>(null);
+    [status, setStatus] = useState<FirefoxStatus | null>(null);
   const [loadedDraft, setLoadedDraft] = useState<Draft | null>(null);
   const [draftId, setDraftId] = useState(initialDraftId),
     [chosen, setChosen] = useState<string[]>([]),
@@ -91,13 +85,9 @@ export function TabPublishingWorkspace({
     status.window?.companyId === company.id,
   );
   function targetIssue(a: Account) {
+    const connectionIssue = firefoxAccountIssue(a, status);
+    if (connectionIssue) return connectionIssue;
     if (!draft) return "Önce kaydedilmiş taslağı seçin.";
-    if (!a.profileUrl) return "Önce hedef profil/sayfa adresini kaydedin.";
-    if (!compatible) return "Bu şirketin Firefox penceresini bağlayın (eklenti 1.3 veya üzeri).";
-    const b = binding(a.id);
-    if (!b) return "Bu hesabın açık sekmesini eklentide bağlayın.";
-    if (b.platform !== a.platform || b.profileUrl !== a.profileUrl || !b.identityLabel)
-      return "Eklentideki hedef adresini ve görünen şirket adını kontrol edin.";
     if (!draft.posts.some((p) => p.platform === a.platform)) return "Bu platformun metni taslakta yok.";
     const count = draft.gallery && draft.gallery.length > 1 ? draft.gallery.length
       : draft.platformMedia?.[a.platform] || draft.gallery?.[0]?.mediaId || draft.mediaId ? 1 : 0;
@@ -167,9 +157,14 @@ export function TabPublishingWorkspace({
     };
   }, [draftId, company.id]);
   async function check() {
-    const next = await firefoxRequest<Status>("status");
-    if (alive.current) setStatus(next);
-    return next;
+    try {
+      const next = await firefoxRequest<FirefoxStatus>("status");
+      if (alive.current) setStatus(next);
+      return next;
+    } catch (e) {
+      if (alive.current) setStatus(null);
+      throw e;
+    }
   }
   async function run(action: () => Promise<void>) {
     if (lock.current) return;
@@ -226,17 +221,16 @@ export function TabPublishingWorkspace({
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
-      <details>
-        <summary>Pencereyi ve hesap sekmelerini bağla</summary>
-        <FirefoxConnection
-          companyId={company.id}
-          companyName={company.name}
-          disabled={busy}
-          modelReady={false}
-          onBinding={() => {}}
-          onStatus={(next) => setStatus(next ? { ...next, bindings: next.bindings || [] } : null)}
-        />
-      </details>
+      <FirefoxConnection
+        companyId={company.id}
+        companyName={company.name}
+        disabled={busy}
+        modelReady={false}
+        registeredAccounts={accounts}
+        compact
+        onBinding={() => {}}
+        onStatus={setStatus}
+      />
       <div className="content-actions">
         <button
           className="secondary"
@@ -256,7 +250,7 @@ export function TabPublishingWorkspace({
         >
           Yayın sonuçlarını yenile
         </button>
-        <a href={`?company=${company.id}&page=accounts`}>
+        <a href={`?company=${company.id}&page=connections`}>
           Hesap ve sayfa adreslerini düzenle
         </a>
       </div>
@@ -313,7 +307,8 @@ export function TabPublishingWorkspace({
           Uygun tüm hesapları seç ({readyAccounts.length})
         </button>
         {accounts.map((a) => {
-          const b = binding(a.id), issue = targetIssue(a), ready = !issue;
+          const b = binding(a.id), issue = targetIssue(a), ready = !issue,
+            connectionIssue = firefoxAccountIssue(a, status);
           return (
             <label className="tab-publish-target" key={a.id}>
               <input
@@ -334,8 +329,9 @@ export function TabPublishingWorkspace({
                   {b?.identityLabel || a.label}
                 </strong>
                 <small>
-                  {issue || a.profileUrl}
+                  {connectionIssue || "Firefox sekmesi bağlı"}
                 </small>
+                {!connectionIssue && <small>{issue || `İçerik önizlemesi oluşturulabilir · ${a.profileUrl}`}</small>}
               </span>
             </label>
           );

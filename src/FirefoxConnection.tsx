@@ -7,7 +7,7 @@ import {
   firefoxTabChoice,
   firefoxQuestion,
 } from "./firefoxBridge.ts";
-import type { FirefoxBinding, FirefoxPage } from "./firefoxBridge.ts";
+import type { FirefoxBinding, FirefoxPage, FirefoxStatus } from "./firefoxBridge.ts";
 
 type Account = {
   id: string;
@@ -15,13 +15,6 @@ type Account = {
   label: string;
   platform: string;
   profileUrl: string;
-};
-type Status = {
-  version: string;
-  window: { companyId: string; windowId: number } | null;
-  bindings?: FirefoxBinding[];
-  binding: FirefoxBinding | null;
-  pending: boolean;
 };
 type Tab = {
   id: number;
@@ -38,19 +31,23 @@ export function FirefoxConnection({
   modelReady,
   onBinding,
   onStatus,
+  registeredAccounts,
+  compact = false,
 }: {
   companyId: string;
   companyName: string;
   disabled: boolean;
   modelReady: boolean;
   onBinding: (binding: FirefoxBinding | null) => void;
-  onStatus?: (status: Status | null) => void;
+  onStatus?: (status: FirefoxStatus | null) => void;
+  registeredAccounts?: Account[];
+  compact?: boolean;
 }) {
   const callbacks = useRef({ onBinding, onStatus });
   callbacks.current = { onBinding, onStatus };
   const currentCompany = useRef(companyId);
   currentCompany.current = companyId;
-  const [status, setStatus] = useState<Status | null>(null),
+  const [status, setStatus] = useState<FirefoxStatus | null>(null),
     [accounts, setAccounts] = useState<Account[]>([]),
     [accountId, setAccountId] = useState("");
   const [page, setPage] = useState<FirefoxPage | null>(null),
@@ -58,6 +55,8 @@ export function FirefoxConnection({
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false);
   const [tabs, setTabs] = useState<Tab[]>([]);
+  const [connectionError, setConnectionError] = useState(""),
+    [tabsError, setTabsError] = useState("");
   const [tabTask, setTabTask] = useState("");
   const [tabAnswer, setTabAnswer] = useState("");
   const mounted = useRef(true);
@@ -68,6 +67,14 @@ export function FirefoxConnection({
     };
   }, []);
   useEffect(() => {
+    setAccountId("");
+  }, [companyId]);
+  useEffect(() => {
+    if (registeredAccounts) {
+      setAccounts(registeredAccounts.filter((a) => a.companyId === companyId));
+      return;
+    }
+    setAccounts([]);
     let valid = true;
     void api<Account[]>(`/api/social/accounts?companyId=${companyId}`)
       .then((rows) => {
@@ -79,35 +86,76 @@ export function FirefoxConnection({
     return () => {
       valid = false;
     };
-  }, [companyId]);
+  }, [companyId, registeredAccounts]);
   const refresh = useCallback(async () => {
-    const next = await firefoxRequest<Status>("status");
+    let next: FirefoxStatus;
+    try {
+      next = await firefoxRequest<FirefoxStatus>("status");
+      if (typeof next.version !== "string") throw new Error("Firefox eklentisi durumu doğrulanamadı. Eklentiyi güncelleyip paneli yenileyin.");
+    } catch (e) {
+      if (mounted.current && currentCompany.current === companyId) {
+        setStatus(null);
+        setTabs([]);
+        setTabsError("");
+        setPage(null);
+        setConnectionError((e as Error).message);
+        callbacks.current.onBinding(null);
+        callbacks.current.onStatus?.(null);
+      }
+      throw e;
+    }
     if (!mounted.current || currentCompany.current !== companyId) return null;
+    setConnectionError("");
     setStatus(next);
     callbacks.current.onStatus?.(next);
     const binding = next.binding?.companyId === companyId ? next.binding : null;
     callbacks.current.onBinding(binding);
     if (!binding) setPage(null);
     if (next.window?.companyId === companyId) {
-      const result = await firefoxRequest<{ tabs: Tab[] }>("tabs", { companyId });
-      if (!Array.isArray(result.tabs)) throw new Error("Firefox sekme listesi doğrulanamadı. Eklenti sürümünü kontrol edin.");
-      if (mounted.current && currentCompany.current === companyId) setTabs(result.tabs);
+      try {
+        const result = await firefoxRequest<{ tabs: Tab[] }>("tabs", { companyId });
+        if (!Array.isArray(result.tabs)) throw new Error("Firefox sekme listesi doğrulanamadı. Eklenti sürümünü kontrol edin.");
+        if (mounted.current && currentCompany.current === companyId) {
+          setTabs(result.tabs);
+          setTabsError("");
+        }
+      } catch (e) {
+        if (mounted.current && currentCompany.current === companyId) {
+          setTabs([]);
+          setTabsError((e as Error).message);
+        }
+      }
     }
-    else setTabs([]);
+    else { setTabs([]); setTabsError(""); }
     return binding;
   }, [companyId]);
   useEffect(() => {
+    setStatus(null);
+    setPage(null);
+    setConnectionError("");
+    setTabsError("");
+    setNotice("");
+    setError("");
+    callbacks.current.onStatus?.(null);
+    callbacks.current.onBinding(null);
     let active = true, inFlight = false;
     const check = async () => {
       if (!active || inFlight || document.hidden) return;
       inFlight = true;
       try { await refresh(); }
-      catch { if (active) { setStatus(null); setTabs([]); callbacks.current.onBinding(null); callbacks.current.onStatus?.(null); } }
+      catch { /* refresh reports connection failure without conflating it with the tab list. */ }
       finally { inFlight = false; }
     };
     void check();
     const timer = setInterval(() => void check(), 5000);
-    return () => { active = false; clearInterval(timer); };
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", check);
+    };
   }, [refresh]);
   async function run(action: () => Promise<void>) {
     if (busy || disabled) return;
@@ -176,6 +224,12 @@ export function FirefoxConnection({
         AI görevine uygun sekmeye geçebilir. Aynı platformda birden fazla
         hesap varsa hangi sekmenin kullanılacağı onay ekranında gösterilir.
       </p>
+      <p>
+        Firefox'ta hesaplara giriş yaptıysanız aşağıdaki <b>Açık hesap sekmelerini topluca bağla</b>{" "}
+        düğmesine basın, ardından Firefox araç çubuğundaki <b>Sosyal Studio</b> simgesinden
+        sekmeleri birlikte onaylayın. Bu bağlantı paylaşım yapmaz.
+        Firefox yeniden başlatıldığında veya site yeni bir sekmede açıldığında bağlantı onayını yenileyin.
+      </p>
       <details>
         <summary>Eklentiyi kur · kişisel Firefox için elle kurulum</summary>
         <ol>
@@ -212,9 +266,11 @@ export function FirefoxConnection({
         <button
           disabled={disabled || busy || !accounts.some((a) => a.profileUrl)}
           onClick={() => void run(async () => {
-            if (!status || Number(status.version.split(".")[1]) < 4)
+            const available = status || await firefoxRequest<FirefoxStatus>("status");
+            if (!/^1\.(?:[4-9]|[1-9]\d+)\./.test(available.version))
               throw new Error("Toplu bağlantı için Firefox eklentisi 1.4 veya üzeri gerekli. Güncel yardımcı/eklenti paketini kullanın.");
             await firefoxRequest("connect-workspace", { companyId, companyName });
+            await refresh();
             setNotice("Firefox araç çubuğundaki Sosyal Studio simgesini açın. Bulunan hesap sekmelerini birlikte onaylayın; bağlantı burada otomatik güncellenir.");
           })}
         >
@@ -254,12 +310,18 @@ export function FirefoxConnection({
             : ""}
         </p>
       )}
+      {!status && <p role={connectionError ? "alert" : "status"}>
+        {connectionError || "Eklenti bağlantısı kontrol ediliyor…"}
+      </p>}
+      {tabsError && <p role="alert">Sekme listesi yenilenemedi: {tabsError} Bağlantıyı yeniden kontrol edin.</p>}
       {status?.version === "1.0.0" && (
         <p role="status">
           Çoklu hesap bağlantısı için Eklentiyi kur bölümünden 1.4.0 paketini
           indirip yeniden yükle. İlk sürüm yalnız son bağlanan hesabı tutar.
         </p>
       )}
+      <details open={!compact}>
+        <summary>Sekme araçları ve tek tek hesap bağlantısı</summary>
       {connected.length > 0 && (
         <label className="field">
           Çalışılacak bağlı hesap sekmesi
@@ -472,6 +534,7 @@ export function FirefoxConnection({
           )}
         </>
       )}
+      </details>
       {busy && <p role="status">Firefox bağlantısı kontrol ediliyor…</p>}
       {notice && <p role="status">{notice}</p>}
       {error && <p role="alert">{error}</p>}
