@@ -31,3 +31,5 @@ Bu sonuçlar canlı sağlayıcıların tüm güncel DOM yapılarının, hesap ye
 İlk GitHub Linux turu Chromium bağımlılık kurulumunda uzun süre ilerlemedi. Ubuntu 24.04 runner imajında Chrome/Chromium ve native Firefox zaten kurulu olduğundan CI, hazır arayüz tarayıcısını doğrulayıp `CHROMIUM_EXECUTABLE` üzerinden kullanır. Asıl yayın adaptörleri yine sabitlenmiş gerçek Mozilla Firefox ile test edilir; testler kaldırılmadı.
 
 Sonraki Windows koşusunda test Firefox kurulum adımı başarısız oldu; aynı kaynakla önceki Windows koşusu geçmişti. Test indirmesi aynı sabit Mozilla sürümüyle en fazla üç kez denenir, son neden GitHub annotation olarak kaydedilir ve kurulum adımı dört dakikayla sınırlıdır. Eski doğrulama işleri yeni commit geldiğinde iptal edilebilir; canlı dağıtım işi ayrı grupta sırayla kalır ve çalışırken iptal edilmez.
+
+Playwright CI sonuçları liste raporunun yanında GitHub annotation biçiminde de yazılır; arayüz hatalarının senaryo, dosya ve adımı iş kaydından görülebilir.
