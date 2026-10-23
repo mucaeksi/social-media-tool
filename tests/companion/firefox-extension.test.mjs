@@ -478,9 +478,11 @@ test(
       assert.equal((await rpc("agent-observe", { companyId, sessionId: runId })).ok, false, "Görev onayı olmadan görüntü alınmaz");
       await popup.evaluate(() => refresh());
       await popup.waitForSelector("section pre");
-      await popup.bringToFront();
-      const agentApprove = await popup.evaluateHandle(() => [...document.querySelectorAll("section button")].find((b) => b.textContent === "Qwen'e bu sosyal medya görevini ver"));
-      await agentApprove.asElement().click();
+      // Firefox BiDi cannot activate privileged moz-extension pages. This
+      // fixture already grants capture permission, so use the same real popup
+      // DOM click as the other approvals without a privileged-context command.
+      await popup.evaluate(() => [...document.querySelectorAll("section button")]
+        .find((b) => b.textContent === "Qwen'e bu sosyal medya görevini ver").click());
       await popup.waitForFunction(() => document.querySelector("#status").textContent !== "Bekleyen isteği inceleyin.");
       assert.match(await popup.$eval("#status", (el) => el.textContent), /1 panel bağlantısı etkin/);
       assert.equal((await rpc("status")).agent.id, runId);

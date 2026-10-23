@@ -1,7 +1,7 @@
 # Graph Report - social-media-tool  (2026-10-23)
 
 ## Corpus Check
-- 247 files · ~199,968 words
+- 247 files · ~200,003 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 9 file(s) not represented in the graph (top: (none) 4, .cmd 2, .css 2)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ec424a16`
+- Built from commit: `5770ca3f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
