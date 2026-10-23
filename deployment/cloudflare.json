@@ -1,8 +1,8 @@
 {
   "status": "success",
-  "source_commit": "91d9c58fad0ef4680c5b607ead8dd186a24927b2",
-  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/39975781931",
-  "updated_at": "2026-10-23T15:13:56.911Z",
+  "source_commit": "55d17c46a32473252a6c7ec75fb8b44708a9a11d",
+  "workflow_url": "https://github.com/mucaeksi/social-media-tool/actions/runs/40005119558",
+  "updated_at": "2026-10-23T18:45:21.950Z",
   "url": "https://sosyal-studio.sosyalstudio-06a486e459d2.workers.dev",
   "zero_trust": {
     "plan": "Teams Free Base",
@@ -15,7 +15,7 @@
       "serviceTokens": 50,
       "policiesPerApp": 1000
     },
-    "checkedAt": "2026-10-23T15:13:58.120Z",
+    "checkedAt": "2026-10-23T18:45:23.591Z",
     "seatEnforcement": "Cloudflare Free planı girişte 50 aktif koltuğu uygular"
   },
   "workers_ai": {
@@ -23,7 +23,7 @@
     "price": 0,
     "dailyNeurons": 10000,
     "applicationBudget": 9000,
-    "checkedAt": "2026-10-23T15:13:58.394Z",
+    "checkedAt": "2026-10-23T18:45:23.962Z",
     "paidSubscriptionFound": false
   },
   "social_profiles": {
@@ -45,7 +45,7 @@
     "media": "Cloudflare R2",
     "login": "Kullanıcı adı ve şifre — D1 oturumları",
     "socialBrowser": "Cloudflare Browser Run — deneysel hesap girişi",
-    "companyComputer": "Windows Firefox 1.11.0 — şirket başına tek pencere, sosyal ağ sekmeleri, kalıcı profiller ve yerel AI; gerçek hesap/model kontrolü bilgisayarda yapılmalı",
+    "companyComputer": "Windows Firefox 1.12.0 — şirket başına tek pencere, sosyal ağ sekmeleri, kalıcı profiller ve yerel AI; gerçek hesap/model kontrolü bilgisayarda yapılmalı",
     "ai": "Cloudflare Workers AI — görsel + özet, platform metinleri ve şirket hafızası",
     "knowledge": "KKTC profili, kanıtlı kaynak onayı, şirket erişimleri ve kalite defteri",
     "publishing": "Aynı Firefox penceresinde dokuz platform için onaylı fotoğraf/metin kuyruğu ve yeni gönderi bağlantısı denetimi; gerçek sosyal hesapta henüz doğrulanmadı. Eski Facebook pilotu ayrıca korunur."
