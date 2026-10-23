@@ -252,9 +252,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/cloudflare.yml": {
-    "mtime": 1792751384.6076174,
-    "seen": 1792751394.540405,
-    "ast_hash": "0894273b7cf8861fa67e5b2537c6b084",
+    "mtime": 1792751957.6418653,
+    "seen": 1792751970.3468945,
+    "ast_hash": "449b45de940c6cf803ad6a9e1260fd9b",
     "semantic_hash": ""
   },
   "docs/AI_YOL_HARITASI.md": {
@@ -870,9 +870,9 @@
     "semantic_hash": ""
   },
   "scripts/install-test-firefox.mjs": {
-    "mtime": 1792647351.8288207,
-    "seen": 1792655558.236093,
-    "ast_hash": "3b0a9904c3bee246a936fd0952942712",
+    "mtime": 1792751958.8968794,
+    "seen": 1792751970.3467226,
+    "ast_hash": "7abcd0f92182dc99df87b5bfcf35bbf9",
     "semantic_hash": ""
   },
   "tests/companion/launcher.test.mjs": {
@@ -1440,9 +1440,9 @@
     "semantic_hash": ""
   },
   "docs/DOGRULAMA_1_10.md": {
-    "mtime": 1792751384.6080139,
-    "seen": 1792751394.5404131,
-    "ast_hash": "1a4b7a29801192308980d23f4bc559d7",
+    "mtime": 1792751957.642153,
+    "seen": 1792751970.3469017,
+    "ast_hash": "1954c34539765b4475fce0dbea71fb4a",
     "semantic_hash": ""
   },
   "scripts/use-test-browser.mjs": {
