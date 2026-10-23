@@ -15,6 +15,7 @@ export type FirefoxStatus = {
   bindings?: FirefoxBinding[];
   binding: FirefoxBinding | null;
   pending: boolean;
+  agent?: { id: string; companyId: string; task: string; steps: number; expiresAt: number; accountId: string } | null;
   publishing?: {
     activeJob: string | null;
     queued: string[];

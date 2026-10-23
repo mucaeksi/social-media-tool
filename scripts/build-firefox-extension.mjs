@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import { crc32, sha256 } from "../companion/release.mjs";
 import { tabPublishingExtensionSource } from "../shared/tab-publishing.mjs";
 import { advertisingExtensionSource } from "../shared/advertising.mjs";
+import { firefoxAgentExtensionSource } from "../shared/firefox-agent.mjs";
 
 export const extensionFiles = [
   "manifest.json",
@@ -15,11 +16,16 @@ export const extensionFiles = [
   "background.js",
   "panel-bridge.js",
   "page-agent.js",
+  "agent-policy.js",
+  "agent-background.js",
+  "browser-agent.js",
   "popup.html",
   "popup.css",
   "popup.js",
 ];
 export async function buildFirefoxExtension(destination = "dist/indir") {
+  if (await readFile(new URL("../firefox-extension/agent-policy.js", import.meta.url), "utf8") !== firefoxAgentExtensionSource())
+    throw new Error("Firefox görev politikası eşleşmiyor.");
   if (
     (await readFile(
       new URL("../firefox-extension/advertising.js", import.meta.url),
@@ -98,6 +104,8 @@ export async function buildFirefoxExtension(destination = "dist/indir") {
   );
   await writeFile(join(destination, "FIREFOX_QWEN_1_11.md"),
     await readFile(new URL("../docs/FIREFOX_QWEN_1_11.md", import.meta.url)));
+  await writeFile(join(destination, "FIREFOX_QWEN_1_12.md"),
+    await readFile(new URL("../docs/FIREFOX_QWEN_1_12.md", import.meta.url)));
   await writeFile(join(destination, "OTOMATIK_YAYIN.md"),
     await readFile(new URL("../docs/OTOMATIK_YAYIN.md", import.meta.url)));
   return { bytes: zip.length, sha256: sha256(zip) };

@@ -90,6 +90,7 @@ async function fixture({ publication } = {}) {
   const context = vm.createContext({
     URL,
     crypto,
+    structuredClone,
     console,
     setInterval: () => 0,
     Date: class extends Date {
@@ -99,6 +100,7 @@ async function fixture({ publication } = {}) {
     },
     browser: {
       runtime,
+      permissions: { contains: async () => true },
       browserAction: { setBadgeText() {} },
       tabs: {
         onRemoved: {
@@ -145,6 +147,8 @@ async function fixture({ publication } = {}) {
     await readFile("firefox-extension/policy.js", "utf8"),
     context,
   );
+  for (const file of ["agent-policy.js", "agent-background.js"])
+    vm.runInContext(await readFile("firefox-extension/" + file, "utf8"), context);
   vm.runInContext(
     await readFile("firefox-extension/background.js", "utf8"),
     context,
@@ -187,6 +191,65 @@ async function fixture({ publication } = {}) {
     fills: () => fills,
   };
 }
+test("Qwen Firefox görevi açık araç çubuğu onayı ister; iptal, süre ve pencere/oturum değişimi erişimi keser", async () => {
+  const f = await fixture();
+  await f.connect();
+  async function start() {
+    const runId = crypto.randomUUID();
+    assert.equal((await f.call({ action: "agent-start", companyId, companyName: "Kurgu", requestId: runId,
+      task: "Şirket sayfasını incele", accountId, targets: [{ accountId, platform: "facebook" }] })).pending, true);
+    const state = await f.popupCall({ action: "popup-state" });
+    return { runId, id: state.requests[0].id };
+  }
+  let run = await start();
+  assert.equal((await f.call({ action: "agent-observe", companyId, sessionId: run.runId })).ok, false);
+  assert.equal(f.reads.length, 0);
+  assert.equal((await f.popupCall({ action: "approve", id: run.id })).ok, true);
+  assert.equal((await f.call({ action: "status" })).agent.id, run.runId);
+  assert.equal((await f.call({ action: "publish-batch", companyId, jobs: [] })).ok, false, "Genel görev ve yayın ekranı birlikte hesabı kullanamaz");
+  await f.call({ action: "agent-stop", companyId, sessionId: crypto.randomUUID() });
+  assert.equal((await f.call({ action: "status" })).agent.id, run.runId, "Geç kalan eski görev iptali yeni görevi kesmez");
+  await f.call({ action: "agent-stop", companyId, sessionId: run.runId });
+  assert.equal((await f.call({ action: "status" })).agent, null);
+  run = await start();
+  await f.call({ action: "agent-stop", companyId, sessionId: run.runId });
+  assert.equal((await f.popupCall({ action: "approve", id: run.id })).ok, false, "İptal edilen bekleyen görev sonradan onaylanamaz");
+  run = await start(); await f.popupCall({ action: "approve", id: run.id });
+  f.updated(1, { status: "loading" });
+  assert.equal((await f.call({ action: "status" })).agent, null, "Panel yenilemesi eski görev kararını taşımaz");
+  run = await start(); await f.popupCall({ action: "approve", id: run.id });
+  f.clock(13 * 60000);
+  assert.equal((await f.call({ action: "status" })).agent, null);
+  f.clock(0);
+  run = await start(); await f.popupCall({ action: "approve", id: run.id });
+  f.tabs.get(2).windowId = 11;
+  assert.equal((await f.call({ action: "agent-observe", companyId, sessionId: run.runId })).ok, false);
+  assert.equal(f.reads.length, 0, "Başka pencereye taşınan hesabın içeriği okunmaz");
+  assert.equal((await f.call({ action: "status" })).agent, null);
+});
+test("İleri tarihli yayın Qwen görevini engellemez; yayın zamanı gelince görev yetkisi sona erer", async () => {
+  const job = { id: crypto.randomUUID(), company_id: companyId, account_id: accountId, created_by: "admin", state: "draft",
+    scheduled_at: new Date(1000000).toISOString(), fingerprint: "a".repeat(64),
+    snapshot: { transport: "firefox-tabs", platform: "facebook", profileUrl: target.profileUrl, identityLabel: "Kurgu", text: "Kurgu", media: [] } };
+  const f = await fixture({ publication: async (m) => {
+    if (m.action === "authorize") job.state = "queued";
+    return { ok: true, value: structuredClone(job) };
+  } });
+  await f.connect();
+  await f.call({ action: "publish-batch", companyId, jobs: [job] });
+  let pending = await f.popupCall({ action: "popup-state" });
+  assert.equal((await f.popupCall({ action: "approve", id: pending.requests[0].id })).ok, true);
+  const runId = crypto.randomUUID();
+  assert.equal((await f.call({ action: "agent-start", companyId, accountId, requestId: runId, task: "Sayfayı incele",
+    targets: [{ accountId, platform: "facebook" }] })).pending, true);
+  pending = await f.popupCall({ action: "popup-state" });
+  assert.equal((await f.popupCall({ action: "approve", id: pending.requests[0].id })).ok, true);
+  assert.equal((await f.call({ action: "status" })).agent.id, runId);
+  f.clock(1000000);
+  assert.equal((await f.call({ action: "status" })).agent, null);
+  assert.equal((await f.call({ action: "agent-observe", companyId, sessionId: runId })).ok, false);
+  assert.equal(f.reads.length, 0);
+});
 test("Toplu onayın sonraki hedefinde hata olursa daha önce onaylanan işler yürütme listesinde kalır", async () => {
   let failSecond = true, failPreflight = true, firstAuthorizations = 0;
   const secondId = "33333333-3333-4333-8333-333333333333";
@@ -583,6 +646,7 @@ test("Eklenti paketi yalnız açık kaynak listesini içerir; imzasız dağıtı
     await readFile("firefox-extension/manifest.json", "utf8"),
   );
   assert.equal(manifest.permissions.includes("<all_urls>"), false);
+  assert.deepEqual(manifest.optional_permissions, ["<all_urls>"]);
   assert.equal(manifest.permissions.includes("cookies"), false);
   assert.equal(manifest.permissions.includes("nativeMessaging"), false);
   assert.equal(manifest.content_scripts[0].all_frames, false);

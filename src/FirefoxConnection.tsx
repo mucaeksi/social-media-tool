@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { adProviders } from "../shared/advertising.mjs";
 import { api } from "./api.ts";
+import { FirefoxAgent } from "./FirefoxAgent.tsx";
 import {
   firefoxRequest,
   firefoxTarget,
@@ -234,7 +235,7 @@ export function FirefoxConnection({
         <summary>Eklentiyi kur · kişisel Firefox için elle kurulum</summary>
         <ol>
           <li>
-            <a href="/indir/sosyal-studio-firefox.zip?v=1.4.0" download>
+            <a href="/indir/sosyal-studio-firefox.zip?v=1.5.0" download>
               Eklenti paketini indir
             </a>{" "}
             ve ZIP'i bir klasöre çıkar.
@@ -316,10 +317,11 @@ export function FirefoxConnection({
       {tabsError && <p role="alert">Sekme listesi yenilenemedi: {tabsError} Bağlantıyı yeniden kontrol edin.</p>}
       {status?.version === "1.0.0" && (
         <p role="status">
-          Çoklu hesap bağlantısı için Eklentiyi kur bölümünden 1.4.0 paketini
+          Çoklu hesap bağlantısı için Eklentiyi kur bölümünden 1.5.0 paketini
           indirip yeniden yükle. İlk sürüm yalnız son bağlanan hesabı tutar.
         </p>
       )}
+      <FirefoxAgent key={companyId} companyId={companyId} companyName={companyName} status={status} disabled={disabled || busy} />
       <details open={!compact}>
         <summary>Sekme araçları ve tek tek hesap bağlantısı</summary>
       {connected.length > 0 && (

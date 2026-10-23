@@ -2,6 +2,7 @@ import { platforms } from "./platform-catalog.mjs";
 import { advertisingRules } from "./advertising.mjs";
 import { SOCIAL_EXPERT_RULES } from "./social-expert.mjs";
 import { nightInput, validNightStatus } from "./night-learning.mjs";
+import { firefoxAgentInput } from "./firefox-agent.mjs";
 
 import { LOCAL_MODEL } from "./features.mjs";
 export { LOCAL_MODEL };
@@ -56,6 +57,13 @@ export function localFail(code) {
   });
 }
 export function localInput(input) {
+  if (input?.action === "browser-step") {
+    try { return firefoxAgentInput(input); } catch { localFail("FAILED"); }
+  }
+  if (input?.action === "browser-cancel") {
+    if (!/^[a-f0-9-]{36}$/i.test(input.runId || "")) localFail("FAILED");
+    return { action: "browser-cancel", runId: input.runId };
+  }
   if (typeof input?.action === "string" && input.action.startsWith("night-")) {
     try {
       return nightInput(input);

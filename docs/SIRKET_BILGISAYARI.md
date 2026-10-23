@@ -1,3 +1,7 @@
+# 1.12: Qwen ile sosyal medya Firefox görevleri
+
+Yardımcı 1.12 ve eklenti 1.5, mevcut Qwen3.5:9b ile bağlı sosyal medya sekmelerini görme, gezinme ve boş metin alanına yazma görevlerini yürütür. İlk görevde Firefox görüntü izni istenir. Model ve girişler yeniden kurulmaz; mevcut patch akışı kullanılır. [Görev kullanımı ve güncelleme](https://github.com/mucaeksi/social-media-tool/blob/main/docs/FIREFOX_QWEN_1_12.md).
+
 # 1.7.1: ilk Firefox kurulumunun yarıda kesilmesi düzeltildi
 
 Firefox ilk kurulumunun 30 saniyelik normal başlangıç denetimiyle kesilmesi giderildi. Yardımcı indirme başlamadan kurulum aşamasını denetleyiciye bildirir; bu aşamanın ayrı, en fazla 30 dakikalık süresi vardır. İndirilen MB, Mozilla imza kontrolü ve kurulum aşamaları pencerede görünür. Boşluklu klasörlerde Mozilla NSIS kurucusunun hedef dizin seçeneğini okuyamamasına yol açan Windows argüman tırnaklaması da düzeltildi; yalnız dizin değeri tırnaklanır, shell kullanılmaz. Tekrarlanan ilerleme bildirimi üst süreyi uzatmaz. Zaman aşımı başarı olarak dönmez; henüz hazır olmayan yeni sürüm onaylanmaz. Sonraki açılışta güncelleme kontrolü Firefox kurulumu başlamadan yapılır; başarısız bir kurulum yeni düzeltmenin bulunmasını engellemez.

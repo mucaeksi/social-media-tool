@@ -172,7 +172,8 @@ test(
         // distributed source and ZIP never contain localhost or a test bypass.
         if (name === "manifest.json") {
           const manifest = JSON.parse(text);
-          manifest.permissions = ["tabs", "storage", "http://127.0.0.1/*"];
+          manifest.permissions = ["tabs", "storage", "<all_urls>", "http://127.0.0.1/*"];
+          manifest.optional_permissions = [];
           manifest.content_scripts[0].matches = ["http://127.0.0.1/panel*"];
           manifest.web_accessible_resources = [
             "popup.html",
@@ -210,6 +211,9 @@ test(
               )
               .replace(/u\.port\s*\|\|/g, "") +
             '\nfor(const value of Object.values(StudioPublishing.platforms))value.hosts=["127.0.0.1"];\n';
+        if (name === "agent-policy.js")
+          text = text.replace('facebook: ["facebook.com"]', 'facebook: ["127.0.0.1"]')
+            .replace('u.protocol !== "https:"', 'u.protocol !== "http:"').replace(/\|\|\s*u\.port/, "");
         if (name === "background.js")
           text = text.replace("}, 30000);", "}, 250);");
         await writeFile(join(directory, name), text);
@@ -298,7 +302,7 @@ test(
         () => document.querySelector("#status").textContent.length > 0,
       );
       stage = "ilk hesabı bağlama";
-      assert.equal((await rpc("status")).version, "1.4.0");
+      assert.equal((await rpc("status")).version, JSON.parse(await readFile("firefox-extension/manifest.json", "utf8")).version);
       assert.equal((await rpc("read", { companyId, accountId })).ok, false);
       assert.equal(
         (
@@ -457,6 +461,52 @@ test(
         0,
         "Eklenti yayın düğmesine basmaz",
       );
+      stage = "Qwen görev izni, gerçek ekran görüntüsü ve gözlenen alana yazma";
+      await social.evaluate(() => {
+        document.querySelector("[role=textbox]").textContent = "";
+        const secret = document.createElement("div");
+        secret.id = "agent-private-test";
+        secret.dataset.private = "true";
+        secret.style.cssText = "position:fixed;left:20px;top:450px;width:120px;height:50px;background:red;z-index:99";
+        secret.textContent = "secret-screen-fixture";
+        document.body.append(secret);
+      });
+      const runId = crypto.randomUUID();
+      const startAgent = await rpc("agent-start", { companyId, companyName: "Kurgu", accountId, requestId: runId,
+        task: "Boş şirket gönderi alanına kurgu bir tanıtım yaz.", targets: [{ accountId, platform: "facebook" }] });
+      assert.equal(startAgent.pending, true);
+      assert.equal((await rpc("agent-observe", { companyId, sessionId: runId })).ok, false, "Görev onayı olmadan görüntü alınmaz");
+      await popup.evaluate(() => refresh());
+      await popup.waitForSelector("section pre");
+      await popup.bringToFront();
+      const agentApprove = await popup.evaluateHandle(() => [...document.querySelectorAll("section button")].find((b) => b.textContent === "Qwen'e bu sosyal medya görevini ver"));
+      await agentApprove.asElement().click();
+      await popup.waitForFunction(() => document.querySelector("#status").textContent !== "Bekleyen isteği inceleyin.");
+      assert.match(await popup.$eval("#status", (el) => el.textContent), /1 panel bağlantısı etkin/);
+      assert.equal((await rpc("status")).agent.id, runId);
+      const visual = await rpc("agent-observe", { companyId, sessionId: runId });
+      assert.equal(visual.ok, true, visual.error);
+      assert.ok(visual.image.startsWith("/9j/"));
+      assert.equal(/secret-screen-fixture|private-fixture|message-overlay-fixture/.test(visual.observation.text), false);
+      assert.equal(visual.observation.controls.some((c) => c.label === "Paylaş"), false);
+      const pixels = await (await import("sharp")).default(Buffer.from(visual.image, "base64")).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+      const viewport = await social.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+      const offset = (Math.floor(475 * pixels.info.height / viewport.height) * pixels.info.width + Math.floor(80 * pixels.info.width / viewport.width)) * pixels.info.channels;
+      assert.ok([...pixels.data.subarray(offset, offset + 3)].every((v) => v < 60), "Özel alan gerçek yakalamada kapatılır");
+      const field = visual.observation.controls.find((c) => c.writable);
+      assert.ok(field, "Şirketin boş metin alanı görüntüyle birlikte tanınır");
+      const typed = await rpc("agent-act", { companyId, sessionId: runId, snapshotId: visual.observation.id,
+        decision: { action: "type", elementId: field.id, accountId: "", text: "Qwen görevinden kurgu tanıtım.", message: "Boş alana yaz." } });
+      assert.equal(typed.applied, true, typed.error);
+      assert.equal(await social.$eval("[role=textbox]", (el) => el.innerText), "Qwen görevinden kurgu tanıtım.");
+      const after = await rpc("agent-observe", { companyId, sessionId: runId });
+      assert.equal(after.ok, true, after.error);
+      assert.equal(after.observation.controls.some((c) => c.writable), false, "Mevcut metin otomatik ezilmez");
+      assert.equal((await rpc("agent-act", { companyId, sessionId: runId, snapshotId: after.observation.id,
+        decision: { action: "done", elementId: "", accountId: "", text: "", message: "Metin formda hazır." } })).finished, "done");
+      assert.equal((await rpc("status")).agent, null);
+      assert.equal(await social.evaluate(() => window.published || 0), 0);
+      await social.evaluate(() => { document.querySelector("#agent-private-test").remove(); document.querySelector("[role=textbox]").textContent = "Şirket taslağı"; });
       result = await rpc("read", scope);
       await rpc("prepare", {
         ...scope,

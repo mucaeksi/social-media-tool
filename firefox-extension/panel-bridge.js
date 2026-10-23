@@ -74,6 +74,10 @@
       m.id.length > 64 ||
       ![
         "status",
+        "agent-start",
+        "agent-stop",
+        "agent-observe",
+        "agent-act",
         "publish-batch",
         "connect",
         "open-ad-portal",
@@ -130,6 +134,21 @@
         );
       }
       let target, targets;
+      if (m.action === "agent-start") {
+        const companyId = new URL(location.href).searchParams.get("company");
+        if (companyId !== m.companyId || !Array.isArray(m.targets) || !m.targets.length || m.targets.length > 25)
+          throw new Error("Seçili şirketin bağlı hesaplarını belirtin.");
+        const res = await fetch(location.origin + "/api/social/accounts?" + new URLSearchParams({ companyId }),
+          { credentials: "include", cache: "no-store", redirect: "error" });
+        if (!res.ok) throw new Error("Görev hesapları doğrulanamadı.");
+        const accounts = await res.json();
+        targets = m.targets.map((t) => {
+          const account = accounts.find((a) => a.id === t.accountId && a.companyId === companyId);
+          const ad = (globalThis.StudioAdvertising || []).find((p) => "ads-" + p.id === t.platform && p.platforms.includes(account?.platform));
+          if (!account || (account.platform !== t.platform && !ad)) throw new Error("Görev hedefi seçili şirketin kayıtlı hesabı değil.");
+          return { accountId: account.id, platform: t.platform };
+        });
+      }
       if (m.action === "connect-workspace") {
         const companyId = new URL(location.href).searchParams.get("company");
         if (companyId !== m.companyId)
@@ -186,11 +205,15 @@
         userId: auth.user.id,
         target,
         targets,
+        task: m.task,
+        sessionId: m.sessionId,
+        requestId: m.requestId,
+        decision: m.decision,
         companyName: m.companyName,
         tabId: m.tabId,
         text: m.text,
         snapshotId: m.snapshotId,
-        companyId: m.companyId,
+        companyId: m.action === "status" ? new URL(location.href).searchParams.get("company") : m.companyId,
         accountId: m.accountId,
         platform: m.platform,
         elementId: m.elementId,

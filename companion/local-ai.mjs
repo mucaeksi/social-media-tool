@@ -22,6 +22,7 @@ import {
 } from "./ai-install.mjs";
 import { LocalMemory } from "./local-memory.mjs";
 import { AD_GUIDE_VERSION } from "../shared/advertising.mjs";
+import { firefoxAgent, firefoxAgentSystem, firefoxAgentFormat } from "../shared/firefox-agent.mjs";
 
 const postFormat = {
   type: "object",
@@ -251,6 +252,7 @@ export class LocalAI {
       runtime,
       memory: this.memory.stats(),
       diagnosticVersion: "local-ai-check-v1",
+      browserAgentVersion: firefoxAgent.version,
       selfTest: this.selfTest || null,
       lastRun: this.lastRun || null,
     };
@@ -527,6 +529,10 @@ export class LocalAI {
   }
   async execute(value, onProgress = () => {}) {
     const input = localInput(value);
+    if (input.action === "browser-cancel") {
+      if (this.browserRunId === input.runId) this.generationController?.abort();
+      return { ok: true, status: await this.status({ measure: false }) };
+    }
     if (input.action.startsWith("night-")) {
       if (!this.night) localFail("OFFLINE");
       if (input.action === "night-sync") {
@@ -541,6 +547,7 @@ export class LocalAI {
       input.action === "generate" ||
       input.action === "self-test" ||
       input.action === "select-tab" ||
+      input.action === "browser-step" ||
       input.action === "setup" ||
       input.action === "cancel"
     )
@@ -568,6 +575,7 @@ export class LocalAI {
     }
     if (this.busy) localFail("BUSY");
     this.busy = true;
+    this.browserRunId = input.action === "browser-step" ? input.runId : null;
     this.phase = "generating";
     this.generationController = new AbortController();
     this.generationSignal = AbortSignal.any([
@@ -588,6 +596,18 @@ export class LocalAI {
       );
       if (saved?.model !== LOCAL_MODEL || saved.digest !== installed.digest)
         localFail("MODEL_MISSING");
+      if (input.action === "browser-step") {
+        this.stage = "Firefox ekranı görülüyor ve sıradaki işlem seçiliyor";
+        const { image, ...context } = input;
+        const answer = await this.chat([
+          { role: "system", content: firefoxAgentSystem },
+          { role: "user", content: JSON.stringify(context), images: [image] },
+        ], { tokens: 700, format: firefoxAgentFormat(input) });
+        let choice;
+        try { choice = firefoxAgent.decision(JSON.parse(answer), input.observation, input.tabs); }
+        catch { localFail("INVALID_OUTPUT"); }
+        return { ok: true, companyId: input.companyId, answer: JSON.stringify(choice), posts: [] };
+      }
       if (input.action === "select-tab") {
         this.stage = "İsteğe uygun Firefox sekmesi seçiliyor";
         const answer = await this.chat([
@@ -712,6 +732,7 @@ export class LocalAI {
       if (this.generationController?.signal.aborted) localFail("CANCELLED");
       throw e;
     } finally {
+      this.browserRunId = null;
       if (this.lastRun.state === "running") this.lastRun = { ...this.lastRun, state: "passed", stage: this.stage, durationMs: Date.now() - startedAt };
       this.busy = false;
       this.phase = "unknown";

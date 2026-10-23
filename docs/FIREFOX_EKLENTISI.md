@@ -1,10 +1,12 @@
 # Ana Firefox ile Sosyal Studio
 
+**1.12 güncellemesi:** Yardımcı 1.12 / eklenti 1.5 ile Qwen ekran görüntüsü ve görünür alanlarla sosyal medya görevlerini adım adım yürütür. Sekme geçişi, izinli gezinti/tıklama ve boş şirket alanına metin yazma desteklenir. [Qwen Firefox görevleri ve güncelleme](FIREFOX_QWEN_1_12.md).
+
 1.11 güncellemesinde yardımcı 1.11 / eklenti 1.4 ile **Açık hesap sekmelerini topluca bağla**, kendiliğinden durum yenileme, biçimi sınırlandırılmış AI sekme seçimi ve **Sekmeyi seç ve AI ile incele** eklendi. [Yeni kullanım ve gerçek Qwen testi](FIREFOX_QWEN_1_11.md). Bu dosyadaki tek tek bağlama yolu alternatif olarak korunur.
 
 1.10 güncellemesinde onaylı toplu organik yayın da eklendi: [aynı pencerede otomatik yayın rehberi](OTOMATIK_YAYIN.md). Reklam bütçesi ve ödeme bu akıştan yürütülmez.
 
-## Windows'ta tam otomatik kurulum — yardımcı 1.11 / eklenti 1.4
+## Windows'ta tam otomatik kurulum — yardımcı 1.12 / eklenti 1.5
 
 Güncel `Baslat.cmd` açılınca Firefox Developer Edition Mozilla'nın resmî HTTPS adresinden indirilir. Windows Authenticode zinciri ve Mozilla Corporation yayıncı imzası doğrulanmadan kurucu çalıştırılmaz. Firefox `FirefoxDeveloper`, kendine ait profil `FirefoxProfil`, ek tarayıcı verileri `FirefoxVerileri` klasörüne hazırlanır; hepsi BAT dosyasının yanındadır. İşletim sistemindeki kişisel Firefox profili, varsayılan tarayıcı ve şifre kasası değiştirilmez.
 

@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "Sosyal Studio · Firefox bağlantısı",
-  "version": "1.4.0",
-  "description": "Aynı Firefox penceresinde onayladığınız hesap ve sayfalarda metin ve fotoğrafları sırayla yayımlar; yeni gönderi bağlantısını doğrular.",
+  "version": "1.5.0",
+  "description": "Qwen ile bağlı sosyal medya sayfalarını görüntüler, sekmelerde gezinir ve taslak metinleri yazar; onaylı gönderileri yayın kuyruğundan yürütür.",
   "browser_specific_settings": {
     "gecko": {
       "id": "firefox@sosyal-studio.local",
@@ -32,11 +32,14 @@
     "https://ads.google.com/*",
     "https://ads.twitter.com/*"
   ],
+  "optional_permissions": ["<all_urls>"],
   "background": {
     "scripts": [
       "managed.js",
       "advertising.js",
       "policy.js",
+      "agent-policy.js",
+      "agent-background.js",
       "background.js"
     ],
     "persistent": true

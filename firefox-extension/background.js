@@ -8,6 +8,8 @@
   const autoJobs = new Map();
   let activeJob = null;
   let publicationError = "";
+  const agent = createStudioBrowserAgent({ validBinding, validWindow, queue,
+    publishing: () => Boolean(activeJob || [...autoJobs.values()].some((entry) => Date.parse(entry.job.scheduled_at) <= Date.now())) });
   // Files are updated by the existing helper. Reload only after every panel
   // connection is closed, so an update never discards active account grants.
   if (globalThis.StudioManagedInstallation === true)
@@ -225,6 +227,7 @@
     return result;
   }
   async function drainPublications() {
+    if (agent.anyActive()) return;
     if (working) return;
     const entry = [...autoJobs.values()].find(
       (e) => Date.parse(e.job.scheduled_at) <= Date.now(),
@@ -301,6 +304,7 @@
     return { pending: true };
   }
   browser.tabs.onRemoved.addListener((tabId) => {
+    agent.removed(tabId);
     bindings.delete(tabId);
     windows.delete(tabId);
     for (const [id, accounts] of bindings) {
@@ -313,6 +317,11 @@
     expire();
   });
   browser.tabs.onUpdated.addListener((id, change) => {
+    if (change.status === "loading") {
+      agent.stop(id);
+      for (const [key, r] of requests) if (r.panelTab === id && r.action === "agent-start") requests.delete(key);
+      expire();
+    }
     if (!change.url) return;
     try {
       if (new URL(change.url).origin === p.panelOrigin) return;
@@ -320,6 +329,7 @@
       /* revoke below */
     }
     bindings.delete(id);
+    agent.stop(id);
     windows.delete(id);
     for (const [key, r] of requests)
       if (r.panelTab === id) requests.delete(key);
@@ -364,6 +374,7 @@
           };
         }
         if (m.action === "revoke") {
+          agent.clear();
           bindings.clear();
           autoJobs.clear();
           windows.clear();
@@ -398,7 +409,9 @@
           );
           if (auth?.userId !== r.userId)
             throw new Error("Panel oturumu değişti; yeniden bağlayın.");
-          if (r.action === "connect-workspace") {
+          if (r.action === "agent-start") {
+            await agent.approve(r);
+          } else if (r.action === "connect-workspace") {
             if (auth.companyId !== r.target.companyId)
               throw new Error("Seçili şirket değişti; yeniden bağlayın.");
             if (!Array.isArray(m.selections) || !m.selections.length || m.selections.length > r.targets.length ||
@@ -527,6 +540,7 @@
       if (!p.panel(sender))
         throw new Error("Yalnız Sosyal Studio paneli bağlantı kurabilir.");
       if (m.action === "disconnect") {
+        agent.stop(sender.tab.id);
         for (const [id, e] of autoJobs)
           if (e.panelTab === sender.tab.id) autoJobs.delete(id);
         bindings.delete(sender.tab.id);
@@ -538,10 +552,21 @@
       }
       if (typeof m.userId !== "string" || m.userId.length > 100)
         throw new Error("Panel oturumu doğrulanamadı.");
+      if (["agent-start", "agent-stop", "agent-observe", "agent-act"].includes(m.action)) {
+        if (m.action === "agent-stop") {
+          for (const [id, r] of requests) if (r.panelTab === sender.tab.id && r.action === "agent-start" && r.runId === m.sessionId) requests.delete(id);
+          expire();
+        }
+        if (m.action === "agent-start" && [...requests.values()].some((r) => r.panelTab === sender.tab.id && r.action !== "agent-start"))
+          throw new Error("Önce Firefox simgesindeki bekleyen bağlantı/yayın isteğini tamamlayın.");
+        return agent.handle(m, sender);
+      }
       if (m.action === "status") {
         const w = windows.get(sender.tab.id),
           current = await browser.tabs.get(sender.tab.id);
+        if (w && m.companyId && w.companyId !== m.companyId) agent.stop(sender.tab.id);
         if (w && (w.userId !== m.userId || w.windowId !== current.windowId)) {
+          agent.stop(sender.tab.id);
           bindings.delete(sender.tab.id);
           windows.delete(sender.tab.id);
           throw new Error(
@@ -569,9 +594,11 @@
           pending: [...requests.values()].some(
             (r) => r.panelTab === sender.tab.id,
           ),
+          agent: agent.summary(sender.tab.id),
         };
       }
       if (m.action === "publish-batch") {
+        if (agent.anyActive()) throw new Error("Yayın kuyruğunu başlatmadan önce Qwen Firefox görevini durdurun.");
         const w = await validWindow(sender, m);
         if (
           !Array.isArray(m.jobs) ||

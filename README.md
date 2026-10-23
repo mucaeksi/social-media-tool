@@ -2,6 +2,8 @@
 
 Türkçe, çok şirketli sosyal medya içerik hazırlama ve çalışma paneli. Facebook, Instagram, X, Threads, Pinterest, YouTube, TikTok, LinkedIn ve Tumblr için içerik hazırlanır.
 
+**1.12 yaması:** Qwen ekran görüntüsü ve görünür alanlarla bağlı sosyal medya sekmelerini inceler; sekme/profil/bağlantı gezintisi, kaydırma, izinli düğmelere tıklama ve boş şirket metin alanına yazma görevlerini adım adım yürütür. Görev araç çubuğundan bir kez onaylanır, panelden durdurulur. [Qwen Firefox görev rehberi](docs/FIREFOX_QWEN_1_12.md).
+
 **1.11 yaması:** Firefox hesap sekmelerini tek onayla topluca bağlama, görevle sekme seçip inceleme, gerçek Qwen metin/JSON/görsel testi ve taslaktan yayın ekranına doğrudan geçiş eklendi. Kısmi toplu onayda başarılı hedeflerin yürütme listesi korunur. [Kullanım ve güncelleme rehberi](docs/FIREFOX_QWEN_1_11.md).
 
 **1.10 yaması:** Aynı Firefox penceresinde dokuz platform için onaylı fotoğraf/metin yayın kuyruğu, hesap ve sayfa eşleştirmesi, toplu önizleme, zamanlama ve yeni gönderi bağlantısı denetimi eklendi. [Otomatik yayın rehberi](docs/OTOMATIK_YAYIN.md).

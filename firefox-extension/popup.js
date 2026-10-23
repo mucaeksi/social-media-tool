@@ -1,6 +1,7 @@
 const state = document.querySelector("#status"),
   container = document.querySelector("#requests");
 let busy = false;
+let captureGranted = false;
 async function call(message) {
   const value = await browser.runtime.sendMessage(message);
   if (!value?.ok)
@@ -29,6 +30,7 @@ function node(tag, text, root) {
   return el;
 }
 async function refresh() {
+  captureGranted = await browser.permissions.contains({ origins: ["<all_urls>"] });
   const data = await call({ action: "popup-state" });
   container.replaceChildren();
   state.textContent = data.requests.length
@@ -51,7 +53,12 @@ async function refresh() {
       link.rel = "noreferrer";
     }
     let tabs, identity, identityId, workspace;
-    if (r.action === "connect-workspace") {
+    if (r.action === "agent-start") {
+      node("p", "Qwen bu görev boyunca aşağıdaki sosyal medya sekmelerini görüntüleyebilir, okuyabilir, kaydırabilir, izinli düğmelere tıklayabilir ve boş metin alanlarına yazabilir. En fazla 8 adım ve 12 dakika. Son yayın mevcut yayın kuyruğundan onaylanır.", section);
+      node("pre", r.task, section);
+      for (const b of r.bindings) node("p", `${b.target.platform} · ${b.target.identityLabel || b.target.label}`, section);
+      node("p", "İlk kullanımda Firefox ekran görüntüsü izni ister. Görüntüler özel alanlar kapatıldıktan sonra yerel Qwen'e panel bağlantısından aktarılır; arşivlenmez.", section);
+    } else if (r.action === "connect-workspace") {
       node("p", "Açık hesap sekmeleri birlikte bulundu. Önerileri ve ekranda görünen şirket adlarını kontrol edip tek seferde bağlayın. Bu onay paylaşım yapmaz.", section);
       workspace = [];
       for (const row of r.accounts) {
@@ -152,6 +159,8 @@ async function refresh() {
       "button",
       r.action === "connect-window"
         ? "Bu Firefox penceresini bağla"
+        : r.action === "agent-start"
+          ? "Qwen'e bu sosyal medya görevini ver"
         : r.action === "connect-workspace"
           ? "Seçili hesap sekmelerini birlikte bağla"
         : r.action === "connect"
@@ -162,8 +171,8 @@ async function refresh() {
       section,
     );
     approve.disabled = r.action === "connect" && !r.choices.length;
-    approve.onclick = () =>
-      void act({
+    approve.onclick = () => {
+      const message = {
         action: "approve",
         id: r.id,
         ...(workspace ? { selections: workspace.filter((r) => r.select.value).map((r) => ({ accountId: r.accountId, tabId: Number(r.select.value), identityLabel: r.name.value })) } : {}),
@@ -174,7 +183,19 @@ async function refresh() {
               ...(identityId ? { identityId: identityId.value } : {}),
             }
           : {}),
-      }, r.action === "publish-batch");
+      };
+      if (r.action === "agent-start") {
+        if (captureGranted) { void act(message); return; }
+        // Called directly from the toolbar button gesture. Firefox needs this
+        // optional origin grant for captureTab; the executor still enforces the
+        // frozen social targets, page policy and window on every operation.
+        void browser.permissions.request({ origins: ["<all_urls>"] }).then((granted) => {
+          if (!granted) throw new Error("Ekran görüntüsü izni verilmedi; Firefox görevi başlamadı.");
+          captureGranted = true;
+          return act(message);
+        }).catch((e) => { state.textContent = e.message; });
+      } else void act(message, r.action === "publish-batch");
+    };
     const reject = node("button", "Reddet", section);
     reject.onclick = () => void act({ action: "reject", id: r.id });
   }

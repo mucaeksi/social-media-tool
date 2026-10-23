@@ -15,14 +15,16 @@ import {
 } from "../shared/local-ai.mjs";
 import { visionImage } from "./ai-vision.mjs";
 import { evidenceFor } from "./knowledge.mjs";
+import { firefoxAgentInput, firefoxAgent } from "../shared/firefox-agent.mjs";
+import { adProviders } from "../shared/advertising.mjs";
 
 export function registerLocalAI(app) {
   app.use(
     "/api/computer/ai/*",
-    bodyLimit({
-      maxSize: 32000,
+    (c, next) => bodyLimit({
+      maxSize: c.req.path === "/api/computer/ai/browser-step" ? 320000 : 32000,
       onError: (c) => c.json({ error: "Yerel AI isteği çok büyük." }, 413),
-    }),
+    })(c, next),
   );
   async function call(c, input) {
     const device = await c.env.DB.prepare(
@@ -76,6 +78,34 @@ export function registerLocalAI(app) {
       (choice.tabId !== null && !input.tabs.some((t) => t.tabId === choice.tabId)))
       throw computerError(502, "Qwen yalnız mevcut sekmelerden birini seçebilir.");
     return c.json({ answer: JSON.stringify(choice) });
+  });
+  app.post("/api/computer/ai/browser-step", async (c) => {
+    let input;
+    try { input = firefoxAgentInput(await c.req.json()); }
+    catch { throw computerError(400, "Firefox görev görüntüsü veya hedefi doğrulanamadı."); }
+    if (!(await c.get("store").company(input.companyId))) throw computerError(404, "Şirket bulunamadı.");
+    const { results } = await c.env.DB.prepare("SELECT id,platform,profile_url FROM social_accounts WHERE company_id=?").bind(input.companyId).all();
+    for (const tab of input.tabs) {
+      const row = results.find((r) => r.id === tab.accountId);
+      if (!row || (row.platform !== tab.platform && !adProviders.some((p) => "ads-" + p.id === tab.platform && p.platforms.includes(row.platform))))
+        throw computerError(403, "Görevdeki hesap seçili şirkete ait değil.");
+    }
+    const row = results.find((r) => r.id === input.target.accountId);
+    const ad = adProviders.find((p) => "ads-" + p.id === input.target.platform && p.platforms.includes(row?.platform));
+    if (!row || input.target.profileUrl !== (ad ? ad.home : row.profile_url) || (!ad && input.target.platform !== row.platform))
+      throw computerError(409, "Görev hedefi değişti. Firefox hesabını yeniden bağlayın.");
+    const result = await call(c, input);
+    let choice;
+    try {
+      if (result.companyId !== input.companyId) throw new Error();
+      choice = firefoxAgent.decision(JSON.parse(result.answer), input.observation, input.tabs);
+    } catch { throw computerError(502, "Qwen Firefox işlem yanıtı doğrulanamadı."); }
+    return c.json({ decision: choice });
+  });
+  app.post("/api/computer/ai/browser-cancel", async (c) => {
+    const input = z.object({ companyId: z.uuid(), runId: z.uuid() }).parse(await c.req.json());
+    if (!(await c.get("store").company(input.companyId))) throw computerError(404, "Şirket bulunamadı.");
+    return c.json((await call(c, { action: "browser-cancel", runId: input.runId })).status);
   });
   const nightCompany = async (c, id) => {
     if (c.get("identity")?.role !== "admin")

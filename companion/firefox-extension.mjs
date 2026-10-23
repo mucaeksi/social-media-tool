@@ -31,7 +31,7 @@ export async function prepareFirefoxExtension(
   const bundle = JSON.parse(await readFile(bundleURL, "utf8"));
   const files = [
     ...baseFiles,
-    ...["advertising.js", "publication-policy.js", "publisher.js"].filter(
+    ...["advertising.js", "publication-policy.js", "publisher.js", "agent-policy.js", "agent-background.js", "browser-agent.js"].filter(
       (f) => bundle.files && Object.hasOwn(bundle.files, f),
     ),
   ];
@@ -47,6 +47,9 @@ export async function prepareFirefoxExtension(
   )
     throw new Error("Firefox eklenti paketi doğrulanamadı.");
   const manifest = JSON.parse(bundle.files["manifest.json"]);
+  const agentFiles = ["agent-policy.js", "agent-background.js", "browser-agent.js"];
+  if ((agentFiles.some((f) => Object.hasOwn(bundle.files, f)) || manifest.background?.scripts?.includes("agent-background.js")) &&
+    !agentFiles.every((f) => typeof bundle.files[f] === "string")) throw new Error("Firefox görev paketi eksik.");
   if (
     manifest.browser_specific_settings?.gecko?.id !==
       "firefox@sosyal-studio.local" ||

@@ -131,6 +131,7 @@ function connect(config) {
         capabilities: [
           "local-ai-v1",
           "local-ai-check-v1",
+          "firefox-agent-v1",
           "advertising-v1",
           "research-v1",
           "browser-tasks-v1",

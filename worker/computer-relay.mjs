@@ -353,6 +353,8 @@ export class CompanyComputer {
           );
         if (["self-test", "select-tab"].includes(input.input.action) && !socket.deserializeAttachment().localAICheck)
           throw computerError(409, "Gerçek Qwen testi için yardımcı 1.11 veya üzeri gerekli. Yardımcı güncellemesini tamamlayın.");
+        if (["browser-step", "browser-cancel"].includes(input.input.action) && !socket.deserializeAttachment().firefoxAgent)
+          throw computerError(409, "Qwen Firefox kontrolü için yardımcı 1.12 veya üzeri gerekli. Yardımcı güncellemesini tamamlayın.");
         if (
           input.input.requireAdvertising &&
           !socket.deserializeAttachment().advertising
@@ -370,7 +372,7 @@ export class CompanyComputer {
           );
           const count = budget.day === day ? budget.count : 0;
           const setups = budget.day === day ? budget.setups : 0;
-          const inference = ["generate", "self-test", "select-tab"].includes(input.input.action);
+          const inference = ["generate", "self-test", "select-tab", "browser-step"].includes(input.input.action);
           if (
             (inference &&
               (count >= LOCAL_AI_LIMITS.dailyRequests ||
@@ -401,7 +403,7 @@ export class CompanyComputer {
         { input: input.input },
         {
           type: "ai-command",
-          timeout: input.input.action === "generate" ? 280000 : input.input.action === "select-tab" ? 120000 : 12000,
+          timeout: input.input.action === "generate" ? 280000 : ["select-tab", "browser-step"].includes(input.input.action) ? 120000 : 12000,
           validate: validLocalResult,
           onProgress: input.input.jobId
             ? async (progress) => {
@@ -549,6 +551,8 @@ export class CompanyComputer {
           value.capabilities.includes("local-ai-v1"),
         localAICheck:
           Array.isArray(value.capabilities) && value.capabilities.includes("local-ai-check-v1"),
+        firefoxAgent:
+          Array.isArray(value.capabilities) && value.capabilities.includes("firefox-agent-v1"),
         advertising:
           Array.isArray(value.capabilities) &&
           value.capabilities.includes("advertising-v1"),

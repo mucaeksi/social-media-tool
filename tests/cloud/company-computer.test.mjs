@@ -467,6 +467,9 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
     if (m.input.action === "self-test") result.status = { ...result.status, diagnosticVersion: "local-ai-check-v1", selfTest: { state: "running", startedAt: new Date().toISOString(), finishedAt: null, code: null, steps: [] } };
     if (m.input.action === "select-tab") result = { ok: true, companyId: m.input.companyId,
       answer: JSON.stringify({ tabId: mode === "unknown-tab" ? 999 : m.input.tabs[0].tabId }), posts: [] };
+    if (m.input.action === "browser-step") result = { ok: true, companyId: mode === "wrong-browser-company" ? otherCompany : m.input.companyId,
+      answer: JSON.stringify({ action: "type", elementId: mode === "unknown-control" ? crypto.randomUUID() : m.input.observation.controls[0].id,
+        accountId: "", text: "Kurgu metni", message: "Boş alana yaz." }), posts: [] };
     agent.send(JSON.stringify({ type: "ai-result", id: m.id, result }));
   };
   agent.addEventListener("message", listener);
@@ -672,6 +675,34 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
     assert.equal((await request("/api/computer/ai/select-tab", { method: "POST", body: choose })).status, 502);
     assert.equal((await request("/api/computer/ai/select-tab", { method: "POST", body: { ...choose, tabs: [] } })).status, 400);
     assert.equal((await db.prepare("SELECT COUNT(*) AS total FROM ai_turns").first()).total, 2, "Tanılama ve sekme seçimi sohbet geçmişine girmez");
+    const browserInput = { companyId, runId: crypto.randomUUID(), task: "Boş alana kurgu metni yaz.",
+      target: { companyId, accountId, platform: "x", identityLabel: "Kurgu", profileUrl: "https://x.com/fixture" },
+      observation: { id: crypto.randomUUID(), url: "https://x.com/home", title: "Kurgu", text: "Güncel sayfa",
+        controls: [{ id: crypto.randomUUID(), label: "Gönderi metni", kind: "field", clickable: false, writable: true }] },
+      tabs: [{ accountId, platform: "x", label: "Kurgu" }], history: [], image: "/9j/2Q==" };
+    const browserCall = (body = browserInput, role = "other") => request("/api/computer/ai/browser-step", { method: "POST", body, role });
+    assert.equal((await browserCall()).status, 409, "Eski yardımcıya görsel Firefox kararı gönderilmez");
+    assert.equal((await browserCall(browserInput, "editor")).status, 403);
+    assert.equal((await browserCall({ ...browserInput, target: { ...browserInput.target, profileUrl: "https://x.com/changed" } })).status, 409);
+    assert.equal((await browserCall({ ...browserInput, target: { ...browserInput.target, accountId: otherAccount },
+      tabs: [{ ...browserInput.tabs[0], accountId: otherAccount }] })).status, 403);
+    const browserUpgraded = new Promise((resolve) => {
+      const receive = (e) => { if (JSON.parse(e.data).type === "pong") { agent.removeEventListener("message", receive); resolve(); } };
+      agent.addEventListener("message", receive);
+    });
+    agent.send(JSON.stringify({ type: "hello", capabilities: ["local-ai-v1", "local-ai-check-v1", "firefox-agent-v1"] }));
+    agent.send(JSON.stringify({ type: "ping" })); await browserUpgraded;
+    mode = "good";
+    const step = await browserCall(); assert.equal(step.status, 200);
+    assert.equal((await step.json()).decision.elementId, browserInput.observation.controls[0].id);
+    assert.equal(captured.image, browserInput.image);
+    assert.equal(captured.profile, undefined);
+    mode = "unknown-control"; assert.equal((await browserCall()).status, 502);
+    mode = "wrong-browser-company"; assert.equal((await browserCall()).status, 502);
+    mode = "good";
+    assert.equal((await browserCall({ ...browserInput, image: "/9j/" + "A".repeat(320000) })).status, 413);
+    assert.equal((await request("/api/computer/ai/browser-cancel", { method: "POST", body: { companyId, runId: browserInput.runId }, role: "other" })).status, 200);
+    assert.equal((await db.prepare("SELECT COUNT(*) AS total FROM ai_turns").first()).total, 2, "Görsel Firefox görevleri sohbet arşivine yazılmaz");
   } finally {
     agent.removeEventListener("message", listener);
   }
