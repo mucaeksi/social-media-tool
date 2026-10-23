@@ -6,7 +6,7 @@ import { firefoxAgentInput } from "./firefox-agent.mjs";
 
 import { LOCAL_MODEL } from "./features.mjs";
 export { LOCAL_MODEL };
-export const LOCAL_EXPERT_VERSION = "yerel-kktc-reklam-v6";
+export const LOCAL_EXPERT_VERSION = "yerel-kktc-otomasyon-v7";
 export const LOCAL_AI_LIMITS = Object.freeze({
   imageBytes: 600000,
   wireChars: 900000,
@@ -88,6 +88,10 @@ export function localInput(input) {
     if (JSON.stringify(tabs).length > 6000) localFail("CONTEXT_TOO_LONG");
     return { action: "select-tab", companyId: input.companyId, question: input.question, tabs };
   }
+  if (input.action === "cancel" && input.jobId !== undefined) {
+    if (!/^[a-f0-9-]{36}$/i.test(input.jobId) || !/^[a-f0-9-]{36}$/i.test(input.attemptId || "")) localFail("FAILED");
+    return { action: "cancel", jobId: input.jobId, attemptId: input.attemptId };
+  }
   if (input.action !== "generate") return { action: input.action };
   const { companyId, profile, entries, question, mode, selected, image } =
     input;
@@ -142,6 +146,7 @@ export function localInput(input) {
     (typeof input.jobId !== "string" || !/^[a-f0-9-]{36}$/i.test(input.jobId))
   )
     localFail("FAILED");
+  if (input.attemptId !== undefined && !/^[a-f0-9-]{36}$/i.test(input.attemptId)) localFail("FAILED");
   return {
     action: "generate",
     companyId,
@@ -152,6 +157,7 @@ export function localInput(input) {
     selected,
     image,
     ...(input.jobId ? { jobId: input.jobId } : {}),
+    ...(input.attemptId ? { attemptId: input.attemptId } : {}),
     ...(resume ? { resume } : {}),
   };
 }
@@ -192,6 +198,10 @@ export function localPost(text, platform, hasImage) {
     .join("\n\n");
   if ([...combined].length > localPlatforms[platform].limit)
     localFail("INVALID_OUTPUT");
+  const tags = p.hashtags.map((tag) => tag.normalize("NFKC").toLocaleLowerCase("tr-TR"));
+  if (new Set(tags).size !== tags.length) localFail("INVALID_OUTPUT");
+  const captionTags = (p.caption.match(/#[\p{L}\p{N}_]+/gu) || []).map((tag) => tag.normalize("NFKC").toLocaleLowerCase("tr-TR"));
+  if (tags.some((tag) => captionTags.includes(tag))) localFail("INVALID_OUTPUT");
   return {
     platform,
     title: p.title,

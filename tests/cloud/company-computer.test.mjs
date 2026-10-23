@@ -708,6 +708,94 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
   }
 });
 
+test("Qwen hazırlığı asıl taslağı korur; tekrar, eski kaynak, yarım üretim ve şirket kapsamını denetler", async () => {
+  const upgraded = new Promise((resolve) => {
+    const receive = (e) => { if (JSON.parse(e.data).type === "pong") { agent.removeEventListener("message", receive); resolve(); } };
+    agent.addEventListener("message", receive);
+  });
+  agent.send(JSON.stringify({ type: "hello", capabilities: ["local-ai-v1", "draft-automation-v1"] }));
+  agent.send(JSON.stringify({ type: "ping" })); await upgraded;
+  const second = await (await request("/api/social/accounts", { method: "POST", body: { companyId, platform: "facebook", label: "Kurgu sayfa", profileUrl: "https://www.facebook.com/fixture" } })).json();
+  const makeDraft = async () => (await (await request("/api/drafts", { method: "POST", body: {
+    companyId, name: "Kaynak kurgu", text: "Girne mağazamız için kaynak metin.", selected: ["x"], posts: [], mediaId: null,
+  } })).json());
+  let calls = 0, captured, hold, started, fixtureSource, mode = "good";
+  const listener = async (e) => {
+    const m = JSON.parse(e.data); if (m.type !== "ai-command") return;
+    captured = m.input;
+    if (m.input.action !== "generate") { agent.send(JSON.stringify({ type: "ai-result", id: m.id, result: { ok: true, status: { phase: "ready", model: LOCAL_MODEL } } })); return; }
+    calls++;
+    const posts = m.input.selected.map((platform) => ({ platform, title: "Kurgu", caption: platform + " için Girne tanıtımı.", hashtags: [], alt: "" }));
+    if (mode === "hold") { started(); await new Promise((r) => { hold = r; }); }
+    if (mode === "fail") {
+      agent.send(JSON.stringify({ type: "ai-progress", id: m.id, progress: { posts: posts.slice(0, 1), observation: null } }));
+      agent.send(JSON.stringify({ type: "ai-result", id: m.id, result: { ok: false, code: "TIMEOUT" } }));
+    } else agent.send(JSON.stringify({ type: "ai-result", id: m.id, result: { ok: true, companyId: m.input.companyId, answer: "Hazır.", posts, observation: null } }));
+  };
+  agent.addEventListener("message", listener);
+  const prepare = (body, role = "other") => request("/api/computer/ai/prepare-draft", { method: "POST", body, role });
+  try {
+    const source = await makeDraft(), input = { id: crypto.randomUUID(), attemptId: crypto.randomUUID(), draftId: source.id, revision: source.revision, accountIds: [accountId, second.id] };
+    assert.equal((await prepare(input, "editor")).status, 403);
+    assert.equal((await prepare({ ...input, accountIds: [otherAccount] })).status, 400);
+    assert.equal((await prepare({ ...input, revision: 99 })).status, 409);
+    assert.equal(calls, 0);
+    const result = await prepare(input); assert.equal(result.status, 201, JSON.stringify(await result.clone().json()));
+    const ready = await result.json();
+    assert.equal(ready.draft.id, input.id); assert.notEqual(ready.draft.id, source.id);
+    assert.equal(ready.draft.posts.length, 2); assert.equal(ready.draft.review.state, "review");
+    assert.equal(ready.published, false); assert.equal(captured.requireDraftAutomation, true);
+    assert.match(captured.question, /Girne mağazamız/);
+    assert.deepEqual((await (await request(`/api/drafts/${source.id}`)).json()).posts, []);
+    assert.equal((await prepare(input)).status, 200); assert.equal(calls, 1, "Tekrar üretim yapmaz");
+    assert.equal((await prepare(input, "admin")).status, 409);
+    assert.equal((await prepare({ ...input, accountIds: [accountId] })).status, 409);
+    assert.equal((await request(`/api/computer/ai/jobs/${input.id}/cancel`, { method: "POST", role: "admin", body: { attemptId: input.attemptId } })).status, 404);
+    assert.equal((await request(`/api/computer/ai/jobs/${input.id}/cancel`, { method: "POST", role: "other", body: { attemptId: input.attemptId } })).status, 200);
+    assert.equal(captured.jobId, input.id);
+    assert.equal(captured.attemptId, input.attemptId);
+    assert.equal((await request("/api/tab-publications", { method: "POST", body: {
+      id: crypto.randomUUID(), draftId: ready.draft.id, draftRevision: 99, accountId, targetLabel: "Kurgu",
+    } })).status, 409, "Değişmiş hazırlık sürümüyle önizleme oluşturulmaz");
+    assert.equal((await (await request(`/api/tab-publications?companyId=${companyId}`)).json()).length, 0, "Hazırlık gerçek yayın başlatmaz");
+    const changed = await makeDraft(), changing = { ...input, id: crypto.randomUUID(), draftId: changed.id, revision: changed.revision };
+    mode = "hold"; const waiting = new Promise((r) => { started = r; }); const pending = prepare(changing); await waiting;
+    assert.equal((await prepare(changing)).status, 409, "Aynı hazırlık eşzamanlı çalışmaz");
+    await request(`/api/drafts/${changed.id}`, { method: "PUT", body: { ...changed, text: "Yeni kaynak" } });
+    hold(); assert.equal((await pending).status, 409);
+    assert.equal((await request(`/api/drafts/${changing.id}`)).status, 404);
+    mode = "fail";
+    const partial = await makeDraft(), retry = { ...input, id: crypto.randomUUID(), draftId: partial.id, revision: partial.revision };
+    assert.equal((await prepare(retry)).status, 503);
+    mode = "good"; assert.equal((await prepare({ ...retry, attemptId: crypto.randomUUID() })).status, 201);
+    assert.equal(captured.resume.posts.length, 1, "Yarım kalan platformlar devam eder");
+    assert.equal(calls, 4);
+    assert.equal((await prepare({ ...retry, id: partial.id })).status, 409, "Kaynak kimliğiyle üzerine yazılmaz");
+    const captionOnly = await (await request("/api/drafts", { method: "POST", body: { companyId, name: "Yalnız Facebook kaynağı", text: "", selected: ["facebook"],
+      posts: [{ platform: "facebook", title: "Kurgu", caption: "Kaynak anlamı korunacak sandalye metni.", hashtags: [], alt: "" }] } })).json();
+    assert.equal((await prepare({ ...input, id: crypto.randomUUID(), draftId: captionOnly.id, revision: captionOnly.revision, accountIds: [accountId] })).status, 201);
+    assert.match(captured.question, /Kaynak anlamı korunacak sandalye metni/); assert.deepEqual(captured.selected, ["x"]);
+    const sourceId = crypto.randomUUID(), factId = crypto.randomUUID(), now = new Date().toISOString(), until = new Date(Date.now() + 86400000).toISOString();
+    fixtureSource = sourceId;
+    await db.prepare("INSERT INTO research_sources(id,company_id,url,final_url,title,excerpt,content_hash,fetched_at,state) VALUES(?,?,?,?,?,?,?,?,'approved')")
+      .bind(sourceId, companyId, "https://company.org/receipt", "https://company.org/receipt", "Kurgu", "Kurgu", "hash", now).run();
+    await db.prepare("INSERT INTO research_facts(id,company_id,source_id,field,value,evidence,approved_by,approved_at,valid_until) VALUES(?,?,?,?,?,?,?,?,?)")
+      .bind(factId, companyId, sourceId, "denetim", "Doğrulanmış kurgu bilgi", "Kurgu", "admin", new Date(Date.now() - 60000).toISOString(), until).run();
+    for (let i = 0; i < 6; i++) await db.prepare("INSERT INTO research_facts(id,company_id,source_id,field,value,evidence,approved_by,approved_at,valid_until) VALUES(?,?,?,?,?,?,?,?,?)")
+      .bind(crypto.randomUUID(), companyId, sourceId, "test", `Z${i}`, "Kurgu", "admin", now, until).run();
+    const proofDraft = await (await request("/api/drafts", { method: "POST", body: { companyId, name: "Kanıtlı kaynak", text: "Girne için tanıtım.", selected: ["x"], posts: [],
+      sourceRefs: [{ sourceId, factId, field: "denetim", value: "Doğrulanmış kurgu bilgi", url: "https://company.org/receipt", validUntil: until }] } })).json();
+    mode = "hold"; const evidenceWaiting = new Promise((r) => { started = r; });
+    const proofRequest = prepare({ ...input, id: crypto.randomUUID(), draftId: proofDraft.id, revision: proofDraft.revision, accountIds: [accountId] });
+    await evidenceWaiting; assert.equal(captured.profile.sourceRefs.some((r) => r.factId === factId), false, "Eski kanıt yeni altılı seçime girmiyor");
+    await db.prepare("UPDATE research_facts SET retired_at=? WHERE id=?").bind(now, factId).run(); hold();
+    assert.equal((await proofRequest).status, 409, "Üretim sırasında değişen asıl kaynak yeniden doğrulanır");
+  } finally {
+    agent.removeEventListener("message", listener);
+    if (fixtureSource) await db.prepare("DELETE FROM research_sources WHERE id=?").bind(fixtureSource).run();
+  }
+});
+
 test("Gece planı yalnız yöneticiye ve seçili şirketin güncel onaylı kaynaklarına açılır", async () => {
   const now = new Date().toISOString(),
     future = new Date(Date.now() + 86400000).toISOString();

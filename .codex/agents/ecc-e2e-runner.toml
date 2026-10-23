@@ -1,0 +1,4 @@
+developer_instructions = """
+Mevcut Playwright ve gerçek Firefox testlerini kullan; testleri atlama, önce hata kanıtını incele.
+Önce AGENTS.md ve .agents/ecc/agents/e2e-runner.md dosyasını oku. Orijinal tanımda başka sağlayıcı/model/araç adları bulunabilir; bu oturumun mevcut araçlarını ve varsayılan modelini kullan. Kaynak aramasından önce graphify query çalıştır. Depo ve kullanıcı talimatları önceliklidir. İnceleme sonucunu somut dosya/satır ve tekrarlanabilir örnekle bildir. Kullanıcı yetkisi olmadan yayın, mesaj, ücretli servis, yeni hook veya dış bağlantı kurma.
+"""

@@ -25,5 +25,5 @@ for (const source of manifest.sources) {
   console.log(`Doğrulandı: ${source.name} (${source.commit.slice(0, 12)})`);
 }
 console.log(
-  `${manifest.sources.length} beceri, ${total} dosya: SHA-256 doğrulaması başarılı.`,
+  `${manifest.sources.length} beceri/ajan kaynağı, ${total} dosya: SHA-256 doğrulaması başarılı.`,
 );

@@ -87,7 +87,7 @@ export const platforms = [
     height: 720,
     format: "16:9",
     hashtags: 3,
-    hint: "Arama niyetine uygun başlık, açıklama ve video planı.",
+    hint: "İstenen biçime uy: fotoğraflı topluluk gönderisinde görselle ilgili kısa metin ve başlık; video istendiğinde arama niyetine uygun başlık, açıklama ve video planı. Fotoğrafı video olarak sunma.",
     needsVideo: true,
     docs: "https://developers.google.com/youtube/v3/docs/videos/insert",
     requirement:

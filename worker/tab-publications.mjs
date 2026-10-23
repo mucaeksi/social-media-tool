@@ -7,7 +7,7 @@ const fail = (status, message) => {
 };
 const view = (r) => ({ ...r, snapshot: JSON.parse(r.snapshot) });
 const body = (c) => c.req.json();
-async function validateSources(c, snapshot, companyId) {
+export async function validateSources(c, snapshot, companyId) {
   for (const ref of snapshot.sourceRefs || []) {
     const found = await c.env.DB.prepare(
       "SELECT id FROM research_facts WHERE id=? AND company_id=? AND value=? AND retired_at IS NULL AND valid_until>?",
@@ -94,6 +94,7 @@ export function registerTabPublications(app) {
       .object({
         id: z.uuid(),
         draftId: z.uuid(),
+        draftRevision: z.number().int().nonnegative().optional(),
         accountId: z.uuid(),
         scheduledAt: z.iso.datetime().nullable().default(null),
         targetLabel: z.string().trim().min(1).max(100),
@@ -101,6 +102,8 @@ export function registerTabPublications(app) {
       .parse(await body(c));
     const draft = await c.get("store").draft(input.draftId);
     if (!draft) fail(404, "Kaydedilmiş taslak bulunamadı.");
+    if (input.draftRevision !== undefined && draft.revision !== input.draftRevision)
+      fail(409, "Hazırlanmış taslak değişti. Son içeriği yeniden inceleyin.");
     const account = await c.env.DB.prepare(
       "SELECT * FROM social_accounts WHERE id=? AND company_id=?",
     )

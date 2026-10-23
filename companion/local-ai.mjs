@@ -61,6 +61,7 @@ export class LocalAI {
     this.selfTest = null;
     this.memory = new LocalMemory(directory);
     this.closing = false;
+    this.cancelledAttempts = new Map();
   }
   async http(path, body, timeout = 5000, method = body ? "POST" : "GET", deadline = AbortSignal.timeout(timeout)) {
     // Fixed loopback endpoint; no URL/model/command can be supplied by the panel.
@@ -253,6 +254,7 @@ export class LocalAI {
       memory: this.memory.stats(),
       diagnosticVersion: "local-ai-check-v1",
       browserAgentVersion: firefoxAgent.version,
+      draftAutomationVersion: "draft-automation-v1",
       selfTest: this.selfTest || null,
       lastRun: this.lastRun || null,
     };
@@ -553,7 +555,12 @@ export class LocalAI {
     )
       await this.night?.pause();
     if (input.action === "cancel") {
-      this.generationController?.abort();
+      if (input.jobId) {
+        for (const [id, until] of this.cancelledAttempts) if (until <= Date.now()) this.cancelledAttempts.delete(id);
+        this.cancelledAttempts.set(`${input.jobId}:${input.attemptId}`, Date.now() + 300000);
+        while (this.cancelledAttempts.size > 100) this.cancelledAttempts.delete(this.cancelledAttempts.keys().next().value);
+      }
+      if (!input.jobId || (this.generationJobId === input.jobId && this.generationAttemptId === input.attemptId)) this.generationController?.abort();
       return { ok: true, status: await this.status({ measure: false }) };
     }
     if (input.action === "status")
@@ -574,8 +581,11 @@ export class LocalAI {
       return { ok: true, status: await this.status({ measure: false }) };
     }
     if (this.busy) localFail("BUSY");
+    if (input.attemptId && this.cancelledAttempts.get(`${input.jobId}:${input.attemptId}`) > Date.now()) localFail("CANCELLED");
     this.busy = true;
     this.browserRunId = input.action === "browser-step" ? input.runId : null;
+    this.generationJobId = input.action === "generate" ? input.jobId || null : null;
+    this.generationAttemptId = input.attemptId || null;
     this.phase = "generating";
     this.generationController = new AbortController();
     this.generationSignal = AbortSignal.any([
@@ -693,7 +703,7 @@ export class LocalAI {
                         : ""),
                   },
                 ],
-                { json: true },
+                { format: postFormat },
               ),
               platform,
               Boolean(observation),
@@ -701,8 +711,8 @@ export class LocalAI {
             if (
               posts.some(
                 (p) =>
-                  p.caption.normalize("NFKC").toLocaleLowerCase("tr-TR") ===
-                  post.caption.normalize("NFKC").toLocaleLowerCase("tr-TR"),
+                  p.caption.normalize("NFKC").trim().replace(/\s+/gu, " ").toLocaleLowerCase("tr-TR") ===
+                  post.caption.normalize("NFKC").trim().replace(/\s+/gu, " ").toLocaleLowerCase("tr-TR"),
               )
             )
               localFail("INVALID_OUTPUT");
@@ -733,6 +743,8 @@ export class LocalAI {
       throw e;
     } finally {
       this.browserRunId = null;
+      this.generationJobId = null;
+      this.generationAttemptId = null;
       if (this.lastRun.state === "running") this.lastRun = { ...this.lastRun, state: "passed", stage: this.stage, durationMs: Date.now() - startedAt };
       this.busy = false;
       this.phase = "unknown";

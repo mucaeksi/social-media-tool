@@ -3,6 +3,7 @@ import { api } from "./api.ts";
 import { firefoxRequest, firefoxAccountIssue } from "./firefoxBridge.ts";
 import type { FirefoxStatus } from "./firefoxBridge.ts";
 import { FirefoxConnection } from "./FirefoxConnection.tsx";
+import { DraftAutomation } from "./DraftAutomation.tsx";
 import { zonedTime } from "./scheduleTime.ts";
 import { tabPublishing } from "../shared/tab-publishing.mjs";
 import type { AuthUser, Company, Draft, PlatformId } from "./types.ts";
@@ -63,6 +64,7 @@ export function TabPublishingWorkspace({
     [jobs, setJobs] = useState<Job[]>([]),
     [status, setStatus] = useState<FirefoxStatus | null>(null);
   const [loadedDraft, setLoadedDraft] = useState<Draft | null>(null);
+  const [preparedDrafts, setPreparedDrafts] = useState<Draft[]>([]);
   const [draftId, setDraftId] = useState(initialDraftId),
     [chosen, setChosen] = useState<string[]>([]),
     [selectedJobs, setSelectedJobs] = useState<string[]>([]),
@@ -279,7 +281,7 @@ export function TabPublishingWorkspace({
             }}
           >
             <option value="">Taslak seçin</option>
-            {drafts.map((d) => (
+            {[...drafts, ...preparedDrafts.filter((p) => !drafts.some((d) => d.id === p.id))].map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name}
               </option>
@@ -300,6 +302,10 @@ export function TabPublishingWorkspace({
           </small>
         </label>
       </div>
+      <DraftAutomation company={company} user={user} draft={draft} accounts={accounts} status={status}
+        disabled={busy} scheduledAt={() => time ? zonedTime(time, zone) : null}
+        onBusy={setBusy} onJobs={(ids) => { setSelectedJobs(ids); void refresh().catch((e) => setError(e.message)); }}
+        onPrepared={(d) => { setPreparedDrafts((rows) => [...rows.filter((r) => r.id !== d.id), d]); setConfirmed(false); }} />
       <fieldset disabled={busy}>
         <legend>Yayınlanacak hesaplar ve sayfalar</legend>
         <button type="button" className="secondary" disabled={!readyAccounts.length}

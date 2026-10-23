@@ -355,6 +355,8 @@ export class CompanyComputer {
           throw computerError(409, "Gerçek Qwen testi için yardımcı 1.11 veya üzeri gerekli. Yardımcı güncellemesini tamamlayın.");
         if (["browser-step", "browser-cancel"].includes(input.input.action) && !socket.deserializeAttachment().firefoxAgent)
           throw computerError(409, "Qwen Firefox kontrolü için yardımcı 1.12 veya üzeri gerekli. Yardımcı güncellemesini tamamlayın.");
+        if (input.input.requireDraftAutomation && !socket.deserializeAttachment().draftAutomation)
+          throw computerError(409, "Otomatik taslak hazırlığı için yardımcı 1.13 gerekli. Yardımcı güncellemesini tamamlayın.");
         if (
           input.input.requireAdvertising &&
           !socket.deserializeAttachment().advertising
@@ -553,6 +555,8 @@ export class CompanyComputer {
           Array.isArray(value.capabilities) && value.capabilities.includes("local-ai-check-v1"),
         firefoxAgent:
           Array.isArray(value.capabilities) && value.capabilities.includes("firefox-agent-v1"),
+        draftAutomation:
+          Array.isArray(value.capabilities) && value.capabilities.includes("draft-automation-v1"),
         advertising:
           Array.isArray(value.capabilities) &&
           value.capabilities.includes("advertising-v1"),

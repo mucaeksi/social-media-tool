@@ -1,0 +1,23 @@
+# Sosyal Studio için seçilmiş ECC rolleri; model ve izinler üst yapılandırmadan gelir.
+[features]
+multi_agent = true
+
+[agents]
+max_threads = 4
+max_depth = 1
+
+[agents.ecc_architect]
+description = "Mimari, veri akışı ve tekrar/iptal davranışlarını incele."
+config_file = "agents/ecc-architect.toml"
+
+[agents.ecc_code_reviewer]
+description = "Somut doğruluk, güvenlik ve geriye dönük hataları incele."
+config_file = "agents/ecc-code-reviewer.toml"
+
+[agents.ecc_marketing_agent]
+description = "KKTC şirket bağlamında kaynaklı marka dili, platform metinleri ve kampanya tutarlılığını incele."
+config_file = "agents/ecc-marketing-agent.toml"
+
+[agents.ecc_e2e_runner]
+description = "Mevcut Playwright ve gerçek Firefox testlerini kullan; testleri atlama, önce hata kanıtını incele."
+config_file = "agents/ecc-e2e-runner.toml"

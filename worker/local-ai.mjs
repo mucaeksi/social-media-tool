@@ -17,6 +17,7 @@ import { visionImage } from "./ai-vision.mjs";
 import { evidenceFor } from "./knowledge.mjs";
 import { firefoxAgentInput, firefoxAgent } from "../shared/firefox-agent.mjs";
 import { adProviders } from "../shared/advertising.mjs";
+import { registerDraftAutomation } from "./draft-automation.mjs";
 
 export function registerLocalAI(app) {
   app.use(
@@ -232,7 +233,7 @@ export function registerLocalAI(app) {
       (await call(c, { action: "night-review", ...input })).learning,
     );
   });
-  const ask = async (c, suppliedInput, resumeJob) => {
+  const ask = async (c, suppliedInput, resumeJob, preparation, attemptId) => {
     const started = Date.now();
     const input = z
       .object({
@@ -321,7 +322,7 @@ export function registerLocalAI(app) {
     ]
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
-    const jobId = resumeJob?.id || crypto.randomUUID(),
+    const jobId = resumeJob?.id || preparation?.id || crypto.randomUUID(),
       jobTime = new Date().toISOString();
     if (resumeJob) {
       if (resumeJob.context_hash !== contextHash)
@@ -342,14 +343,14 @@ export function registerLocalAI(app) {
         resume: JSON.parse(resumeJob.progress_json),
       });
     } else {
-      await c.env.DB.batch([
+      const inserted = await c.env.DB.batch([
         c.env.DB.prepare(
-          "INSERT INTO local_ai_jobs(id,company_id,user_id,state,request_json,context_hash,created_at,updated_at) VALUES(?,?,?,'running',?,?,?,?)",
+          "INSERT INTO local_ai_jobs(id,company_id,user_id,state,request_json,context_hash,created_at,updated_at) VALUES(?,?,?,'running',?,?,?,?) ON CONFLICT DO NOTHING",
         ).bind(
           jobId,
           input.companyId,
           c.get("identity").id,
-          JSON.stringify(input),
+          JSON.stringify({ ...input, ...(preparation ? { preparation } : {}) }),
           contextHash,
           jobTime,
           jobTime,
@@ -358,13 +359,16 @@ export function registerLocalAI(app) {
           "DELETE FROM local_ai_jobs WHERE company_id=? AND state<>'running' AND id NOT IN (SELECT id FROM local_ai_jobs WHERE company_id=? ORDER BY created_at DESC,id DESC LIMIT 20)",
         ).bind(input.companyId, input.companyId),
       ]);
+      if (!inserted[0].meta.changes) throw computerError(409, "Bu hazırlık zaten çalışıyor. Sonucu yenileyin.");
       payload = localInput({ ...payload, jobId });
     }
     let result;
+    if (attemptId) payload = localInput({ ...payload, attemptId });
     try {
       result = await call(c, {
         ...payload,
         requireAdvertising: input.advertising === true,
+        requireDraftAutomation: Boolean(preparation),
       });
     } catch (e) {
       await c.env.DB.prepare(
@@ -374,134 +378,130 @@ export function registerLocalAI(app) {
         .run();
       throw e;
     }
-    await c.env.DB.prepare(
-      "UPDATE local_ai_jobs SET state='paused',updated_at=? WHERE id=? AND state='running'",
-    )
-      .bind(new Date().toISOString(), jobId)
-      .run();
-    if (
-      result.companyId !== input.companyId ||
-      typeof result.answer !== "string" ||
-      !result.answer.trim()
-    )
-      throw computerError(
-        502,
-        "Yerel modelin şirketi veya yanıtı doğrulanamadı.",
-      );
-    if (
-      media &&
-      (typeof result.observation !== "string" ||
-        !result.observation.trim() ||
-        result.observation.length > 4000)
-    )
-      throw computerError(
-        502,
-        "Görsel gözlemi doğrulanamadı. Önceki içerik korundu.",
-      );
-    let posts = null;
-    if (input.mode === "posts") {
+    try {
       if (
-        !Array.isArray(result.posts) ||
-        result.posts.length !== input.selected.length ||
-        new Set(result.posts.map((p) => p.platform)).size !==
-          input.selected.length
+        result.companyId !== input.companyId ||
+        typeof result.answer !== "string" ||
+        !result.answer.trim()
       )
-        throw computerError(502, "Seçili platformların tamamı hazırlanamadı.");
-      posts = input.selected.map((platform) => {
-        const p = result.posts.find((p) => p.platform === platform);
-        if (!p) throw computerError(502, "Platform yanıtı eksik.");
-        try {
-          return localPost(JSON.stringify(p), platform, Boolean(media));
-        } catch {
-          throw computerError(
-            502,
-            "Yerel modelin biçimi veya platform sınırları doğrulanamadı. Önceki içerik korundu.",
-          );
-        }
-      });
-      const captions = posts.map((p) =>
-        p.caption
-          .normalize("NFKC")
-          .trim()
-          .replace(/\s+/gu, " ")
-          .toLocaleLowerCase("tr-TR"),
-      );
-      if (new Set(captions).size !== posts.length)
         throw computerError(
           502,
-          "Model bazı platformlara aynı metni yazdı. Önceki içerik korundu.",
+          "Yerel modelin şirketi veya yanıtı doğrulanamadı.",
         );
-    }
-    const userId = c.get("identity").id,
-      id = crypto.randomUUID(),
-      createdAt = new Date().toISOString();
-    const observation =
-      media && typeof result.observation === "string"
-        ? result.observation
-        : null;
-    await c.env.DB.batch([
-      c.env.DB.prepare(
-        "INSERT INTO ai_turns(id,company_id,user_id,question,answer,posts,created_at,media_id,image_observation,expert_version,engine,model) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
-      ).bind(
-        id,
-        input.companyId,
-        userId,
-        input.question,
-        result.answer,
-        posts ? JSON.stringify(posts) : null,
-        createdAt,
-        input.mediaId,
-        observation,
-        LOCAL_EXPERT_VERSION,
-        "local",
-        LOCAL_MODEL,
-      ),
-      c.env.DB.prepare(
-        "DELETE FROM ai_turns WHERE company_id=? AND user_id=? AND id NOT IN (SELECT id FROM ai_turns WHERE company_id=? AND user_id=? ORDER BY created_at DESC,id DESC LIMIT 20)",
-      ).bind(input.companyId, userId, input.companyId, userId),
-    ]);
-    await c.env.DB.prepare("INSERT INTO ai_evidence(turn_id,data) VALUES(?,?)")
-      .bind(id, JSON.stringify(sourceRefs))
-      .run();
-    await c.env.DB.prepare(
-      "UPDATE local_ai_jobs SET state='complete',progress_json=?,updated_at=? WHERE id=?",
-    )
-      .bind(
-        JSON.stringify({ posts: posts || [], observation }),
-        new Date().toISOString(),
-        jobId,
+      if (
+        media &&
+        (typeof result.observation !== "string" ||
+          !result.observation.trim() ||
+          result.observation.length > 4000)
       )
-      .run();
-    const trace = await generationTrace(c.env.DB, {
-      id,
-      companyId: input.companyId,
-      model: LOCAL_MODEL,
-      expertVersion: LOCAL_EXPERT_VERSION,
-      sourceRefs,
-      mediaId: input.mediaId,
-      started,
-      products,
-      context: { profile: payload.profile, entries: payload.entries },
-    });
-    return c.json({
-      trace,
-      id,
-      jobId,
-      sourceRefs,
-      companyId: input.companyId,
-      question: input.question,
-      answer: result.answer,
-      posts,
-      createdAt,
-      mediaId: input.mediaId,
-      imageObservation: observation,
-      expertVersion: LOCAL_EXPERT_VERSION,
-      model: LOCAL_MODEL,
-      engine: "local",
-      published: false,
-      reservedNeurons: 0,
-    });
+        throw computerError(
+          502,
+          "Görsel gözlemi doğrulanamadı. Önceki içerik korundu.",
+        );
+      let posts = null;
+      if (input.mode === "posts") {
+        if (
+          !Array.isArray(result.posts) ||
+          result.posts.length !== input.selected.length ||
+          new Set(result.posts.map((p) => p.platform)).size !==
+            input.selected.length
+        )
+          throw computerError(502, "Seçili platformların tamamı hazırlanamadı.");
+        posts = input.selected.map((platform) => {
+          const p = result.posts.find((p) => p.platform === platform);
+          if (!p) throw computerError(502, "Platform yanıtı eksik.");
+          try {
+            return localPost(JSON.stringify(p), platform, Boolean(media));
+          } catch {
+            throw computerError(
+              502,
+              "Yerel modelin biçimi veya platform sınırları doğrulanamadı. Önceki içerik korundu.",
+            );
+          }
+        });
+        const captions = posts.map((p) =>
+          p.caption
+            .normalize("NFKC")
+            .trim()
+            .replace(/\s+/gu, " ")
+            .toLocaleLowerCase("tr-TR"),
+        );
+        if (new Set(captions).size !== posts.length)
+          throw computerError(
+            502,
+            "Model bazı platformlara aynı metni yazdı. Önceki içerik korundu.",
+          );
+      }
+      const userId = c.get("identity").id,
+        id = crypto.randomUUID(),
+        createdAt = new Date().toISOString();
+      const observation =
+        media && typeof result.observation === "string"
+          ? result.observation
+          : null;
+      await c.env.DB.batch([
+        c.env.DB.prepare(
+          "INSERT INTO ai_turns(id,company_id,user_id,question,answer,posts,created_at,media_id,image_observation,expert_version,engine,model) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+        ).bind(
+          id,
+          input.companyId,
+          userId,
+          input.question,
+          result.answer,
+          posts ? JSON.stringify(posts) : null,
+          createdAt,
+          input.mediaId,
+          observation,
+          LOCAL_EXPERT_VERSION,
+          "local",
+          LOCAL_MODEL,
+        ),
+        c.env.DB.prepare(
+          "DELETE FROM ai_turns WHERE company_id=? AND user_id=? AND id NOT IN (SELECT id FROM ai_turns WHERE company_id=? AND user_id=? ORDER BY created_at DESC,id DESC LIMIT 20)",
+        ).bind(input.companyId, userId, input.companyId, userId),
+      ]);
+      await c.env.DB.prepare("INSERT INTO ai_evidence(turn_id,data) VALUES(?,?)")
+        .bind(id, JSON.stringify(sourceRefs))
+        .run();
+      const trace = await generationTrace(c.env.DB, {
+        id,
+        companyId: input.companyId,
+        model: LOCAL_MODEL,
+        expertVersion: LOCAL_EXPERT_VERSION,
+        sourceRefs,
+        mediaId: input.mediaId,
+        started,
+        products,
+        context: { profile: payload.profile, entries: payload.entries },
+      });
+      await c.env.DB.prepare(
+        "UPDATE local_ai_jobs SET state='complete',progress_json=?,updated_at=? WHERE id=?",
+      ).bind(JSON.stringify({ posts: posts || [], observation, turnId: id }), new Date().toISOString(), jobId).run();
+      return c.json({
+        trace,
+        id,
+        jobId,
+        sourceRefs,
+        companyId: input.companyId,
+        question: input.question,
+        answer: result.answer,
+        posts,
+        createdAt,
+        mediaId: input.mediaId,
+        imageObservation: observation,
+        expertVersion: LOCAL_EXPERT_VERSION,
+        model: LOCAL_MODEL,
+        engine: "local",
+        published: false,
+        reservedNeurons: 0,
+      });
+    } catch (e) {
+      await c.env.DB.prepare("UPDATE local_ai_jobs SET state='paused',updated_at=? WHERE id=? AND state='running'")
+        .bind(new Date().toISOString(), jobId).run();
+      throw e;
+    }
   };
+  registerDraftAutomation(app, { ask, call });
   app.post("/api/computer/ai/ask", (c) => ask(c));
   app.get("/api/computer/ai/jobs", async (c) => {
     const id = z.uuid().parse(c.req.query("companyId"));

@@ -180,7 +180,7 @@ test("Görsel özel depodan okunur; iki modelin bütçesi önceden ayrılır ve 
     await call(`/api/ai/workspace?companyId=${companies[0]}`)
   ).json();
   assert.equal(workspace.turns[0].mediaId, media.id);
-  assert.equal(workspace.turns[0].expertVersion, "kktc-kampanya-v3");
+  assert.equal(workspace.turns[0].expertVersion, "kktc-kampanya-ecc-v4");
   await db.prepare("DELETE FROM media WHERE id=?").bind(media.id).run();
   assert.equal(
     (await (await call(`/api/ai/workspace?companyId=${companies[0]}`)).json())

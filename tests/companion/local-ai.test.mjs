@@ -126,6 +126,20 @@ function responseFor(platform) {
   };
 }
 
+test("Hazırlık iptali yalnız kendi üretim kimliğini keser ve diğer işi korur", async (t) => {
+  let started; const ready = new Promise((r) => { started = r; });
+  const f = await fixture(t, (url, _body, options) => {
+    if (url.endsWith("tags")) return Response.json({ models: [model] });
+    return new Promise((_resolve, reject) => { options.signal.addEventListener("abort", () => reject(new Error("fixture abort")), { once: true }); started(); });
+  });
+  const jobId = crypto.randomUUID(), attemptId = crypto.randomUUID(), pending = f.ai.execute({ ...input, jobId, attemptId }); await ready;
+  await f.ai.execute({ action: "cancel", jobId: crypto.randomUUID(), attemptId });
+  await f.ai.execute({ action: "cancel", jobId, attemptId: crypto.randomUUID() });
+  assert.equal(f.ai.generationController.signal.aborted, false);
+  await f.ai.execute({ action: "cancel", jobId, attemptId }); await assert.rejects(pending, (e) => e.code === "CANCELLED");
+  await assert.rejects(f.ai.execute({ ...input, jobId, attemptId }), (e) => e.code === "CANCELLED");
+});
+
 test("küçük model, yalnız loopback, sabit kaynak ve sınırlı GPU bağlamıyla platformları ayrı üretir", async (t) => {
   let platformIndex = 0;
   const f = await fixture(t, (url, body) => {
@@ -135,6 +149,9 @@ test("küçük model, yalnız loopback, sabit kaynak ve sınırlı GPU bağlamı
     assert.equal(body.keep_alive, -1);
     assert.equal(body.options.num_ctx, 16384);
     assert.equal(body.options.num_thread, 4);
+    assert.equal(body.format.additionalProperties, false);
+    assert.deepEqual(body.format.required, ["title", "caption", "hashtags", "alt"]);
+    assert.ok(body.messages[0].content.includes("Marka sesi ve kaynak uyarlaması"));
     assert.ok(body.messages.some((m) => m.content.includes("Kurgu Mobilya")));
     assert.ok(body.messages.some((m) => m.content.includes("Fiyat uydurma")));
     return Response.json({
@@ -243,6 +260,8 @@ test("görsel bir kez incelenir; gözlem metin üretiminde kullanılır ve görs
     image: Buffer.from("synthetic-image").toString("base64"),
   });
   assert.equal(vision, 1);
+  assert.throws(() => localPost(JSON.stringify({ ...responseFor("instagram"), hashtags: ["#Girne", "#girne"] }), "instagram", false), (e) => e.code === "INVALID_OUTPUT");
+  assert.throws(() => localPost(JSON.stringify({ ...responseFor("instagram"), caption: "Tanıtım #Girne", hashtags: ["#girne"] }), "instagram", false), (e) => e.code === "INVALID_OUTPUT");
   assert.ok(result.posts[0].alt);
   assert.equal(
     localPost(

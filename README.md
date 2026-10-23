@@ -1,5 +1,7 @@
 # Sosyal Studio
 
+**1.13:** Qwen ile kaynak taslaktan platform metinleri, ayrı hazırlık kopyası ve Firefox toplu yayın önizlemeleri tek akışta hazırlanır; son eklenti onayı korunur. Yardımcı 1.13 / eklenti 1.5. Ayrıntılar: [Qwen otomasyon rehberi](docs/QWEN_OTOMASYON_1_13.md), [ECC kullanımı](docs/ECC_KULLANIM.md).
+
 Türkçe, çok şirketli sosyal medya içerik hazırlama ve çalışma paneli. Facebook, Instagram, X, Threads, Pinterest, YouTube, TikTok, LinkedIn ve Tumblr için içerik hazırlanır.
 
 **1.12 yaması:** Qwen ekran görüntüsü ve görünür alanlarla bağlı sosyal medya sekmelerini inceler; sekme/profil/bağlantı gezintisi, kaydırma, izinli düğmelere tıklama ve boş şirket metin alanına yazma görevlerini adım adım yürütür. Görev araç çubuğundan bir kez onaylanır, panelden durdurulur. [Qwen Firefox görev rehberi](docs/FIREFOX_QWEN_1_12.md).
