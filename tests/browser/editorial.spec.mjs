@@ -174,6 +174,9 @@ test("Kampanya takvimi, nullable ölçüm ve görselli parçalı yedek Türkçe 
   page,
   request,
 }) => {
+  // Image processing, several editor flows, ZIP export and restore share this
+  // test. Leave room for the restore's existing 30-second assertion on CI.
+  test.setTimeout(90000);
   const c = await company(request, "Editoryal deneme");
   page.on("dialog", (d) => d.accept());
   await page.goto(`/?company=${c.id}`);
