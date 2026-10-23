@@ -1362,9 +1362,9 @@
     "semantic_hash": ""
   },
   "tests/browser/advertising.spec.mjs": {
-    "mtime": 1792668052.4317582,
-    "seen": 1792668133.525874,
-    "ast_hash": "873bc6ec23996c9b9b2a548374778fce",
+    "mtime": 1792752544.2688553,
+    "seen": 1792752608.0096178,
+    "ast_hash": "45e3fa04712f892a7849e57354bbc79c",
     "semantic_hash": ""
   },
   "docs/REKLAM_KULLANIM.md": {
@@ -1440,9 +1440,9 @@
     "semantic_hash": ""
   },
   "docs/DOGRULAMA_1_10.md": {
-    "mtime": 1792752333.1593525,
-    "seen": 1792752341.5667148,
-    "ast_hash": "84ece6abe7c533a51dd43c0815dae3ff",
+    "mtime": 1792752589.157522,
+    "seen": 1792752608.0097249,
+    "ast_hash": "e46d0f3fae7dd0872f75001f777dc2b0",
     "semantic_hash": ""
   },
   "scripts/use-test-browser.mjs": {

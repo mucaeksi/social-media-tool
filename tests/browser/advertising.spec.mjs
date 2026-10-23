@@ -222,10 +222,13 @@ test("KKTC reklam planı, ücretli ölçüm, onaylı ders ve Firefox alan onayı
         exact: true,
       })
       .click();
-    const prepared = await page.evaluate(() => window.adFixture.prepared);
-    expect(prepared.platform).toBe("ads-meta");
-    expect(prepared.elementId).toBe("headline");
-    expect(prepared.companyId).toBe(c.id);
+    await expect
+      .poll(() => page.evaluate(() => window.adFixture.prepared))
+      .toMatchObject({
+        platform: "ads-meta",
+        elementId: "headline",
+        companyId: c.id,
+      });
     await page.setViewportSize({ width: 390, height: 844 });
     expect(
       await page.evaluate(

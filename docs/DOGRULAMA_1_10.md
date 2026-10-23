@@ -33,3 +33,5 @@ Bu sonuçlar canlı sağlayıcıların tüm güncel DOM yapılarının, hesap ye
 Sonraki Windows koşusunda test Firefox kurulum adımı başarısız oldu; aynı kaynakla önceki Windows koşusu geçmişti. Test indirmesi aynı sabit Mozilla sürümüyle en fazla üç kez denenir, son neden GitHub annotation olarak kaydedilir ve kurulum adımı dört dakikayla sınırlıdır. Eski doğrulama işleri yeni commit geldiğinde iptal edilebilir; canlı dağıtım işi ayrı grupta sırayla kalır ve çalışırken iptal edilmez.
 
 Playwright CI sonuçları liste raporunun yanında GitHub annotation biçiminde de yazılır; arayüz hatalarının senaryo, dosya ve adımı iş kaydından görülebilir.
+
+GitHub annotasyonları, reklam arayüzü testinin eklenti `postMessage` yanıtı gelmeden `prepared.platform` alanını okuduğunu gösterdi. Test artık asenkron sonucu bekleyip aynı platform/alan/şirket değerlerini doğrular; sabit uyku, testi yeniden çalıştırma veya test atlama eklenmedi.
