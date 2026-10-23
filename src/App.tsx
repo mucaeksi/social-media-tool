@@ -1284,7 +1284,9 @@ export default function App({
                           ? "Reklamları planlayın, aynı Firefox penceresinde inceleyin ve sonuçlardan çalışma notları çıkarın."
                           : page === "content"
                             ? "Kampanyaları planlayın, ürün bilgilerini doğrulayın ve sonuçları izleyin."
-                            : "Şirketinizi seçin, sosyal hesaplarınıza uzak tarayıcıdan giriş yapın."}
+                            : page === "publications"
+                              ? "Aynı Firefox penceresinde hesaplarınızı bağlayın ve onayladığınız gönderileri yayımlayın."
+                              : "Şirketinizi seçin, sosyal hesaplarınıza uzak tarayıcıdan giriş yapın."}
               </p>
             </div>
             <div className="company-picker">

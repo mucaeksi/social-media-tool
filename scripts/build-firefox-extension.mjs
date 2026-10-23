@@ -2,12 +2,15 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { crc32, sha256 } from "../companion/release.mjs";
+import { tabPublishingExtensionSource } from "../shared/tab-publishing.mjs";
 import { advertisingExtensionSource } from "../shared/advertising.mjs";
 
 export const extensionFiles = [
   "manifest.json",
   "managed.js",
   "advertising.js",
+  "publication-policy.js",
+  "publisher.js",
   "policy.js",
   "background.js",
   "panel-bridge.js",
@@ -24,6 +27,13 @@ export async function buildFirefoxExtension(destination = "dist/indir") {
     )) !== advertisingExtensionSource()
   )
     throw new Error("Reklam kataloğu eşleşmiyor.");
+  if (
+    (await readFile(
+      new URL("../firefox-extension/publication-policy.js", import.meta.url),
+      "utf8",
+    )) !== tabPublishingExtensionSource()
+  )
+    throw new Error("Yayın kataloğu eşleşmiyor.");
   const parts = [],
     central = [];
   let offset = 0;

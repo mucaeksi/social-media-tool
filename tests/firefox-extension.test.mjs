@@ -91,6 +91,7 @@ async function fixture() {
     URL,
     crypto,
     console,
+    setInterval: () => 0,
     Date: class extends Date {
       static now() {
         return now;

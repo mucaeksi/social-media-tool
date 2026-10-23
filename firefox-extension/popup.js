@@ -86,6 +86,34 @@ async function refresh() {
           "Kişisel profilinizi seçmeyin. Facebook'ta şirket profiline geçin; LinkedIn'de şirket sayfasının yönetici görünümünü açın.",
           section,
         );
+    } else if (r.action === "publish-batch") {
+      node(
+        "p",
+        "Aşağıdaki gönderiler, belirtilen hesap ve sayfalarda otomatik YAYINLANACAK. Panel ve hesap sekmeleri aynı pencerede açık kalmalı. Reklam veya ödeme işlemi yapılmaz.",
+        section,
+      );
+      for (const entry of r.entries) {
+        node(
+          "strong",
+          `${entry.target.platform} · ${entry.target.identityLabel}`,
+          section,
+        );
+        const link = node("a", entry.target.profileUrl, section);
+        link.href = entry.target.profileUrl;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        node(
+          "p",
+          `${entry.job.snapshot.media.length} fotoğraf · ${new Date(entry.job.scheduled_at).toLocaleString("tr-TR", { timeZone: entry.job.timezone })}`,
+          section,
+        );
+        node("pre", entry.job.snapshot.text, section);
+      }
+      node(
+        "p",
+        "Sonucu belirsiz gönderi yeniden gönderilmez. Form veya hesap eşleşmiyorsa o hedef durdurulur.",
+        section,
+      );
     } else if (r.action === "prepare") {
       node(
         "p",
@@ -106,7 +134,9 @@ async function refresh() {
         ? "Bu Firefox penceresini bağla"
         : r.action === "connect"
           ? "Bu sekmeyi bağla"
-          : "Metni taslağa yerleştir",
+          : r.action === "publish-batch"
+            ? "Bu hesaplarda otomatik yayını onayla"
+            : "Metni taslağa yerleştir",
       section,
     );
     approve.disabled = r.action === "connect" && !r.choices.length;

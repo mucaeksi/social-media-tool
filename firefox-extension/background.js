@@ -5,6 +5,9 @@
     requests = new Map();
   const ttl = 5 * 60 * 1000;
   let working = false;
+  const autoJobs = new Map();
+  let activeJob = null;
+  let publicationError = "";
   // Files are updated by the existing helper. Reload only after every panel
   // connection is closed, so an update never discards active account grants.
   if (globalThis.StudioManagedInstallation === true)
@@ -132,6 +135,146 @@
       { frameId: 0 },
     );
   }
+  async function publicationAPI(entry, action, extra = {}) {
+    const panel = await browser.tabs.get(entry.panelTab);
+    const w = windows.get(entry.panelTab);
+    if (
+      !w ||
+      w.companyId !== entry.companyId ||
+      w.userId !== entry.userId ||
+      panel.windowId !== entry.windowId ||
+      w.windowId !== entry.windowId ||
+      panel.incognito ||
+      new URL(panel.url).origin !== p.panelOrigin
+    )
+      throw new Error("Yayın için onaylanan panel/pencere değişti.");
+    const auth = await browser.tabs.sendMessage(
+      entry.panelTab,
+      { source: "studio-auth-check" },
+      { frameId: 0 },
+    );
+    if (auth?.userId !== entry.userId || auth.companyId !== entry.companyId)
+      throw new Error("Yayıncı yönetici oturumu değişti.");
+    const result = await browser.tabs.sendMessage(
+      entry.panelTab,
+      {
+        source: "studio-tab-publication",
+        action,
+        jobId: entry.job.id,
+        executor: entry.executor,
+        ...extra,
+      },
+      { frameId: 0 },
+    );
+    if (!result?.ok)
+      throw new Error(result?.error || "Yayın işi doğrulanamadı.");
+    return result.value;
+  }
+  async function publisher(entry, action, extra = {}) {
+    const b = await validBinding(
+      { tab: await browser.tabs.get(entry.panelTab) },
+      {
+        userId: entry.userId,
+        companyId: entry.companyId,
+        accountId: entry.job.account_id,
+        platform: entry.job.snapshot.platform,
+      },
+    );
+    if (
+      b.tabId !== entry.tabId ||
+      b.windowId !== entry.windowId ||
+      JSON.stringify(b.target) !== JSON.stringify(entry.target)
+    )
+      throw new Error("Onaylanan hesap sekmesi değişti.");
+    await browser.tabs.update(b.tabId, { active: true });
+    for (const file of [
+      "advertising.js",
+      "policy.js",
+      "publication-policy.js",
+      "publisher.js",
+    ])
+      await browser.tabs.executeScript(b.tabId, { file, frameId: 0 });
+    const result = await browser.tabs.sendMessage(
+      b.tabId,
+      {
+        source: "studio-publisher-agent",
+        action,
+        target: b.target,
+        job: entry.job,
+        ...extra,
+      },
+      { frameId: 0 },
+    );
+    if (!result?.ok)
+      throw new Error(result?.error || "Gönderi formu doğrulanamadı.");
+    return result;
+  }
+  async function drainPublications() {
+    if (working) return;
+    const entry = [...autoJobs.values()].find(
+      (e) => Date.parse(e.job.scheduled_at) <= Date.now(),
+    );
+    if (!entry) return;
+    working = true;
+    activeJob = entry.job.id;
+    publicationError = "";
+    autoJobs.delete(entry.job.id);
+    let claimed = false,
+      sending = false;
+    try {
+      const key = "publication:" + entry.job.id;
+      const journal = await browser.storage.local.get(key);
+      if (journal[key])
+        throw new Error(
+          "Bu iş daha önce yürütmeye alındı; otomatik tekrar yapılmaz.",
+        );
+      entry.job = await publicationAPI(entry, "claim");
+      claimed = true;
+      // Durable before any DOM changes. A restart cannot replay a possibly sent job.
+      await browser.storage.local.set({
+        [key]: { at: Date.now(), state: "started" },
+      });
+      const images = [];
+      for (let i = 0; i < entry.job.snapshot.media.length; i++)
+        images.push(await publicationAPI(entry, "media", { index: i }));
+      const ready = await publisher(entry, "prepare", { images });
+      if (!ready.ready || !ready.sessionId)
+        throw new Error("Yayın önizlemesi doğrulanamadı.");
+      await publicationAPI(entry, "sending");
+      sending = true;
+      // Session/account/window checks run again immediately before the click.
+      const result = await publisher(entry, "publish", {
+        sessionId: ready.sessionId,
+      });
+      await publicationAPI(entry, "result", {
+        state: result.state === "verified" ? "verified" : "unknown",
+        url: result.url,
+      });
+      await browser.storage.local.set({
+        [key]: { at: Date.now(), state: result.state },
+      });
+    } catch (e) {
+      publicationError = e.message || "Yayın tamamlanamadı.";
+      if (claimed)
+        await publicationAPI(entry, "result", {
+          state: sending ? "unknown" : "failed",
+          detail: publicationError.slice(0, 300),
+        }).catch(() => {});
+    } finally {
+      activeJob = null;
+      working = false;
+      // Journal metadata only: no tokens, texts, images or account details.
+      try {
+        const all = await browser.storage.local.get(null);
+        const keys = Object.keys(all)
+          .filter((k) => k.startsWith("publication:"))
+          .sort((a, b) => (all[b].at || 0) - (all[a].at || 0));
+        if (keys.length > 500)
+          await browser.storage.local.remove(keys.slice(500));
+      } catch {}
+    }
+  }
+  setInterval(() => void drainPublications(), 1000);
   function queue(r) {
     for (const [id, old] of requests)
       if (old.panelTab === r.panelTab) requests.delete(id);
@@ -206,6 +349,7 @@
         }
         if (m.action === "revoke") {
           bindings.clear();
+          autoJobs.clear();
           windows.clear();
           requests.clear();
           expire();
@@ -238,7 +382,29 @@
           );
           if (auth?.userId !== r.userId)
             throw new Error("Panel oturumu değişti; yeniden bağlayın.");
-          if (r.action === "connect-window") {
+          if (r.action === "publish-batch") {
+            for (const entry of r.entries) {
+              await validBinding(
+                { tab: panelTab },
+                {
+                  userId: r.userId,
+                  companyId: entry.companyId,
+                  accountId: entry.job.account_id,
+                  platform: entry.job.snapshot.platform,
+                },
+              );
+              const current = await publicationAPI(entry, "get");
+              if (
+                current.fingerprint !== entry.job.fingerprint ||
+                JSON.stringify(current.snapshot) !==
+                  JSON.stringify(entry.job.snapshot)
+              )
+                throw new Error("Yayın önizlemesi değişti; yeniden inceleyin.");
+            }
+            for (const entry of r.entries)
+              entry.job = await publicationAPI(entry, "authorize");
+            for (const entry of r.entries) autoJobs.set(entry.job.id, entry);
+          } else if (r.action === "connect-window") {
             grantWindow(r);
           } else if (r.action === "connect") {
             const tab = await browser.tabs.get(m.tabId);
@@ -305,6 +471,8 @@
       if (!p.panel(sender))
         throw new Error("Yalnız Sosyal Studio paneli bağlantı kurabilir.");
       if (m.action === "disconnect") {
+        for (const [id, e] of autoJobs)
+          if (e.panelTab === sender.tab.id) autoJobs.delete(id);
         bindings.delete(sender.tab.id);
         windows.delete(sender.tab.id);
         for (const [id, r] of requests)
@@ -334,10 +502,67 @@
             tabId: b.tabId,
           })),
           binding: b ? { ...b.target, tabId: b.tabId } : null,
+          publishing: {
+            activeJob,
+            queued: [...autoJobs.keys()],
+            error: publicationError,
+          },
           pending: [...requests.values()].some(
             (r) => r.panelTab === sender.tab.id,
           ),
         };
+      }
+      if (m.action === "publish-batch") {
+        const w = await validWindow(sender, m);
+        if (
+          !Array.isArray(m.jobs) ||
+          !m.jobs.length ||
+          m.jobs.length > 20 ||
+          new Set(m.jobs.map((j) => j.id)).size !== m.jobs.length
+        )
+          throw new Error("En fazla 20 farklı hedef yayını seçin.");
+        const entries = [];
+        for (const job of m.jobs) {
+          if (
+            job.company_id !== m.companyId ||
+            job.created_by !== m.userId ||
+            job.snapshot?.transport !== "firefox-tabs" ||
+            !["draft", "queued"].includes(job.state)
+          )
+            throw new Error(
+              "Yayın işi seçili şirket/yöneticiye ait değil veya yürütmeye alınmış.",
+            );
+          const b = await validBinding(sender, {
+            ...m,
+            accountId: job.account_id,
+            platform: job.snapshot.platform,
+          });
+          if (
+            b.target.profileUrl !== job.snapshot.profileUrl ||
+            b.target.identityLabel !== job.snapshot.identityLabel
+          )
+            throw new Error(
+              "Hedef profil/sayfa adı eklentideki onayla eşleşmiyor.",
+            );
+          entries.push({
+            job,
+            target: b.target,
+            tabId: b.tabId,
+            panelTab: sender.tab.id,
+            windowId: w.windowId,
+            userId: m.userId,
+            companyId: m.companyId,
+            executor: crypto.randomUUID(),
+          });
+        }
+        return queue({
+          action: "publish-batch",
+          target: { companyId: m.companyId, companyName: m.companyName },
+          userId: m.userId,
+          panelTab: sender.tab.id,
+          windowId: w.windowId,
+          entries,
+        });
       }
       if (m.action === "open-ad-portal") {
         const target = p.target(m.target),

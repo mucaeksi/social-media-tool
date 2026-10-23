@@ -7,6 +7,7 @@ const EditorialMetrics = lazy(() =>
 );
 import { useEffect, useState } from "react";
 import { api } from "./api.ts";
+import { TabPublishingWorkspace } from "./TabPublishingWorkspace.tsx";
 import { ActivityFeed } from "./ActivityFeed.tsx";
 import type { AuthUser, Company, Draft } from "./types.ts";
 
@@ -599,13 +600,19 @@ export function PublicationWorkspace({
   }
   return (
     <div className="expert-grid">
+      <TabPublishingWorkspace
+        key={company.id}
+        company={company}
+        user={user}
+        drafts={drafts}
+      />
       <section className="card expert-panel">
-        <h2>Yayın takvimi</h2>
+        <h2>Facebook · ayrı oturum pilotu</h2>
         <p>
           Onaylanan işler planlanan zamanda şirket bilgisayarındaki Firefox ile
           yürütülür. Bilgisayar çevrimdışı kalırsa iki dakikadan fazla geciken
           iş paylaşılmaz. İlk otomatik adaptör Facebook içindir; diğer
-          platformların form hazırlığı Hesap bağlantıları ekranındadır.
+          platformların ve aynı pencerenin toplu yayını yukarıdaki ekrandadır.
         </p>
         <p>
           <strong>Hedef saat dilimi:</strong>{" "}
@@ -714,6 +721,11 @@ export function PublicationWorkspace({
           </select>
         </label>
         {jobs
+          .filter(
+            (j) =>
+              (j.snapshot as unknown as { transport?: string }).transport !==
+              "firefox-tabs",
+          )
           .filter((j) => !stateFilter || j.state === stateFilter)
           .map((j) => (
             <article className="expert-item" key={j.id}>

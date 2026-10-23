@@ -676,7 +676,7 @@ export function AdvertisingWorkspace({
               {status.pending
                 ? "Eklenti simgesinde onay bekliyor"
                 : "Bekleyen istek yok"}
-              {status.version !== "1.2.0"
+              {!/^1\.(?:[2-9]|[1-9]\d+)\./.test(status.version)
                 ? " · Reklam desteği için güncel eklentiyi yükleyin."
                 : ""}
             </p>

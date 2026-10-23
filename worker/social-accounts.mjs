@@ -37,7 +37,11 @@ export function registerSocialAccounts(app) {
       );
     if (
       (!c.env.SOCIAL_BROWSER || !c.env.BROWSER_STATE_KEY) &&
-      !c.env.COMPANY_COMPUTER
+      !c.env.COMPANY_COMPUTER &&
+      !(
+        c.req.path === "/api/social/accounts" &&
+        ["GET", "POST"].includes(c.req.method)
+      )
     )
       return c.json({ error: "Uzak tarayıcı bu ortamda etkin değil." }, 503);
     return next();

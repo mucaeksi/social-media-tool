@@ -212,50 +212,137 @@ beforeEach(async () => {
     socket.send(
       JSON.stringify({
         type: "hello",
-        capabilities: ["local-ai-v1", "research-v1", "browser-tasks-v1", "company-tabs-v1"],
+        capabilities: [
+          "local-ai-v1",
+          "research-v1",
+          "browser-tasks-v1",
+          "company-tabs-v1",
+        ],
       }),
     );
     await new Promise((r) => setTimeout(r, 20));
   }
 });
 test("Şirket sekmeleri yalnız kayıtlı ilk hesapları açar; geçiş kullanıcı, şirket, görünüm ve ek hesap ayrımını korur", async () => {
-  const instagram = crypto.randomUUID(), duplicate = crypto.randomUUID();
-  for (const [id, platform] of [[instagram, "instagram"], [duplicate, "facebook"]])
-    await db.prepare("INSERT INTO social_accounts(id,company_id,platform,label,created_at,profile_url) VALUES(?,?,?,?,?,?)")
-      .bind(id, first.id, platform, "Kurgu ek hesap", new Date().toISOString(), `https://www.${platform}.com/fixture-${id}`).run();
-  const old = responder, forwarded = [];
-  responder = (value) => { forwarded.push(value); old(value); };
+  const instagram = crypto.randomUUID(),
+    duplicate = crypto.randomUUID();
+  for (const [id, platform] of [
+    [instagram, "instagram"],
+    [duplicate, "facebook"],
+  ])
+    await db
+      .prepare(
+        "INSERT INTO social_accounts(id,company_id,platform,label,created_at,profile_url) VALUES(?,?,?,?,?,?)",
+      )
+      .bind(
+        id,
+        first.id,
+        platform,
+        "Kurgu ek hesap",
+        new Date().toISOString(),
+        `https://www.${platform}.com/fixture-${id}`,
+      )
+      .run();
+  const old = responder,
+    forwarded = [];
+  responder = (value) => {
+    forwarded.push(value);
+    old(value);
+  };
   try {
-    assert.equal((await expectJSON(await request("/api/computer/status"))).companyTabs, true);
-    const opened = await expectJSON(await request(`/api/computer/accounts/${account}/command`, {
-      method: "POST", body: { action: "workspace", workspaceAccounts: [{ companyId: second.id }] },
-    }));
+    assert.equal(
+      (await expectJSON(await request("/api/computer/status"))).companyTabs,
+      true,
+    );
+    const opened = await expectJSON(
+      await request(`/api/computer/accounts/${account}/command`, {
+        method: "POST",
+        body: {
+          action: "workspace",
+          workspaceAccounts: [{ companyId: second.id }],
+        },
+      }),
+    );
     const message = forwarded.find((v) => v.type === "command");
     assert.equal(message.account.profileScope, "company");
     assert.equal(message.account.workspaceAccounts.length, 2);
-    assert.ok(message.account.workspaceAccounts.every((a) => a.companyId === first.id && a.id !== duplicate));
-    assert.equal((await request(`/api/computer/accounts/${instagram}/command`, {
-      method: "POST", role: "other", body: { action: "open", switchAccount: true, previousViewId: opened.viewId },
-    })).status, 409);
-    assert.equal((await request(`/api/computer/accounts/${instagram}/command`, {
-      method: "POST", body: { action: "open", switchAccount: true, previousViewId: crypto.randomUUID() },
-    })).status, 409);
-    const selected = await expectJSON(await request(`/api/computer/accounts/${instagram}/command`, {
-      method: "POST", body: { action: "open", switchAccount: true, previousViewId: opened.viewId },
-    }));
+    assert.ok(
+      message.account.workspaceAccounts.every(
+        (a) => a.companyId === first.id && a.id !== duplicate,
+      ),
+    );
+    assert.equal(
+      (
+        await request(`/api/computer/accounts/${instagram}/command`, {
+          method: "POST",
+          role: "other",
+          body: {
+            action: "open",
+            switchAccount: true,
+            previousViewId: opened.viewId,
+          },
+        })
+      ).status,
+      409,
+    );
+    assert.equal(
+      (
+        await request(`/api/computer/accounts/${instagram}/command`, {
+          method: "POST",
+          body: {
+            action: "open",
+            switchAccount: true,
+            previousViewId: crypto.randomUUID(),
+          },
+        })
+      ).status,
+      409,
+    );
+    const selected = await expectJSON(
+      await request(`/api/computer/accounts/${instagram}/command`, {
+        method: "POST",
+        body: {
+          action: "open",
+          switchAccount: true,
+          previousViewId: opened.viewId,
+        },
+      }),
+    );
     assert.notEqual(selected.viewId, opened.viewId);
-    assert.equal((await request(`/api/computer/accounts/${account}/command`, {
-      method: "POST", body: { action: "screen", viewId: opened.viewId },
-    })).status, 409);
-    assert.equal((await request(`/api/computer/accounts/${duplicate}/command`, {
-      method: "POST", body: { action: "open", switchAccount: true, previousViewId: selected.viewId },
-    })).status, 409);
-    await expectJSON(await request(`/api/computer/accounts/${instagram}/command`, {
-      method: "POST", body: { action: "close", viewId: selected.viewId },
-    }));
+    assert.equal(
+      (
+        await request(`/api/computer/accounts/${account}/command`, {
+          method: "POST",
+          body: { action: "screen", viewId: opened.viewId },
+        })
+      ).status,
+      409,
+    );
+    assert.equal(
+      (
+        await request(`/api/computer/accounts/${duplicate}/command`, {
+          method: "POST",
+          body: {
+            action: "open",
+            switchAccount: true,
+            previousViewId: selected.viewId,
+          },
+        })
+      ).status,
+      409,
+    );
+    await expectJSON(
+      await request(`/api/computer/accounts/${instagram}/command`, {
+        method: "POST",
+        body: { action: "close", viewId: selected.viewId },
+      }),
+    );
   } finally {
     responder = old;
-    await db.prepare("DELETE FROM social_accounts WHERE id IN (?,?)").bind(instagram, duplicate).run();
+    await db
+      .prepare("DELETE FROM social_accounts WHERE id IN (?,?)")
+      .bind(instagram, duplicate)
+      .run();
   }
 });
 test("Editör yalnız atanan şirketin profil, taslak, görsel, AI hafızası ve kaynaklarına erişir", async () => {
@@ -798,3 +885,240 @@ test(
     assert.equal(publishCalls, 1);
   },
 );
+
+async function newTabJob(platform = "facebook") {
+  const existing =
+    platform === "facebook"
+      ? null
+      : await db
+          .prepare(
+            "SELECT id FROM social_accounts WHERE company_id=? AND platform=?",
+          )
+          .bind(first.id, platform)
+          .first();
+  const accountId =
+    platform === "facebook" ? account : existing?.id || crypto.randomUUID();
+  if (platform !== "facebook" && !existing)
+    await db
+      .prepare(
+        "INSERT INTO social_accounts(id,company_id,platform,label,created_at,profile_url) VALUES(?,?,?,?,?,?)",
+      )
+      .bind(
+        accountId,
+        first.id,
+        platform,
+        "Kurgu " + platform,
+        new Date().toISOString(),
+        platform === "x"
+          ? "https://x.com/fixture"
+          : "https://www.youtube.com/@fixture",
+      )
+      .run();
+  const draft = await createCloudStore(db).saveDraft({
+    companyId: first.id,
+    name: "Sekme kurgu",
+    text: "Kurgu",
+    selected: [platform],
+    posts: [post(platform)],
+    mediaId: null,
+    mediaFit: "contain",
+  });
+  const id = crypto.randomUUID();
+  await expectJSON(
+    await request("/api/tab-publications", {
+      method: "POST",
+      body: { id, draftId: draft.id, accountId, targetLabel: "Kurgu" },
+    }),
+    201,
+  );
+  return { id, draft, accountId };
+}
+test("Firefox yayın kuyruğu dokuz platform politikasıyla ayrı çalışır; yetki, sahiplik ve eşzamanlı tek yürütme korunur", async () => {
+  const a = await newTabJob("x"),
+    b = await newTabJob("youtube");
+  assert.equal(
+    (await request(`/api/tab-publications/${a.id}`, { role: "editor" })).status,
+    403,
+  );
+  assert.equal(
+    (await request(`/api/tab-publications/${a.id}`, { role: "other" })).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(`/api/publications/${a.id}/execute`, {
+        method: "POST",
+        body: {},
+      })
+    ).status,
+    409,
+  );
+  const executor = crypto.randomUUID(),
+    other = crypto.randomUUID();
+  for (const id of [a.id, b.id])
+    await expectJSON(
+      await request(`/api/tab-publications/${id}/authorize`, {
+        method: "POST",
+        body: { executor, confirmed: true },
+      }),
+    );
+  const claims = await Promise.all(
+    [a.id, b.id].map((id) =>
+      request(`/api/tab-publications/${id}/claim`, {
+        method: "POST",
+        body: { executor },
+      }),
+    ),
+  );
+  assert.deepEqual(claims.map((r) => r.status).sort(), [200, 409]);
+  const active = claims[0].status === 200 ? a : b;
+  assert.equal(
+    (
+      await request(`/api/tab-publications/${active.id}/sending`, {
+        method: "POST",
+        body: { executor: other },
+      })
+    ).status,
+    409,
+  );
+  await expectJSON(
+    await request(`/api/tab-publications/${active.id}/sending`, {
+      method: "POST",
+      body: { executor },
+    }),
+  );
+  await expectJSON(
+    await request(`/api/tab-publications/${active.id}/result`, {
+      method: "POST",
+      body: { executor, state: "unknown" },
+    }),
+  );
+  assert.equal(
+    (
+      await request(`/api/tab-publications/${active.id}/claim`, {
+        method: "POST",
+        body: { executor },
+      })
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await request(`/api/tab-publications/${active.id}/authorize`, {
+        method: "POST",
+        body: { executor, confirmed: true },
+      })
+    ).status,
+    409,
+  );
+});
+test("Eklenti yayın onayı sabit içeriği korur; profil değişimi ve sahte başarı reddedilir, kesinti belirsiz kalır", async () => {
+  const { id, accountId, draft } = await newTabJob("x"),
+    executor = crypto.randomUUID();
+  assert.equal(
+    (
+      await request("/api/tab-publications", {
+        method: "POST",
+        body: {
+          id: crypto.randomUUID(),
+          draftId: draft.id,
+          accountId,
+          targetLabel: "Kurgu",
+        },
+      })
+    ).status,
+    409,
+  );
+  await expectJSON(
+    await request(`/api/tab-publications/${id}/authorize`, {
+      method: "POST",
+      body: { executor, confirmed: true },
+    }),
+  );
+  await db
+    .prepare("UPDATE social_accounts SET profile_url=? WHERE id=?")
+    .bind("https://x.com/other", accountId)
+    .run();
+  assert.equal(
+    (
+      await request(`/api/tab-publications/${id}/claim`, {
+        method: "POST",
+        body: { executor },
+      })
+    ).status,
+    409,
+  );
+  await db
+    .prepare("UPDATE social_accounts SET profile_url=? WHERE id=?")
+    .bind("https://x.com/fixture", accountId)
+    .run();
+  await expectJSON(
+    await request(`/api/tab-publications/${id}/claim`, {
+      method: "POST",
+      body: { executor },
+    }),
+  );
+  await expectJSON(
+    await request(`/api/tab-publications/${id}/sending`, {
+      method: "POST",
+      body: { executor },
+    }),
+  );
+  assert.equal(
+    (
+      await request(`/api/tab-publications/${id}/result`, {
+        method: "POST",
+        body: {
+          executor,
+          state: "verified",
+          url: "https://x.com/other/status/123",
+        },
+      })
+    ).status,
+    400,
+  );
+  await db
+    .prepare(
+      "UPDATE publication_jobs SET updated_at='2000-01-01T00:00:00.000Z' WHERE id=?",
+    )
+    .bind(id)
+    .run();
+  const jobs = await expectJSON(
+    await request(`/api/tab-publications?companyId=${first.id}`),
+  );
+  assert.equal(jobs.find((j) => j.id === id).state, "unknown");
+  assert.equal(
+    (
+      await request(`/api/tab-publications/${id}/claim`, {
+        method: "POST",
+        body: { executor },
+      })
+    ).status,
+    409,
+  );
+});
+test("Eski yayın cron işi eklenti hedefini ayrı Firefox oturumunda yürütmez", async () => {
+  const { id } = await newTabJob(),
+    executor = crypto.randomUUID();
+  await expectJSON(
+    await request(`/api/tab-publications/${id}/authorize`, {
+      method: "POST",
+      body: { executor, confirmed: true },
+    }),
+  );
+  await scheduledPublications(
+    mf.getBindings ? await mf.getBindings() : { DB: db },
+    async () => {
+      throw new Error("Eklenti işi bilgisayar brokerına gönderilemez.");
+    },
+  );
+  assert.equal(
+    (
+      await db
+        .prepare("SELECT state FROM publication_jobs WHERE id=?")
+        .bind(id)
+        .first()
+    ).state,
+    "queued",
+  );
+});

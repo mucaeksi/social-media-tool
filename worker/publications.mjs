@@ -25,6 +25,8 @@ export async function executePublication(c, id) {
     .first();
   if (!row || !(await c.get("store").company(row.company_id)))
     fail(404, "Yayın işi bulunamadı.");
+  if (JSON.parse(row.snapshot).transport === "firefox-tabs")
+    fail(409, "Bu iş yalnız onaylanan eklenti penceresinde yürütülür.");
   const now = Date.now();
   const owner = await c.env.DB.prepare(
     "SELECT id FROM users WHERE id=? AND role='admin' AND enabled=1",
@@ -214,7 +216,7 @@ export async function executePublication(c, id) {
 export async function scheduledPublications(env, broker) {
   const now = new Date().toISOString();
   await env.DB.prepare(
-    "UPDATE publication_jobs SET state='missed',detail='Planlanan zaman geçti; otomatik geç paylaşım yapılmadı.',updated_at=? WHERE state='queued' AND scheduled_at<?",
+    "UPDATE publication_jobs SET state='missed',detail='Planlanan zaman geçti; otomatik geç paylaşım yapılmadı.',updated_at=? WHERE state='queued' AND COALESCE(json_extract(snapshot,'$.transport'),'companion')<>'firefox-tabs' AND scheduled_at<?",
   )
     .bind(now, new Date(Date.now() - 120000).toISOString())
     .run();
@@ -229,7 +231,7 @@ export async function scheduledPublications(env, broker) {
     .bind(now, new Date(Date.now() - 300000).toISOString())
     .run();
   const { results } = await env.DB.prepare(
-    "SELECT j.id,j.created_by FROM publication_jobs j JOIN users u ON u.id=j.created_by WHERE j.state='queued' AND j.scheduled_at<=? AND u.enabled=1 AND u.role='admin' ORDER BY j.scheduled_at LIMIT 3",
+    "SELECT j.id,j.created_by FROM publication_jobs j JOIN users u ON u.id=j.created_by WHERE j.state='queued' AND COALESCE(json_extract(j.snapshot,'$.transport'),'companion')<>'firefox-tabs' AND j.scheduled_at<=? AND u.enabled=1 AND u.role='admin' ORDER BY j.scheduled_at LIMIT 3",
   )
     .bind(now)
     .all();
@@ -422,6 +424,8 @@ export function registerPublications(app) {
       .first();
     if (!job || !(await c.get("store").company(job.company_id)))
       fail(404, "Yayın işi bulunamadı.");
+    if (JSON.parse(job.snapshot).transport === "firefox-tabs")
+      fail(409, "Eklenti yayını için toplu yayın ekranını kullanın.");
     if (action === "approve") {
       const input = z
         .object({

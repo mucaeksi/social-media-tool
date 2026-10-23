@@ -1,5 +1,7 @@
 # Ana Firefox ile Sosyal Studio
 
+1.10 güncellemesinde onaylı toplu organik yayın da eklendi: [aynı pencerede otomatik yayın rehberi](OTOMATIK_YAYIN.md). Reklam bütçesi ve ödeme bu akıştan yürütülmez.
+
 ## Windows'ta tam otomatik kurulum — yardımcı 1.6 / eklenti 1.1
 
 Güncel `Baslat.cmd` açılınca Firefox Developer Edition Mozilla'nın resmî HTTPS adresinden indirilir. Windows Authenticode zinciri ve Mozilla Corporation yayıncı imzası doğrulanmadan kurucu çalıştırılmaz. Firefox `FirefoxDeveloper`, kendine ait profil `FirefoxProfil`, ek tarayıcı verileri `FirefoxVerileri` klasörüne hazırlanır; hepsi BAT dosyasının yanındadır. İşletim sistemindeki kişisel Firefox profili, varsayılan tarayıcı ve şifre kasası değiştirilmez.

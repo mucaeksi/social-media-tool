@@ -31,9 +31,9 @@ export async function prepareFirefoxExtension(
   const bundle = JSON.parse(await readFile(bundleURL, "utf8"));
   const files = [
     ...baseFiles,
-    ...(bundle.files && Object.hasOwn(bundle.files, "advertising.js")
-      ? ["advertising.js"]
-      : []),
+    ...["advertising.js", "publication-policy.js", "publisher.js"].filter(
+      (f) => bundle.files && Object.hasOwn(bundle.files, f),
+    ),
   ];
   if (
     bundle.format !== 1 ||

@@ -13,9 +13,56 @@
     })
       .then(async (r) => {
         const a = r.ok ? await r.json() : null;
-        return { userId: a?.user?.role === "admin" ? a.user.id : null };
+        return {
+          userId: a?.user?.role === "admin" ? a.user.id : null,
+          companyId: new URL(location.href).searchParams.get("company"),
+        };
       })
       .catch(() => ({ userId: null }));
+  });
+  browser.runtime.onMessage.addListener((m, sender) => {
+    if (
+      sender.id !== browser.runtime.id ||
+      m?.source !== "studio-tab-publication"
+    )
+      return;
+    return (async () => {
+      if (
+        !/^[a-f0-9-]{36}$/i.test(m.jobId || "") ||
+        !["get", "media", "authorize", "claim", "sending", "result"].includes(
+          m.action,
+        )
+      )
+        throw new Error("Geçersiz yayın isteği.");
+      let path = "/api/tab-publications/" + m.jobId;
+      if (m.action === "media") {
+        if (!Number.isInteger(m.index) || m.index < 0 || m.index > 9)
+          throw new Error("Görsel sırası geçersiz.");
+        path += "/media/" + m.index;
+      } else if (m.action !== "get") path += "/" + m.action;
+      const write = !["get", "media"].includes(m.action);
+      const r = await fetch(location.origin + path, {
+        credentials: "include",
+        cache: "no-store",
+        redirect: "error",
+        ...(write
+          ? {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                executor: m.executor,
+                confirmed: true,
+                state: m.state,
+                url: m.url,
+                detail: m.detail,
+              }),
+            }
+          : {}),
+      });
+      const value = await r.json();
+      if (!r.ok) throw new Error(value.error || "Yayın adımı reddedildi.");
+      return { ok: true, value };
+    })().catch((e) => ({ ok: false, error: e.message }));
   });
   window.addEventListener("message", async (event) => {
     const m = event.data;
@@ -27,6 +74,7 @@
       m.id.length > 64 ||
       ![
         "status",
+        "publish-batch",
         "connect",
         "open-ad-portal",
         "connect-window",
@@ -56,6 +104,28 @@
           .catch(() => {});
         throw new Error(
           "Firefox bağlantısı için panelde yönetici olarak giriş yapın.",
+        );
+      }
+      let jobs;
+      if (m.action === "publish-batch") {
+        if (
+          !Array.isArray(m.jobIds) ||
+          !m.jobIds.length ||
+          m.jobIds.length > 20 ||
+          m.jobIds.some((id) => !/^[a-f0-9-]{36}$/i.test(id))
+        )
+          throw new Error("Yayın işlerini seçin.");
+        jobs = await Promise.all(
+          m.jobIds.map(async (id) => {
+            const r = await fetch(
+              location.origin + "/api/tab-publications/" + id,
+              { credentials: "include", cache: "no-store", redirect: "error" },
+            );
+            const value = await r.json();
+            if (!r.ok)
+              throw new Error(value.error || "Yayın önizlemesi doğrulanamadı.");
+            return value;
+          }),
         );
       }
       let target;
@@ -98,6 +168,7 @@
       }
       const result = await browser.runtime.sendMessage({
         action: m.action,
+        jobs,
         userId: auth.user.id,
         target,
         companyName: m.companyName,

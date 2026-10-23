@@ -127,7 +127,7 @@ export function FirefoxConnection({
         <summary>Eklentiyi kur · kişisel Firefox için elle kurulum</summary>
         <ol>
           <li>
-            <a href="/indir/sosyal-studio-firefox.zip?v=1.2.0" download>
+            <a href="/indir/sosyal-studio-firefox.zip?v=1.3.0" download>
               Eklenti paketini indir
             </a>{" "}
             ve ZIP'i bir klasöre çıkar.

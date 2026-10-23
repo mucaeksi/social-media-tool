@@ -2,6 +2,8 @@
 
 Türkçe, çok şirketli sosyal medya içerik hazırlama ve çalışma paneli. Facebook, Instagram, X, Threads, Pinterest, YouTube, TikTok, LinkedIn ve Tumblr için içerik hazırlanır.
 
+**1.10 yaması:** Aynı Firefox penceresinde dokuz platform için onaylı fotoğraf/metin yayın kuyruğu, hesap ve sayfa eşleştirmesi, toplu önizleme, zamanlama ve yeni gönderi bağlantısı denetimi eklendi. [Otomatik yayın rehberi](docs/OTOMATIK_YAYIN.md).
+
 **1.9 yaması:** KKTC reklam planı, manuel reklam ölçümleri, yedi sağlayıcının reklam panelini aynı Firefox penceresinde açma, onaylı metin hazırlama ve reklam çalışma notları eklendi. [Reklam kullanım rehberi](docs/REKLAM_KULLANIM.md).
 
 **1.8 yaması:** Otomatik kayıt ve oturum sonrası kurtarma, taslak sürüm kontrolü, medya kütüphanesi, kampanya/ürün kartları, haftalık/aylık içerik takvimi, çok görselli hazırlık, platform kırpması, ölçüm/deney takibi ve görselli parçalı yedek eklendi. [1.8 kullanım rehberi](docs/KULLANIM_1_8.md).
@@ -11,7 +13,7 @@ Türkçe, çok şirketli sosyal medya içerik hazırlama ve çalışma paneli. F
 1. Şirketi ve varsayılan kanalları seçin. Her şirketin profil, kaynak, taslak ve medya alanı ayrıdır.
 2. Stüdyoda kaynak metni ve görselleri hazırlayın. Cloudflare Gemma 4, yerel Qwen3.5:9b veya manuel ChatGPT aktarımı kullanılabilir. AI sonucu kontrol edilerek aktarılır; model ağırlıkları eğitilmez.
 3. Kampanya, ürün, sorumlu ve inceleme durumunu ekleyin. Ürün kaynaklarını yönetici onaylar. Metin ve görselleri ZIP olarak indirebilirsiniz.
-4. İçerik takviminde manuel planları takip edin. Facebook pilotunda yayın için ayrıca açık onay gerekir; diğer platformlarda hazırlık ve manuel paylaşım kullanılır.
+4. İçerik takviminde manuel planları takip edin. Yayın takviminde seçilen hesapların fotoğraf/metin önizlemelerini eklentide onaylayarak aynı Firefox penceresinde otomatik yayın başlatın.
 5. Gerçek platform/işletme ölçümlerini gönderiye bağlayın. Boş ölçüm sıfır sayılmaz. UTM ve deneylerle sonraki içerik kararını gerçek sonuçlara dayandırın.
 6. Reklam çalışma alanında bütçe, KKTC hizmet bölgeleri ve reklam denemelerini planlayın. Aynı Firefox penceresinde gerçek reklam hesabınıza giriş yapın; AI değerlendirmesi ve metin yerleştirme için eklenti onayını kullanın. Harcama ve yayın işlemlerini sağlayıcı panelinde siz tamamlarsınız.
 
@@ -23,7 +25,7 @@ Otomatik kayıt yayınlama yapmaz. Taslak çakışmasında eski kopya yeni düze
 
 Windows yardımcısı ayrı taşınabilir Firefox ve özel Ollama üzerinden çalışır. Model `qwen3.5:9b`, 4-bit ve 16K bağlamdır. Kurulum, eşleştirme, model dosyaları ve Firefox profilleri mevcut taşınabilir klasörde korunur. Yardımcı güncellemesi mevcut otomatik yama akışından gelir.
 
-Facebook yayın pilotu, doğru hesap/içerik onayı ve yeni gönderi bağlantısı kanıtı arar. Gerçek sosyal hesap davranışı kullanıcı bilgisayarında doğrulanmalıdır. Dokuz platformda otomatik yayın veya resmî OAuth bağlantısı hazır olduğu iddia edilmez. Video hazırlığı çekim/metin planıdır; video dosyası üretmez.
+Eklenti 1.3 fotoğraf/metin gönderilerini aynı onaylı Firefox penceresinde sırayla yürütür; hesap, içerik ve yeni gönderi bağlantısı kanıtı arar. YouTube topluluk ve TikTok fotoğraf biçimi ilgili web hesabında sunulmalıdır. Tanınmayan formda işlem durur; gerçek hesap davranışı kullanıcı bilgisayarında doğrulanmalıdır. Resmî OAuth/API yayıncısı kullanılmaz. Video hazırlığı çekim/metin planıdır; video dosyası üretmez.
 
 D1 tek veritabanı ücretsiz sınırı 500 MB; uygulamanın güvenli yazma eşiği 400 MB'tır. R2 için 10 GB uygulama depolama sınırı ayrıdır. Bulut AI rezervasyon bütçesi günlük 9.000 Neuron, yerel AI günlük 50 üretimdir. Bunlar hesap genelinde fatura kilidi değildir. Ücretli servis veya X API kredisi otomatik açılmaz.
 
@@ -60,6 +62,8 @@ Firefox/Windows testlerinin gerçek çalıştırıcı gereksinimleri ilgili rehb
 
 ## Başvuru
 
+- [1.10 aynı Firefox penceresinde otomatik yayın](docs/OTOMATIK_YAYIN.md)
+- [1.10 test ve doğrulama sonuçları](docs/DOGRULAMA_1_10.md)
 - [1.9 KKTC reklam çalışma alanı](docs/REKLAM_KULLANIM.md)
 - [1.9 test ve doğrulama sonuçları](docs/DOGRULAMA_1_9.md)
 - [1.8 kullanım rehberi](docs/KULLANIM_1_8.md)

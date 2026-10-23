@@ -33,9 +33,44 @@ test(
       stage = "kurulum",
       popup,
       setupChild;
-    const server = createServer((request, response) => {
+    let tabJob, tabImage;
+    const server = createServer(async (request, response) => {
       response.setHeader("Content-Type", "text/html; charset=utf-8");
-      if (request.url.startsWith("/api/auth/me"))
+      if (request.url.startsWith("/api/tab-publications/")) {
+        if (!tabJob) {
+          response.statusCode = 404;
+          response.end(JSON.stringify({ error: "İş yok" }));
+          return;
+        }
+        if (request.method === "GET")
+          response.end(
+            JSON.stringify(
+              request.url.includes("/media/")
+                ? { data: tabImage, type: "image/jpeg" }
+                : tabJob,
+            ),
+          );
+        else {
+          const chunks = [];
+          for await (const chunk of request) chunks.push(chunk);
+          const input = JSON.parse(Buffer.concat(chunks).toString());
+          const action = request.url.split("/").at(-1);
+          if (action === "authorize") {
+            tabJob.state = "queued";
+            tabJob.snapshot.executor = input.executor;
+          }
+          if (action === "claim") {
+            if (tabJob.state !== "queued") response.statusCode = 409;
+            else tabJob.state = "preparing";
+          }
+          if (action === "sending") tabJob.state = "sending";
+          if (action === "result") {
+            tabJob.state = input.state;
+            tabJob.result_url = input.url;
+          }
+          response.end(JSON.stringify(tabJob));
+        }
+      } else if (request.url.startsWith("/api/auth/me"))
         response.end(JSON.stringify({ user }));
       else if (request.url.startsWith("/api/social/accounts"))
         response.end(
@@ -137,7 +172,7 @@ test(
         // distributed source and ZIP never contain localhost or a test bypass.
         if (name === "manifest.json") {
           const manifest = JSON.parse(text);
-          manifest.permissions = ["tabs", "http://127.0.0.1/*"];
+          manifest.permissions = ["tabs", "storage", "http://127.0.0.1/*"];
           manifest.content_scripts[0].matches = ["http://127.0.0.1/panel*"];
           manifest.web_accessible_resources = [
             "popup.html",
@@ -166,6 +201,15 @@ test(
           text =
             "globalThis.StudioAdvertising=" + JSON.stringify(providers) + ";";
         }
+        if (name === "publication-policy.js")
+          text =
+            text
+              .replace(
+                'u.protocol !== "https:"',
+                '!["https:","http:"].includes(u.protocol)',
+              )
+              .replace(/u\.port\s*\|\|/g, "") +
+            '\nfor(const value of Object.values(StudioPublishing.platforms))value.hosts=["127.0.0.1"];\n';
         if (name === "background.js")
           text = text.replace("}, 30000);", "}, 250);");
         await writeFile(join(directory, name), text);
@@ -254,7 +298,7 @@ test(
         () => document.querySelector("#status").textContent.length > 0,
       );
       stage = "ilk hesabı bağlama";
-      assert.equal((await rpc("status")).version, "1.2.0");
+      assert.equal((await rpc("status")).version, "1.3.0");
       assert.equal((await rpc("read", { companyId, accountId })).ok, false);
       assert.equal(
         (
@@ -506,6 +550,98 @@ test(
       assert.equal(await adPage.evaluate(() => window.paid || 0), 0);
       await adPage.goto(origin + "/ads-test/billing");
       assert.equal((await rpc("read", adScope)).ok, false);
+      stage = "aynı pencerede gerçek toplu yayın onayı";
+      await panel.goto(origin + "/panel?company=" + companyId);
+      await social.goto(origin + "/kurgu");
+      await social.evaluate((origin) => {
+        const actor = document.querySelector("#actor");
+        actor.href = origin + "/kurgu";
+        actor.textContent = "Kurgu";
+        const region = document.querySelector('[role="dialog"]');
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/jpeg";
+        region.append(input);
+        region.querySelector("button").onclick = () => {
+          window.published = (window.published || 0) + 1;
+          const article = document.createElement("article");
+          article.append(actor.cloneNode(true));
+          const text = document.createElement("p");
+          text.textContent = region.querySelector('[role="textbox"]').innerText;
+          article.append(text);
+          const link = document.createElement("a");
+          link.href = origin + "/kurgu/posts/123";
+          link.textContent = "Gönderiyi aç";
+          article.append(link);
+          document.querySelector("main").append(article);
+        };
+      }, origin);
+      tabImage = (await social.screenshot({ type: "jpeg" })).toString("base64");
+      tabJob = {
+        id: crypto.randomUUID(),
+        company_id: companyId,
+        account_id: accountId,
+        created_by: "fixture-admin",
+        state: "draft",
+        fingerprint: "a".repeat(64),
+        scheduled_at: new Date().toISOString(),
+        timezone: "Asia/Famagusta",
+        snapshot: {
+          transport: "firefox-tabs",
+          platform: "facebook",
+          identityLabel: "Kurgu",
+          profileUrl: origin + "/kurgu",
+          text: "KKTC için onaylı toplu yayın #Girne",
+          post: { title: "" },
+          media: [{ mediaId: crypto.randomUUID(), fit: "contain" }],
+        },
+      };
+      assert.equal(
+        (
+          await rpc("publish-batch", {
+            companyId,
+            companyName: "Kurgu",
+            jobIds: [tabJob.id],
+          })
+        ).pending,
+        true,
+      );
+      assert.equal(
+        await social.evaluate(() => window.published || 0),
+        0,
+        "Eklenti onayından önce yayın yapılmaz",
+      );
+      await popup.evaluate(() => refresh());
+      await popup.waitForSelector("section pre");
+      await popup.evaluate(() =>
+        [...document.querySelectorAll("section button")]
+          .find((b) => b.textContent === "Bu hesaplarda otomatik yayını onayla")
+          .click(),
+      );
+      await social.waitForFunction(() => window.published === 1);
+      for (let i = 0; i < 40 && tabJob.state !== "verified"; i++)
+        await new Promise((r) => setTimeout(r, 100));
+      assert.equal(tabJob.state, "verified");
+      assert.equal(tabJob.result_url, origin + "/kurgu/posts/123");
+      assert.equal(
+        await social.$eval('input[type="file"]', (el) => el.files.length),
+        1,
+      );
+      assert.equal(
+        (
+          await rpc("publish-batch", {
+            companyId,
+            companyName: "Kurgu",
+            jobIds: [tabJob.id],
+          })
+        ).ok,
+        false,
+      );
+      assert.equal(
+        await social.evaluate(() => window.published),
+        1,
+        "Tamamlanmış iş yeniden gönderilemez",
+      );
       user = { id: "another", role: "editor" };
       assert.equal(
         (await rpc("status")).ok,

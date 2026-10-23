@@ -26,6 +26,7 @@ import {
   registerWorkspaceOperations,
   databaseUsage,
 } from "./workspace-operations.mjs";
+import { registerTabPublications } from "./tab-publications.mjs";
 import { registerPublications } from "./publications.mjs";
 import { registerPasswordRoutes } from "./password-auth.mjs";
 import { createD1Media } from "./d1-media.mjs";
@@ -138,7 +139,7 @@ app.use("*", async (c, next) => {
     ["POST", "PUT"].includes(c.req.method) &&
     ((/^\/api\/content\//.test(c.req.path) &&
       c.req.path !== "/api/content/evidence/check") ||
-      /^\/api\/(?:ai\/ask|computer\/ai\/ask|knowledge\/research|drafts(?:\/[^/]+)?|media|companies(?:\/[^/]+)?|quality|metrics|publications|workspace\/restore)$/.test(
+      /^\/api\/(?:ai\/ask|computer\/ai\/ask|knowledge\/research|drafts(?:\/[^/]+)?|media|companies(?:\/[^/]+)?|quality|metrics|publications|tab-publications|workspace\/restore)$/.test(
         c.req.path,
       ))
   ) {
@@ -171,6 +172,7 @@ registerKnowledge(app);
 registerWorkspaceOperations(app);
 registerEditorial(app);
 registerPublications(app);
+registerTabPublications(app);
 app.use(
   "/api/computer/enroll",
   bodyLimit({
