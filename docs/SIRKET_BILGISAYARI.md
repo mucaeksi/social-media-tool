@@ -1,3 +1,5 @@
+**1.14.1 / eklenti 1.5.1:** Toplu bağlantı onayı aynı pencerede açılır. Model ve girişler korunur; aynı Baslat.cmd ile güncelleyip paneli Ctrl+F5 ile yenileyin. [Toplu bağlantı](FIREFOX_TOPLU_BAGLANTI_1_14_1.md).
+
 # 1.12: Qwen ile sosyal medya Firefox görevleri
 
 **1.14:** Qwen için 17 gerçek beceri dosyası, dosya doğrulama/onarımı ve son kullanılan rehberler; daha düzenli Üretim/Planlama/Yönetim paneli. Yardımcı 1.14, eklenti 1.5; aynı Baslat.cmd ve Ctrl+F5 ile güncelleyin. [Beceri dosyaları ve kullanım kontrolü](QWEN_BECERILERI_1_14.md). Model ve hesap klasörlerini silmeyin.

@@ -6,6 +6,7 @@
   const ttl = 5 * 60 * 1000;
   let working = false;
   const autoJobs = new Map();
+  const approvalOpening = new Map();
   let activeJob = null;
   let publicationError = "";
   const agent = createStudioBrowserAgent({ validBinding, validWindow, queue,
@@ -303,6 +304,33 @@
     expire();
     return { pending: true };
   }
+  function openWorkspaceApproval(r) {
+    // Open only our own approval UI. Queueing never grants account access.
+    // Serialize per window so rapid retries reuse a single exact-URL tab.
+    const previous = approvalOpening.get(r.windowId) || Promise.resolve();
+    const task = previous.catch(() => {}).then(async () => {
+      try {
+        const url = browser.runtime.getURL("popup.html");
+        const tabs = await browser.tabs.query({ windowId: r.windowId });
+        const existing = tabs.find((t) => !t.incognito && t.windowId === r.windowId && t.url === url);
+        if (existing) {
+          await browser.tabs.reload(existing.id);
+          await browser.tabs.update(existing.id, { active: true });
+        } else {
+          await browser.tabs.create({ windowId: r.windowId, openerTabId: r.panelTab, url, active: true });
+        }
+        return true;
+      } catch {
+        // Native toolbar approval remains available if Firefox refuses the tab.
+        return false;
+      }
+    });
+    approvalOpening.set(r.windowId, task);
+    void task.finally(() => {
+      if (approvalOpening.get(r.windowId) === task) approvalOpening.delete(r.windowId);
+    });
+    return task;
+  }
   browser.tabs.onRemoved.addListener((tabId) => {
     agent.removed(tabId);
     bindings.delete(tabId);
@@ -529,6 +557,13 @@
           }
           requests.delete(m.id);
           expire();
+          if (r.action === "connect-workspace") {
+            try {
+              const panel = await browser.tabs.get(r.panelTab);
+              if (!panel.incognito && panel.windowId === r.windowId && new URL(panel.url).origin === p.panelOrigin)
+                await browser.tabs.update(panel.id, { active: true });
+            } catch { /* Account grants stay valid if the focus change fails. */ }
+          }
           return {};
         } catch (e) {
           if (r.action === "publish-batch") r.error = (e.message || "Yayın onayı tamamlanamadı.").slice(0, 1000);
@@ -687,14 +722,18 @@
             new Set(targets.map((t) => t.accountId)).size !== targets.length)
             throw new Error("Şirket hesapları doğrulanamadı.");
         }
-        return queue({
+        const request = {
           action: m.action,
           target,
           ...(targets ? { targets } : {}),
           userId: m.userId,
           panelTab: sender.tab.id,
           windowId: tab.windowId,
-        });
+        };
+        const result = queue(request);
+        return m.action === "connect-workspace"
+          ? { ...result, approvalOpened: await openWorkspaceApproval(request) }
+          : result;
       }
       if (m.action === "tabs" || m.action === "select-tab") {
         const w = await validWindow(sender, m);

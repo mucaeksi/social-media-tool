@@ -100,6 +100,7 @@ export function CompanyAccounts({
   const [adding, setAdding] = useState<{
       id: SocialPlatformId;
       name: string;
+      accountId?: string;
     } | null>(null),
     [label, setLabel] = useState(""),
     [profileUrl, setProfileUrl] = useState("");
@@ -544,6 +545,12 @@ export function CompanyAccounts({
                       <p>Bu gözlem eklentili Firefox'taki hesabın durumunu değiştirmez.</p>
                     </details>
                     <div>
+                      {!a.profileUrl && <button className="secondary" disabled={!admin || busy} onClick={() => {
+                        setError("");
+                        setAdding({ id: a.platform, name: p.name, accountId: a.id });
+                        setLabel(a.label);
+                        setProfileUrl("");
+                      }}>Adres ekle</button>}
                       <button
                         className="secondary"
                         disabled={!admin || !online || busy}
@@ -607,21 +614,18 @@ export function CompanyAccounts({
       </div>
       {adding && (
         <Modal
-          title={`${adding.name} hesabı ekle`}
+          title={adding.accountId ? `${adding.name} hesabının adresini ekle` : `${adding.name} hesabı ekle`}
           onClose={() => setAdding(null)}
         >
           <form
             onSubmit={(event) => {
               event.preventDefault();
               void run(async () => {
-                await api("/api/social/accounts", {
-                  method: "POST",
-                  body: JSON.stringify({
-                    companyId: company?.id,
-                    platform: adding.id,
-                    label,
-                    profileUrl,
-                  }),
+                await api(adding.accountId ? `/api/social/accounts/${adding.accountId}` : "/api/social/accounts", {
+                  method: adding.accountId ? "PUT" : "POST",
+                  body: JSON.stringify(adding.accountId
+                    ? { companyId: company?.id, profileUrl }
+                    : { companyId: company?.id, platform: adding.id, label, profileUrl }),
                 });
                 setAdding(null);
                 await refresh();
@@ -632,6 +636,7 @@ export function CompanyAccounts({
               Hesap etiketi
               <input
                 value={label}
+                readOnly={Boolean(adding.accountId)}
                 onChange={(e) => setLabel(e.target.value)}
                 maxLength={80}
                 required
@@ -641,6 +646,7 @@ export function CompanyAccounts({
               Hesap / sayfa bağlantısı
               <input
                 type="url"
+                required={Boolean(adding.accountId)}
                 value={profileUrl}
                 onChange={(e) => setProfileUrl(e.target.value)}
                 maxLength={2048}
@@ -649,7 +655,7 @@ export function CompanyAccounts({
             {error && <p role="alert">{error}</p>}
             <div className="modal-actions">
               <button className="primary" disabled={busy}>
-                Hesap ekle
+                {adding.accountId ? "Adresi kaydet" : "Hesap ekle"}
               </button>
             </div>
           </form>

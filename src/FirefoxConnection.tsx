@@ -207,6 +207,7 @@ export function FirefoxConnection({
     b.platform.startsWith("ads-")
       ? `${b.accountId}:${b.platform}`
       : b.accountId;
+  const connectable = accounts.filter((account) => account.profileUrl?.trim());
   const connected = (
     status?.bindings || (status?.binding ? [status.binding] : [])
   ).filter((b) => b.companyId === companyId);
@@ -239,7 +240,7 @@ export function FirefoxConnection({
         <summary>Eklentiyi kur · kişisel Firefox için elle kurulum</summary>
         <ol>
           <li>
-            <a href="/indir/sosyal-studio-firefox.zip?v=1.5.0" download>
+            <a href="/indir/sosyal-studio-firefox.zip?v=1.5.1" download>
               Eklenti paketini indir
             </a>{" "}
             ve ZIP'i bir klasöre çıkar.
@@ -269,14 +270,18 @@ export function FirefoxConnection({
       </details>
       <div className="expert-actions">
         <button
-          disabled={disabled || busy || !accounts.some((a) => a.profileUrl)}
+          className="primary"
+          disabled={disabled || busy}
           onClick={() => void run(async () => {
+            if (!connectable.length) throw new Error("Bu şirket için hedef hesap/sayfa adresi bulunamadı. Hesap bağlantıları ekranında ‘Hesap ekle’ veya mevcut kayıttaki ‘Adres ekle’ düğmesinden ‘Hesap / sayfa bağlantısı’ alanını kaydedin; sonra toplu bağlamayı yeniden başlatın.");
             const available = status || await firefoxRequest<FirefoxStatus>("status");
             if (!/^1\.(?:[4-9]|[1-9]\d+)\./.test(available.version))
               throw new Error("Toplu bağlantı için Firefox eklentisi 1.4 veya üzeri gerekli. Güncel yardımcı/eklenti paketini kullanın.");
-            await firefoxRequest("connect-workspace", { companyId, companyName });
+            const request = await firefoxRequest<{ approvalOpened?: boolean }>("connect-workspace", { companyId, companyName });
             await refresh();
-            setNotice("Firefox araç çubuğundaki Sosyal Studio simgesini açın. Bulunan hesap sekmelerini birlikte onaylayın; bağlantı burada otomatik güncellenir.");
+            setNotice(request.approvalOpened
+              ? "Firefox'ta Sosyal Studio onay sekmesi açıldı. Eşleşen hesapları kontrol edip ‘Seçili hesap sekmelerini birlikte bağla’ düğmesiyle onaylayın; paneldeki bağlantı sayısı otomatik güncellenir."
+              : "Bağlantı isteği hazır. Firefox'un sağ üstündeki eklentiler (yapboz) menüsünden Sosyal Studio'yu açın; ‘Seçili hesap sekmelerini birlikte bağla’ düğmesiyle onaylayın. Onay ekranının otomatik açılması için yardımcıyı güncelleyin.");
           })}
         >
           Açık hesap sekmelerini topluca bağla
@@ -307,6 +312,11 @@ export function FirefoxConnection({
           </button>
         )}
       </div>
+      {!connectable.length && <p className="connection-guidance">Açık sekmelerin hangi şirkete ait olduğunu eşleştirmek için önce hedef adreslerini kaydedin. <a href={`?company=${encodeURIComponent(companyId)}&page=connections`}>Hesap bağlantıları</a> ekranındaki platform kartlarında <b>Hesap ekle</b> veya <b>Adres ekle</b> ile hedefi kaydedin.</p>}
+      {connectable.length > 0 && connectable.length < accounts.length && <p className="connection-guidance">{accounts.length - connectable.length} hesabın hedef adresi eksik; toplu bağlantıya yalnız adresi kayıtlı {connectable.length} hesap dahil edilir.</p>}
+      {busy && <p role="status">Firefox bağlantısı kontrol ediliyor…</p>}
+      {notice && <p className="connection-guidance" role="status">{notice}</p>}
+      {error && <p className="connection-guidance" role="alert">{error}</p>}
       {status && (
         <p>
           Eklenti {status.version} · {connected.length} hesap sekmesi bağlı
@@ -321,7 +331,7 @@ export function FirefoxConnection({
       {tabsError && <p role="alert">Sekme listesi yenilenemedi: {tabsError} Bağlantıyı yeniden kontrol edin.</p>}
       {status?.version === "1.0.0" && (
         <p role="status">
-          Çoklu hesap bağlantısı için Eklentiyi kur bölümünden 1.5.0 paketini
+          Çoklu hesap bağlantısı için Eklentiyi kur bölümünden 1.5.1 paketini
           indirip yeniden yükle. İlk sürüm yalnız son bağlanan hesabı tutar.
         </p>
       )}
@@ -541,9 +551,6 @@ export function FirefoxConnection({
         </>
       )}
       </details>
-      {busy && <p role="status">Firefox bağlantısı kontrol ediliyor…</p>}
-      {notice && <p role="status">{notice}</p>}
-      {error && <p role="alert">{error}</p>}
       <small>
         Bağlı sekmeler görev sırasında okunabilir; giriş ve özel mesaj ekranları
         okunmaz. Otomatik paylaşım, Yayın takvimi bölümündeki içerik önizlemesi

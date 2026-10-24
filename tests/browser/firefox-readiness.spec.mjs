@@ -22,6 +22,17 @@ test("Açık Firefox hesapları tek onayla bağlanır; yardımcı gözlemi ve ta
     await page.route("**/api/social/accounts?*", (r) => r.fulfill({ json:
       new URL(r.request().url()).searchParams.get("companyId") === company.id ? accounts : [],
     }));
+    let updatedAccount = null;
+    await page.route("**/api/social/accounts/*", async (route) => {
+      if (route.request().method() !== "PUT") return route.fallback();
+      const input = route.request().postDataJSON();
+      const account = accounts.find((a) => route.request().url().endsWith("/" + a.id));
+      expect(input.companyId).toBe(company.id);
+      expect(Object.keys(input).sort()).toEqual(["companyId", "profileUrl"]);
+      account.profileUrl = input.profileUrl;
+      updatedAccount = account.id;
+      await route.fulfill({ json: account });
+    });
     // The extension uses the normal Firefox profile. Its connection must still
     // work when the separate helper's status/profile service is unavailable.
     await page.route("**/api/computer/**", (r) => r.fulfill({ status: 503, json: { error: "Kurgu yardımcı çevrimdışı." } }));
@@ -40,7 +51,7 @@ test("Açık Firefox hesapları tek onayla bağlanır; yardımcı gözlemi ve ta
           window.postMessage({ source: "sosyal-studio-firefox-v1", id: m.id, ok: false, error: "Kurgu eklenti bağlantısı kesildi." }, location.origin);
           return;
         }
-        if (m.action === "connect-workspace") { f.pending = true; value = { pending: true }; }
+        if (m.action === "connect-workspace") { f.pending = true; value = { pending: true, approvalOpened: true }; }
         if (m.action === "status") value = {
           version: "1.4.0", window: f.connected ? { companyId, windowId: 7 } : null,
           binding: null, pending: f.pending,
@@ -64,6 +75,7 @@ test("Açık Firefox hesapları tek onayla bağlanır; yardımcı gözlemi ve ta
     await connection.getByRole("button", { name: "Açık hesap sekmelerini topluca bağla", exact: true }).click();
     await expect(accountStates.filter({ hasText: "Pencere bağlantısı onay bekliyor" })).toHaveCount(2);
     expect(commands.filter((c) => c === "connect-workspace")).toHaveLength(1);
+    await expect(connection.getByRole("status").filter({ hasText: "onay sekmesi açıldı" })).toBeVisible();
     expect(commands).not.toContain("publish-batch");
     // Simulate the explicit toolbar approval; the web page itself cannot grant.
     await page.evaluate(() => {
@@ -97,6 +109,22 @@ test("Açık Firefox hesapları tek onayla bağlanır; yardımcı gözlemi ve ta
     await expect(targets.getByText("Firefox sekmesi bağlı", { exact: true })).toHaveCount(0);
     await expect(connection.getByText("Eklenti 1.4.0 · 0 hesap sekmesi bağlı", { exact: true })).toBeVisible();
     expect(commands).not.toContain("publish-batch");
+    const connect = connection.getByRole("button", { name: "Açık hesap sekmelerini topluca bağla", exact: true });
+    await expect(connect).toBeEnabled();
+    await connect.click();
+    await expect(connection.getByRole("alert").filter({ hasText: "hedef hesap/sayfa adresi bulunamadı" })).toBeVisible();
+    expect(commands.filter((c) => c === "connect-workspace")).toHaveLength(1);
+    await page.getByRole("combobox", { name: "Aktif şirket" }).selectOption(company.id);
+    await page.getByRole("button", { name: "Hesap bağlantıları", exact: true }).click();
+    await page.getByRole("button", { name: "Adres ekle", exact: true }).click();
+    const addressForm = page.getByRole("dialog", { name: "X / Twitter hesabının adresini ekle" });
+    await expect(addressForm.getByLabel("Hesap etiketi")).toHaveValue("Kurgu x");
+    await expect(addressForm.getByLabel("Hesap etiketi")).toHaveAttribute("readonly", "");
+    await addressForm.getByLabel("Hesap / sayfa bağlantısı").fill("https://x.com/kurgu");
+    await addressForm.getByRole("button", { name: "Adresi kaydet", exact: true }).click();
+    await expect(addressForm).toHaveCount(0);
+    await expect(page.locator('a[href="https://x.com/kurgu"]')).toBeVisible();
+    expect(updatedAccount).toBe(accounts.find((a) => a.platform === "x").id);
     expect(commands).not.toContain("prepare");
   } finally {
     for (const c of companies) await request.delete(`/api/companies/${c.id}`);

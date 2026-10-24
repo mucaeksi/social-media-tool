@@ -16,6 +16,8 @@ import {
 } from "../../worker/browser-state.mjs";
 import { SocialBrowser } from "../../worker/social-browser.mjs";
 import { restoreBrowserState } from "../../worker/browser-profile.mjs";
+import { registerSocialAccounts } from "../../worker/social-accounts.mjs";
+import { Hono } from "hono";
 
 const secret = Buffer.alloc(32, 7).toString("base64url");
 const base = "https://studio.example",
@@ -179,6 +181,64 @@ test("Şirket hesapları ayrı listelenir; şifreli çerezler API yanıtına ç�
       .first(),
     null,
   );
+});
+
+test("Eksik profil adresi bir kez tamamlanır; şirket/rol sınırı ve şifreli oturum korunur", async () => {
+  const response = await request("/api/social/accounts", {
+    method: "POST", body: { companyId, platform: "instagram", label: "Adres bekleyen marka" },
+  });
+  assert.equal(response.status, 201);
+  const account = await response.json();
+  const cookies = [{ name: "sessionid", value: "fixture-preserved-cookie", domain: ".instagram.com", path: "/", expires: -1 }];
+  const state = { cookies, origins: [{ origin: "https://www.instagram.com", items: [["fixture-state", "kept"]] }] };
+  const encrypted = await sealBrowserState(state, account, secret), savedAt = "2026-10-23T10:00:00.000Z";
+  await db.prepare("UPDATE social_accounts SET encrypted_cookies=?,saved_at=?,auth_detected=1 WHERE id=?")
+    .bind(encrypted, savedAt, account.id).run();
+  const update = (body, role = "admin", id = account.id) => request(`/api/social/accounts/${id}`, { method: "PUT", body, role });
+  const input = { companyId, profileUrl: "  https://www.instagram.com/fixture-address?access_token=fixture#private  " };
+  assert.equal((await update(input, null)).status, 401);
+  assert.equal((await update(input, "editor")).status, 403);
+  for (const origin of [null, "https://other-origin.example"])
+    assert.equal((await mf.dispatchFetch(`${base}/api/social/accounts/${account.id}`, {
+      method: "PUT", headers: { Cookie: `__Host-studio_session=${tokens.admin}`, "Content-Type": "application/json", ...(origin ? { Origin: origin } : {}) }, body: JSON.stringify(input),
+    })).status, 403, "Metadata tamamlama Origin korumasını aşmaz");
+  assert.equal((await update({ ...input, companyId: otherId })).status, 404);
+  assert.equal((await update(input, "admin", crypto.randomUUID())).status, 404);
+  for (const profileUrl of ["", " ", "not/a/profile", "http://www.instagram.com/fixture", "https://x.com/fixture", "https://evilinstagram.com/fixture", "https://user:secret@www.instagram.com/fixture", "https://www.instagram.com/" + "a".repeat(2048)])
+    assert.equal((await update({ companyId, profileUrl })).status, 400);
+  for (const extra of [{ platform: "x" }, { label: "Başka ad" }, { id: crypto.randomUUID() }, { encrypted_cookies: "replace" }])
+    assert.equal((await update({ ...input, ...extra })).status, 400, "Geniş hesap düzenleme alanı kabul edilmez");
+  const updated = await update(input); assert.equal(updated.status, 200);
+  const value = await updated.json();
+  assert.equal(value.id, account.id); assert.equal(value.companyId, companyId);
+  assert.equal(value.platform, "instagram"); assert.equal(value.label, account.label);
+  assert.equal(value.profileUrl, "https://www.instagram.com/fixture-address");
+  assert.equal(value.savedAt, savedAt); assert.equal(value.hasSession, true); assert.equal(value.authDetected, true);
+  assert.equal(value.encryptedCookies, undefined); assert.ok(!JSON.stringify(value).includes(cookies[0].value));
+  const row = await db.prepare("SELECT * FROM social_accounts WHERE id=?").bind(account.id).first();
+  assert.equal(row.encrypted_cookies, encrypted); assert.equal(row.saved_at, savedAt); assert.equal(row.label, account.label);
+  assert.deepEqual(await openBrowserState(row.encrypted_cookies, account, secret), state);
+  assert.equal((await update(input)).status, 409, "Aynı adres bile ikinci kez yazılmaz");
+  assert.equal((await update({ companyId, profileUrl: "https://www.instagram.com/another" })).status, 409);
+
+  const other = await (await request("/api/social/accounts", { method: "POST", body: { companyId, platform: "instagram", label: "Boş ikinci hesap" } })).json();
+  assert.equal((await update(input, "admin", other.id)).status, 409, "Tekil profil adresi çakışması reddedilir");
+  assert.equal((await db.prepare("SELECT profile_url FROM social_accounts WHERE id=?").bind(other.id).first()).profile_url, "");
+  const racing = await Promise.all(["race-one", "race-two"].map((name) => update({ companyId, profileUrl: `https://www.instagram.com/${name}` }, "admin", other.id)));
+  assert.deepEqual(racing.map((r) => r.status).sort(), [200, 409], "İki eşzamanlı tamamlama yalnız bir kez yazar");
+
+  // The route's own middleware must permit this metadata update even when
+  // neither remote browser nor company-computer bindings exist.
+  const metadataOnly = new Hono();
+  metadataOnly.use("*", async (c, next) => { c.set("identity", { id: "admin", role: "admin" }); await next(); });
+  registerSocialAccounts(metadataOnly);
+  const plain = await (await request("/api/social/accounts", { method: "POST", body: { companyId, platform: "x", label: "Yalnız metadata" } })).json();
+  const noBrowser = await metadataOnly.request(`${base}/api/social/accounts/${plain.id}`, {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ companyId, profileUrl: "https://x.com/metadata-only" }),
+  }, { DB: db });
+  assert.equal(noBrowser.status, 200); assert.equal((await noBrowser.json()).profileUrl, "https://x.com/metadata-only");
+  const browserAction = await metadataOnly.request(`${base}/api/social/accounts/${plain.id}/open`, { method: "POST" }, { DB: db });
+  assert.equal(browserAction.status, 503, "Tarayıcı gerektiren eylemler allowlist'e eklenmez");
 });
 
 test("Paralel hesap ekleme şirket başına 25 kayıt sınırını aşamaz", async () => {

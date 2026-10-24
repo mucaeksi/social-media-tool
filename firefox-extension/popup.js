@@ -59,7 +59,7 @@ async function refresh() {
       for (const b of r.bindings) node("p", `${b.target.platform} · ${b.target.identityLabel || b.target.label}`, section);
       node("p", "İlk kullanımda Firefox ekran görüntüsü izni ister. Görüntüler özel alanlar kapatıldıktan sonra yerel Qwen'e panel bağlantısından aktarılır; arşivlenmez.", section);
     } else if (r.action === "connect-workspace") {
-      node("p", "Açık hesap sekmeleri birlikte bulundu. Önerileri ve ekranda görünen şirket adlarını kontrol edip tek seferde bağlayın. Bu onay paylaşım yapmaz.", section);
+      node("p", "Önerilen açık sekmeleri ve ekranda görünen şirket adlarını kontrol edip aşağıdaki ‘Seçili hesap sekmelerini birlikte bağla’ düğmesine basın. Bu bağlantı onayı paylaşım yapmaz; tamamlanınca panele dönülür.", section);
       workspace = [];
       for (const row of r.accounts) {
         const group = node("div", "", section);

@@ -8,6 +8,10 @@ const inputSchema = z.object({
   label: z.string().trim().min(1).max(80),
   profileUrl: z.string().trim().max(2048).default(""),
 });
+const profileInputSchema = z.strictObject({
+  companyId: z.uuid(),
+  profileUrl: z.string().trim().min(1).max(2048),
+});
 const publicAccount = (row) => ({
   id: row.id,
   companyId: row.company_id,
@@ -39,8 +43,10 @@ export function registerSocialAccounts(app) {
       (!c.env.SOCIAL_BROWSER || !c.env.BROWSER_STATE_KEY) &&
       !c.env.COMPANY_COMPUTER &&
       !(
-        c.req.path === "/api/social/accounts" &&
-        ["GET", "POST"].includes(c.req.method)
+        (c.req.path === "/api/social/accounts" &&
+          ["GET", "POST"].includes(c.req.method)) ||
+        (c.req.method === "PUT" &&
+          /^\/api\/social\/accounts\/[a-f0-9-]{36}$/i.test(c.req.path))
       )
     )
       return c.json({ error: "Uzak tarayıcı bu ortamda etkin değil." }, 503);
@@ -95,6 +101,23 @@ export function registerSocialAccounts(app) {
       { id, ...input, savedAt: null, hasSession: false, authDetected: null },
       201,
     );
+  });
+  app.put("/api/social/accounts/:id", async (c) => {
+    const id = z.uuid().parse(c.req.param("id"));
+    const input = profileInputSchema.parse(await c.req.json());
+    const row = await c.env.DB.prepare(
+      "SELECT * FROM social_accounts WHERE id=? AND company_id=?",
+    ).bind(id, input.companyId).first();
+    if (!row) return c.json({ error: "Sosyal hesap bulunamadı." }, 404);
+    if (row.profile_url !== "")
+      return c.json({ error: "Kayıtlı hedef adresi değiştirilemez. Bu işlem yalnız eksik adresi tamamlar." }, 409);
+    const profileUrl = accountProfileUrl(input.profileUrl, row.platform);
+    const result = await c.env.DB.prepare(
+      "UPDATE OR IGNORE social_accounts SET profile_url=? WHERE id=? AND company_id=? AND profile_url=''",
+    ).bind(profileUrl, id, input.companyId).run();
+    if (!result.meta.changes)
+      return c.json({ error: "Adres başka hesapta kayıtlı veya bu hesabın adresi eşzamanlı olarak tamamlandı." }, 409);
+    return c.json(publicAccount({ ...row, profile_url: profileUrl }));
   });
   app.post("/api/social/accounts/:id/:action", async (c) => {
     if (!c.env.SOCIAL_BROWSER || !c.env.BROWSER_STATE_KEY)

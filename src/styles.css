@@ -4365,3 +4365,6 @@ input, textarea { caret-color: var(--green); }
   .app-shell .assistant-card .assistant-button { font-size: 12px; }
   .app-shell .upload-button strong span { display: block; }
 }
+
+.app-shell .firefox-connection .connection-guidance { padding: 13px 15px; border: 1px solid #d5e2da; border-radius: 8px; background: #eff5f1; color: #344e40; line-height: 1.75; }
+.app-shell .firefox-connection .connection-guidance[role="alert"] { background: #fff4ee; border-color: #edcbb8; color: #7c3526; }

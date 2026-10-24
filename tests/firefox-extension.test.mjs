@@ -21,7 +21,7 @@ const target = {
   companyName: "Kurgu",
   profileUrl: "https://www.facebook.com/kurgu",
 };
-async function fixture({ publication } = {}) {
+async function fixture({ publication, approvalFailure = false } = {}) {
   let listener,
     removed,
     updated,
@@ -29,6 +29,7 @@ async function fixture({ publication } = {}) {
     userId = "admin",
     fills = 0;
   const reads = [];
+  const reloadedTabs = [];
   const tabs = new Map([
     [1, { id: 1, windowId: 10, index: 0, url: origin + "/", incognito: false }],
     [
@@ -119,12 +120,14 @@ async function fixture({ publication } = {}) {
         },
         query: async () => [...tabs.values()],
         create: async (value) => {
+          if (approvalFailure && value.url === runtime.getURL("popup.html")) throw new Error("Kurgu sekme açma hatası");
           const id = Math.max(...tabs.keys()) + 1;
           const tab = { ...value, id, incognito: false };
           tabs.set(id, tab);
           return tab;
         },
         update: async (id, value) => Object.assign(tabs.get(id), value),
+        reload: async (id) => { reloadedTabs.push(id); },
         executeScript: async () => {},
         sendMessage: async (id, m) => {
           if (m.source === "studio-auth-check") return { userId, companyId };
@@ -180,6 +183,7 @@ async function fixture({ publication } = {}) {
     sender,
     tabs,
     reads,
+    reloadedTabs,
     removed: (id) => removed(id),
     updated: (id, change) => updated(id, change),
     clock: (v) => {
@@ -353,6 +357,11 @@ test("Toplu bağlantı profilleri otomatik önerir, tek onayla bütün hesaplar�
   const other = { ...target, accountId: otherId, platform: "youtube", profileUrl: "https://www.youtube.com/@kurgu" };
   const queued = await f.call({ action: "connect-workspace", companyId, companyName: "Kurgu", targets: [target, other] });
   assert.equal(queued.pending, true);
+  assert.equal(queued.approvalOpened, true);
+  const approval = [...f.tabs.values()].find((t) => t.url === "moz-extension://fixture/popup.html");
+  assert.equal(approval.windowId, f.sender.tab.windowId);
+  assert.equal(approval.openerTabId, f.sender.tab.id);
+  assert.equal(approval.active, true);
   assert.equal((await f.call({ action: "status" })).bindings.length, 0);
   const r = (await f.popupCall({ action: "popup-state" })).requests[0];
   assert.equal(r.accounts[0].suggestedTabId, 2);
@@ -364,9 +373,40 @@ test("Toplu bağlantı profilleri otomatik önerir, tek onayla bütün hesaplar�
   ] });
   assert.equal(result.ok, true, result.error);
   assert.equal((await f.call({ action: "status" })).bindings.length, 2);
+  assert.equal(f.tabs.get(1).active, true, "Gerçek kullanıcı onayından sonra panel sekmesine dönülür");
   assert.equal((await f.call({ action: "read", companyId, accountId: otherId })).ok, true);
   assert.equal((await f.connect()).ok, true);
   assert.equal((await f.call({ action: "status" })).bindings.length, 2);
+});
+
+test("Toplu onay aynı penceredeki tam eklenti URL'sini yeniler; hızlı tekrarlar tek onay sekmesinde son isteği gösterir", async () => {
+  const f = await fixture(), url = "moz-extension://fixture/popup.html";
+  f.tabs.set(7, { id: 7, windowId: 11, url, incognito: false });
+  f.tabs.set(8, { id: 8, windowId: 10, url: url + "?old=1", incognito: false });
+  const request = () => f.call({ action: "connect-workspace", companyId, companyName: "Kurgu", targets: [target] });
+  const responses = await Promise.all([request(), request(), request()]);
+  assert.equal(responses.every((r) => r.pending && r.approvalOpened), true);
+  const own = [...f.tabs.values()].filter((t) => t.windowId === 10 && t.url === url);
+  assert.equal(own.length, 1, "Aynı pencerede ikinci bir onay sekmesi oluşmaz");
+  assert.deepEqual(f.reloadedTabs, [own[0].id, own[0].id]);
+  assert.equal(f.tabs.get(7).active, undefined, "Başka penceredeki eklenti sekmesi kullanılmaz");
+  assert.equal(f.tabs.get(8).active, undefined, "Query eklenmiş adres tam eşleşme sayılmaz");
+  const state = await f.popupCall({ action: "popup-state" });
+  assert.equal(state.requests.length, 1, "Yalnız son panel isteği onay bekler");
+  assert.equal((await f.call({ action: "status" })).bindings.length, 0, "Açma ve yenileme otomatik yetki vermez");
+});
+
+test("Onay sekmesi açılamazsa toplu istek araç çubuğunda bekler; eksik hedef onay isteği oluşturmaz", async () => {
+  const f = await fixture({ approvalFailure: true });
+  const missing = await f.call({ action: "connect-workspace", companyId, companyName: "Kurgu", targets: [] });
+  assert.equal(missing.ok, false);
+  assert.equal((await f.popupCall({ action: "popup-state" })).requests.length, 0);
+  const result = await f.call({ action: "connect-workspace", companyId, companyName: "Kurgu", targets: [target] });
+  assert.equal(result.pending, true); assert.equal(result.approvalOpened, false);
+  const r = (await f.popupCall({ action: "popup-state" })).requests[0];
+  assert.equal((await f.call({ action: "status" })).bindings.length, 0);
+  assert.equal((await f.popupCall({ action: "approve", id: r.id, selections: [{ accountId, tabId: 2, identityLabel: "Kurgu" }] })).ok, true);
+  assert.equal((await f.call({ action: "status" })).bindings.length, 1);
 });
 
 test("Toplu bağlantı başka pencereyi, özel sayfayı ve karışık şirketi reddeder; kısmi izin bırakmaz", async () => {

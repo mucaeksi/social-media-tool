@@ -1,3 +1,5 @@
+**1.14.1 — Firefox toplu bağlantı:** Eklenti 1.5.1, hesap onay ekranını aynı Firefox penceresinde açar; hedef adresi eksikken düğme sessizce pasif kalmaz. Yardımcıyı işiniz bittikten sonra aynı Baslat.cmd ile yeniden başlatıp paneli Ctrl+F5 ile yenileyin. [Kullanım](docs/FIREFOX_TOPLU_BAGLANTI_1_14_1.md).
+
 # Sosyal Studio
 
 **1.14:** Qwen için 17 gerçek beceri dosyası, dosya doğrulama/onarımı ve son kullanılan rehberler; daha düzenli Üretim/Planlama/Yönetim paneli. Yardımcı 1.14, eklenti 1.5; aynı Baslat.cmd ve Ctrl+F5 ile güncelleyin. [Beceri rehberi](docs/QWEN_BECERILERI_1_14.md) · [Panel tasarımı](docs/PANEL_TASARIM_1_14.md).

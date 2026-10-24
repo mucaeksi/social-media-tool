@@ -290,17 +290,35 @@ test(
           { action, extra },
         );
       stage = "eklenti penceresi";
-      popup = await browser.newPage();
+      const secondSocial = await browser.newPage();
+      await secondSocial.goto(origin + "/kurgu-ikinci");
+      const approvalURL = `moz-extension://${uuid}/popup.html`;
+      const previousTargets = new Set(browser.targets());
+      // Firefox may withhold URL-change events for privileged extension tabs.
+      // Observe the new browsing context, then check its real URL in the page.
+      const opening = browser.waitForTarget((t) => !previousTargets.has(t)).catch((error) => error);
+      const initial = await rpc("connect-workspace", { companyId, companyName: "Kurgu" });
+      assert.equal(initial.pending, true);
+      assert.equal(initial.approvalOpened, true, JSON.stringify(initial));
+      const approvalTarget = await opening;
+      if (approvalTarget instanceof Error) throw approvalTarget;
+      popup = await approvalTarget.page();
       popup.on("pageerror", (e) => console.error("Popup fixture:", e.message));
-      // Firefox BiDi does not emit load events consistently for extension pages.
-      // BiDi forbids navigating to extension URLs in current Developer Edition.
-      // The copied test extension explicitly makes this popup web-accessible.
-      await popup.evaluate((url) => {
-        location.href = url;
-      }, `moz-extension://${uuid}/popup.html`);
-      await popup.waitForFunction(
-        () => document.querySelector("#status").textContent.length > 0,
-      );
+      await popup.waitForFunction(() => document.querySelectorAll("section select").length === 2);
+      assert.equal((await rpc("status")).bindings.length, 0, "Sayfanın açılması izin vermez");
+      const approvalLocation = await popup.evaluate(async () => {
+        const current = await browser.tabs.getCurrent();
+        const panel = (await browser.tabs.query({ windowId: current.windowId })).find((t) => t.url?.includes("/panel?company="));
+        return { url: current.url, windowId: current.windowId, panelWindow: panel?.windowId };
+      });
+      assert.equal(approvalLocation.url, approvalURL);
+      assert.equal(approvalLocation.windowId, approvalLocation.panelWindow);
+      await popup.evaluate(() => [...document.querySelectorAll("section button")].find((b) => b.textContent === "Seçili hesap sekmelerini birlikte bağla").click());
+      await popup.waitForFunction(() => document.querySelector("#status").textContent.includes("1 panel bağlantısı etkin"));
+      assert.equal((await rpc("status")).bindings.length, 2);
+      assert.equal(await popup.evaluate(async () => (await browser.tabs.query({ active: true, currentWindow: true }))[0]?.url?.includes("/panel?company=")), true, "Onaydan sonra panel odaklanır");
+      await rpc("disconnect");
+      await secondSocial.close();
       stage = "ilk hesabı bağlama";
       assert.equal((await rpc("status")).version, JSON.parse(await readFile("firefox-extension/manifest.json", "utf8")).version);
       assert.equal((await rpc("read", { companyId, accountId })).ok, false);
@@ -374,8 +392,14 @@ test(
       );
       assert.equal((await rpc("status")).binding.accountId, accountId);
       stage = "açık hesap sekmelerini tek popup onayıyla bağlama";
-      assert.equal((await rpc("connect-workspace", { companyId, companyName: "Kurgu" })).pending, true);
-      await popup.evaluate(() => refresh());
+      await popup.evaluate(() => { globalThis.staleApprovalFixture = true; });
+      const reopened = await rpc("connect-workspace", { companyId, companyName: "Kurgu" });
+      assert.equal(reopened.pending, true); assert.equal(reopened.approvalOpened, true);
+      await popup.waitForFunction(() => globalThis.staleApprovalFixture === undefined && document.querySelectorAll("section select").length === 2);
+      assert.equal(await popup.evaluate(async () => {
+        const current = await browser.tabs.getCurrent();
+        return (await browser.tabs.query({ windowId: current.windowId })).filter((t) => t.url === browser.runtime.getURL("popup.html")).length;
+      }), 1, "Tekrar mevcut tam URL onay sayfasını yeniler; yeni sekme oluşturmaz");
       await popup.waitForFunction(() => document.querySelectorAll("section select").length === 2);
       assert.deepEqual(await popup.$$eval("section select", (els) => els.map((el) => el.value)),
         [String((await rpc("status")).bindings.find((b) => b.accountId === accountId).tabId), String(secondTab.id)]);
