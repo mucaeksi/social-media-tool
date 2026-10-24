@@ -1,5 +1,7 @@
 # Sosyal Studio
 
+**1.14:** Qwen için 17 gerçek beceri dosyası, dosya doğrulama/onarımı ve son kullanılan rehberler; daha düzenli Üretim/Planlama/Yönetim paneli. Yardımcı 1.14, eklenti 1.5; aynı Baslat.cmd ve Ctrl+F5 ile güncelleyin. [Beceri rehberi](docs/QWEN_BECERILERI_1_14.md) · [Panel tasarımı](docs/PANEL_TASARIM_1_14.md).
+
 **1.13:** Qwen ile kaynak taslaktan platform metinleri, ayrı hazırlık kopyası ve Firefox toplu yayın önizlemeleri tek akışta hazırlanır; son eklenti onayı korunur. Yardımcı 1.13 / eklenti 1.5. Ayrıntılar: [Qwen otomasyon rehberi](docs/QWEN_OTOMASYON_1_13.md), [ECC kullanımı](docs/ECC_KULLANIM.md).
 
 Türkçe, çok şirketli sosyal medya içerik hazırlama ve çalışma paneli. Facebook, Instagram, X, Threads, Pinterest, YouTube, TikTok, LinkedIn ve Tumblr için içerik hazırlanır.

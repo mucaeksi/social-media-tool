@@ -374,7 +374,8 @@ export function SocialAI({
         </label>
       )}
       {engine === "local" && (
-        <>
+        <details className="panel-disclosure assistant-system">
+          <summary><strong>Yerel AI ve beceri yönetimi</strong><small>{localReady ? "Model bağlantısı kontrol edildi" : "Kurulum ve durum kontrolü"}</small></summary>
           <LocalAIStatus onReady={setLocalReady} />
           <p>
             Seçili {selected.length} platform. Yerel modelin bağlamı 16K ile
@@ -385,10 +386,10 @@ export function SocialAI({
               .length.toLocaleString("tr-TR")}{" "}
             bayt (token ölçümü değildir).
           </p>
-        </>
-      )}
-      {engine === "local" && user.role === "admin" && (
-        <NightLearning key={`night-${company.id}`} companyId={company.id} />
+          {user.role === "admin" && <NightLearning key={`night-${company.id}`} companyId={company.id} />}
+          <LocalAIJobs key={company.id} companyId={company.id}
+            onComplete={(turn) => setTurns((s) => [...s.filter((r) => r.id !== turn.id), turn])} />
+        </details>
       )}
       {cloud && admin && engine === "local" && (
         <FirefoxConnection
@@ -398,15 +399,6 @@ export function SocialAI({
           disabled={busy}
           modelReady={localReady}
           onBinding={setFirefox}
-        />
-      )}
-      {engine === "local" && (
-        <LocalAIJobs
-          key={company.id}
-          companyId={company.id}
-          onComplete={(turn) =>
-            setTurns((s) => [...s.filter((r) => r.id !== turn.id), turn])
-          }
         />
       )}
       {usage && engine === "cloudflare" && (

@@ -1,3 +1,3 @@
-export const STUDIO_VERSION = "1.13.0";
+export const STUDIO_VERSION = "1.14.0";
 export const LOCAL_MODEL = "qwen3.5:9b";
 export const LOCAL_MODEL_LABEL = "Qwen3.5-9B · 4-bit";

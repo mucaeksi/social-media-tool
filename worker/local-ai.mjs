@@ -67,6 +67,8 @@ export function registerLocalAI(app) {
   app.post("/api/computer/ai/self-test", async (c) =>
     c.json((await call(c, { action: "self-test" })).status, 202),
   );
+  app.post("/api/computer/ai/skills/check", async (c) => c.json((await call(c, { action: "skills-check" })).status));
+  app.post("/api/computer/ai/skills/repair", async (c) => c.json((await call(c, { action: "skills-repair" })).status));
   app.post("/api/computer/ai/select-tab", async (c) => {
     let input;
     try { input = localInput({ ...(await c.req.json()), action: "select-tab" }); }
@@ -297,6 +299,7 @@ export function registerLocalAI(app) {
         entries: rows,
         question: input.question,
         mode: input.mode,
+        purpose: input.advertising ? "advertising" : "organic",
         selected: input.selected || ["instagram"],
         image,
       });

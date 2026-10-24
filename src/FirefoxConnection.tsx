@@ -213,6 +213,9 @@ export function FirefoxConnection({
   return (
     <section className="card firefox-connection">
       <h2>Ana Firefox · Eklenti bağlantısı</h2>
+      <p>Bu paneli ve sosyal hesapları aynı Firefox penceresinde açın. Hesap sekmelerini topluca bağlayıp eklenti simgesinden birlikte onaylayın.</p>
+      <details className="panel-disclosure connection-guide">
+        <summary>Firefox kurulum ve bağlantı rehberi</summary>
       <p>
         <strong>Windows'ta otomatik kurulum:</strong> Güncel Baslat.cmd, aynı
         klasöre Firefox Developer Edition kurar ve eklentiyi ona ait profilde
@@ -231,6 +234,7 @@ export function FirefoxConnection({
         sekmeleri birlikte onaylayın. Bu bağlantı paylaşım yapmaz.
         Firefox yeniden başlatıldığında veya site yeni bir sekmede açıldığında bağlantı onayını yenileyin.
       </p>
+      </details>
       <details>
         <summary>Eklentiyi kur · kişisel Firefox için elle kurulum</summary>
         <ol>

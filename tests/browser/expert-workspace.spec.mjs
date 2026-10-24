@@ -100,6 +100,7 @@ test("KKTC profili, kaynak onayı, kalite defteri, takvim ve depolama Türkçe a
       .getByRole("button", { name: "Yayın takvimi", exact: true })
       .click();
     await expect(page.getByText(/Asia\/Famagusta/).first()).toBeVisible();
+    await page.getByText("Yayın ölçümlerini incele", { exact: true }).click();
     await expect(
       page.getByRole("heading", { name: "Ölçülen performans" }),
     ).toBeVisible();

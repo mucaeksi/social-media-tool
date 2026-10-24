@@ -45,6 +45,7 @@ test("AI paneli ana Firefox sekmesini güncel okur, taslağı eklenti onayına y
     await page.goto("/");
     await page.getByRole("combobox", { name: "Aktif şirket" }).selectOption(company.id);
     await page.getByRole("button", { name: "AI asistanı", exact: true }).click();
+    await page.locator("summary").filter({ hasText: "Yerel AI ve beceri yönetimi" }).click();
     await expect(page.getByText("Model dosyası doğrulandı", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Eklenti bağlantısını kontrol et" }).click();
     await expect(page.getByText("Eklenti 1.4.0 · 2 hesap sekmesi bağlı", { exact: true })).toBeVisible();

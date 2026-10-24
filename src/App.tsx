@@ -202,6 +202,10 @@ export default function App({
   );
   const [help, setHelp] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const navigationRef = useRef<HTMLElement | null>(null);
+  const menuCloseRef = useRef<HTMLButtonElement | null>(null);
+  const menuOpenRef = useRef<HTMLButtonElement | null>(null);
+  const helpAfterMenu = useRef(false);
   const [confirm, setConfirm] = useState<{
     title: string;
     text: string;
@@ -912,6 +916,12 @@ export default function App({
     { id: "publications", name: "Yayın takvimi", icon: CheckCheck },
     { id: "settings", name: "Ekip ve ayarlar", icon: Settings2 },
   ] as const;
+  const navGroups = [
+    { name: "Üretim", ids: ["studio", "ai", "drafts"] },
+    { name: "Planlama", ids: ["content", "publications", "ads"] },
+    { name: "Yönetim", ids: ["companies", "connections", "research", "settings"] },
+  ];
+  const currentGroup = navGroups.find((group) => group.ids.includes(page))?.name || "Çalışma alanı";
   const pageTitles = {
     studio: "İçerik stüdyosu",
     drafts: "Taslaklar",
@@ -924,6 +934,60 @@ export default function App({
     publications: "Yayın takvimi",
     settings: "Ekip ve ayarlar",
   };
+  const pageDescriptions = {
+    studio: "Kaynak metni ve görseli ekleyin, platformlara uyarlayın ve taslağınızı kaydedin.",
+    ai: "Şirket bilgileriyle içerik üretin ve yerel Qwen çalışmalarını yönetin.",
+    drafts: "Kaydedilmiş içerikleri inceleyin, düzenleyin ve yayına hazırlayın.",
+    content: "Kampanyaları, ürün bilgilerini, içerik takvimini ve ölçümleri bir arada yönetin.",
+    ads: "Reklam planlarını, metinlerini ve kaydedilmiş sonuçları birlikte inceleyin.",
+    publications: "Hedef hesapları seçin, gönderileri onaylayın ve yayın sonuçlarını izleyin.",
+    companies: "Şirket bilgilerini, hedef kitlesini ve marka dilini yönetin.",
+    connections: "Şirketin sosyal hesaplarını ve aynı Firefox penceresindeki sekmelerini bağlayın.",
+    research: "KKTC profilini, kaynakları ve onaylı şirket bilgilerini güncel tutun.",
+    settings: "Kullanıcı yetkilerini ve çalışma alanı ayarlarını yönetin.",
+  };
+  useEffect(() => {
+    if (!mobileMenu) {
+      if (helpAfterMenu.current) { helpAfterMenu.current = false; setHelp(true); }
+      return;
+    }
+    const previousFocus = menuOpenRef.current || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    // Hidden descendants may settle a frame after the drawer's own style.
+    // Focus only when the close control can actually receive it.
+    let focusFrame = 0;
+    const focusClose = () => {
+      const control = menuCloseRef.current;
+      if (!control?.isConnected) return;
+      if (getComputedStyle(control).visibility !== "visible") {
+        focusFrame = requestAnimationFrame(focusClose);
+        return;
+      }
+      control.focus();
+    };
+    focusFrame = requestAnimationFrame(focusClose);
+    const closeOnDesktop = window.matchMedia("(min-width: 901px)");
+    const onResize = () => { if (closeOnDesktop.matches) setMobileMenu(false); };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); setMobileMenu(false); }
+      if (event.key !== "Tab") return;
+      const controls = [...(navigationRef.current?.querySelectorAll<HTMLElement>("a[href],button:not(:disabled),select:not(:disabled),[tabindex='0']") || [])]
+        .filter((element) => element.getClientRects().length > 0);
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    window.addEventListener("keydown", onKey);
+    closeOnDesktop.addEventListener("change", onResize);
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+      closeOnDesktop.removeEventListener("change", onResize);
+      if (previousFocus?.isConnected && !document.querySelector('[role="dialog"][aria-modal="true"]')) previousFocus.focus();
+    };
+  }, [mobileMenu]);
 
   if (loading || routeLoading || fatalError)
     return (
@@ -950,6 +1014,12 @@ export default function App({
 
   return (
     <div className={`app-shell ${compact ? "compact-mode" : ""}`}>
+      <a className="skip-link" href="#workspace-content" onClick={(event) => {
+        event.preventDefault();
+        const content = document.getElementById("workspace-content");
+        content?.focus({ preventScroll: true });
+        content?.scrollIntoView({ block: "start" });
+      }}>Ana içeriğe geç</a>
       {company && (
         <div className="workspace-save-status" role="status">
           <strong>{company.name}</strong>
@@ -1126,13 +1196,15 @@ export default function App({
           onClick={() => setMobileMenu(false)}
         />
       )}
-      <aside className={`sidebar ${mobileMenu ? "is-open" : ""}`}>
+      <aside ref={navigationRef} id="workspace-navigation" role={mobileMenu ? "dialog" : undefined} aria-modal={mobileMenu ? true : undefined} aria-label="Çalışma alanı gezinmesi" className={`sidebar ${mobileMenu ? "is-open" : ""}`}>
+        <div className="sidebar-brand-row">
         <a
           className="logo"
           href="#"
           onClick={(e) => {
             e.preventDefault();
             setPage("studio");
+            setMobileMenu(false);
           }}
         >
           <div className="logo-mark">
@@ -1142,29 +1214,28 @@ export default function App({
             sosyal<span className="logo-light">studio</span>
           </span>
         </a>
-        <div className="workspace-label">ÇALIŞMA ALANI</div>
+        <button ref={menuCloseRef} className="icon-button sidebar-close" aria-label="Gezinmeyi kapat" onClick={() => setMobileMenu(false)}><X size={20} /></button>
+        </div>
         <div className="workspace-chip">
           <span className="workspace-avatar">
             <Building2 size={17} />
           </span>
           <div>
-            <strong>Marka merkeziniz</strong>
+            <strong>{company?.name || "Şirket seçilmedi"}</strong>
             <small>
-              {companies.length} şirket ·{" "}
-              {cloud ? "Cloudflare çalışma alanı" : "yerel çalışma alanı"}
+              {companies.length} şirketin çalışma alanı
             </small>
           </div>
         </div>
         <nav aria-label="Ana menü">
-          {navItems
-            .filter(
-              (i) =>
-                cloud ||
-                !["research", "publications", "settings"].includes(i.id),
-            )
-            .map(({ id, name, icon: Icon }) => (
+          {navGroups.map((group) => <div className="nav-group" key={group.name}>
+            <h2>{group.name}</h2>
+            {group.ids.map((id) => navItems.find((item) => item.id === id)!)
+              .filter((item) => cloud || !["research", "publications", "settings"].includes(item.id))
+              .map(({ id, name, icon: Icon }) => (
               <button
                 key={id}
+                aria-current={page === id ? "page" : undefined}
                 className={`nav-item ${page === id ? "active" : ""}`}
                 onClick={() => {
                   setPage(id);
@@ -1176,60 +1247,69 @@ export default function App({
                 {id === "drafts" && drafts.length > 0 && (
                   <span className="nav-count">{drafts.length}</span>
                 )}
-                {page === id && <span className="nav-dot" />}
+                {page === id && <ChevronRight size={15} className="nav-current-icon" aria-hidden="true" />}
               </button>
             ))}
+          </div>)}
         </nav>
         <div className="sidebar-bottom">
           <div className="assistant-promo">
             <span className="promo-icon">
               <Sparkles size={19} />
             </span>
-            <strong>Fikrinize yeni bir dil.</strong>
+            <strong>Platformlara özel içerik</strong>
             <p>
               {aiEnabled
-                ? "Şirketinizi tanıyan asistanla her platforma özel içerikler hazırlayın."
-                : "ChatGPT ile her platforma özel içerikler hazırlayın."}
+                ? "Kaynak metin ve görselden şirketinize uygun taslaklar hazırlayın."
+                : "Manuel ChatGPT aktarımıyla platform metinlerini hazırlayın."}
             </p>
             <button
               onClick={() => {
                 setPage(aiEnabled ? "ai" : "studio");
-                if (!aiEnabled) setHelp(true);
+                setMobileMenu(false);
+                if (!aiEnabled) {
+                  if (mobileMenu) helpAfterMenu.current = true;
+                  else setHelp(true);
+                }
               }}
             >
               {aiEnabled ? "Asistanı aç" : "Nasıl çalışır?"}{" "}
               <ArrowUpRight size={16} />
             </button>
           </div>
-          <button className="sidebar-help" onClick={() => setHelp(true)}>
+          <button className="sidebar-help" onClick={() => {
+            if (mobileMenu) { helpAfterMenu.current = true; setMobileMenu(false); }
+            else setHelp(true);
+          }}>
             <CircleHelp size={18} /> Kullanım rehberi
           </button>
           <div className="local-status">
-            <span />{" "}
+            <ShieldCheck size={14} aria-hidden="true" />{" "}
             {cloud
               ? "Veriler Cloudflare üzerinde saklanır"
               : "Veriler bu ortamda saklanır"}
           </div>
         </div>
       </aside>
-      <div className="main-shell">
+      <div className="main-shell" inert={mobileMenu || undefined}>
         <header className="topbar">
           <div className="breadcrumb">
             <button
+              ref={menuOpenRef}
               className="icon-button mobile-menu"
               aria-label="Menüyü aç"
+              aria-expanded={mobileMenu}
+              aria-controls="workspace-navigation"
               onClick={() => setMobileMenu(true)}
             >
               <Menu size={20} />
             </button>
-            <span>Çalışma alanı</span>
+            <span>{currentGroup}</span>
             <ChevronRight size={15} />
             <strong>{pageTitles[page]}</strong>
           </div>
           <div className="topbar-right">
-            <span className="mode-badge">
-              <span /> Hazırlama modu
-            </span>
+            <div className="user-identity"><strong>{user.name}</strong><span>{user.role === "admin" ? "Yönetici" : "Editör"}</span></div>
             <button
               className="icon-button help-top"
               aria-label="Yardım"
@@ -1254,43 +1334,14 @@ export default function App({
             )}
           </div>
         </header>
-        <main>
+        <main id="workspace-content" tabIndex={-1}>
           <div className="page-heading">
-            <div>
-              <div className="eyebrow">
-                {page === "studio"
-                  ? "FİKİRDEN PAYLAŞIMA"
-                  : "MARKANIZ İÇİN TEK ÇALIŞMA ALANI"}
-              </div>
-              <h1>
-                {page === "studio" ? (
-                  <>
-                    Bir içerik, <span>birçok hikâye.</span>
-                  </>
-                ) : (
-                  pageTitles[page]
-                )}
-              </h1>
-              <p>
-                {page === "studio"
-                  ? "İçeriğinizi bir kez hazırlayın. Her platformda kendi dilinizle anlatın."
-                  : page === "drafts"
-                    ? "Fikirleriniz kaybolmasın. Hazırladığınız içeriklere kaldığınız yerden devam edin."
-                    : page === "companies"
-                      ? "Her şirketin kimliği, anlatımı ve içerikleri kendi alanında."
-                      : page === "ai"
-                        ? "Markanızın bilgileriyle düşünün, platformlara uygun içerik hazırlayın."
-                        : page === "ads"
-                          ? "Reklamları planlayın, aynı Firefox penceresinde inceleyin ve sonuçlardan çalışma notları çıkarın."
-                          : page === "content"
-                            ? "Kampanyaları planlayın, ürün bilgilerini doğrulayın ve sonuçları izleyin."
-                            : page === "publications"
-                              ? "Aynı Firefox penceresinde hesaplarınızı bağlayın ve onayladığınız gönderileri yayımlayın."
-                              : "Şirketinizi seçin, sosyal hesaplarınıza uzak tarayıcıdan giriş yapın."}
-              </p>
+            <div className="page-heading-copy">
+              <h1>{pageTitles[page]}</h1>
+              <p>{pageDescriptions[page]}</p>
             </div>
             <div className="company-picker">
-              <label htmlFor="company-select">AKTİF ŞİRKET</label>
+              <label htmlFor="company-select">Aktif şirket</label>
               <div>
                 <span
                   className="company-dot"
@@ -1329,7 +1380,6 @@ export default function App({
                   <Plus size={16} />
                 </span>
               </div>
-              <div className="eyebrow">İLK ADIM</div>
               <h2>
                 {user.role === "editor"
                   ? "Henüz şirket erişimi atanmadı."
@@ -1614,21 +1664,13 @@ export default function App({
                   <section className="assistant-card">
                     <div className="assistant-top">
                       <span className="assistant-icon">
-                        <Sparkles size={23} />
+                        <Sparkles size={19} aria-hidden="true" />
                       </span>
-                      <span className="assistant-label">
-                        YARATICI YARDIMCINIZ
-                      </span>
-                      <span className="tiny-spark">✳</span>
+                      <h2>İçerik yardımcısı</h2>
                     </div>
-                    <h2>
-                      Bir fikrin
-                      <br />
-                      <em>her platforma uygun hâli.</em>
-                    </h2>
                     <p>
-                      ChatGPT ile metninizi her platformun diline, kitlesine ve
-                      formatına göre yeniden hazırlayın.
+                      ChatGPT ile manuel aktarım: şirket ve platform bilgilerini
+                      içeren talimatı kopyalayın, aldığınız yanıtı stüdyoya ekleyin.
                     </p>
                     <ol>
                       <li>
@@ -1673,7 +1715,7 @@ export default function App({
                       <Clipboard size={15} /> Yanıtı içe aktar
                     </button>
                     <div className="assistant-note">
-                      <span /> API anahtarı gerekmez · Manuel aktarım
+                      <Clipboard size={13} aria-hidden="true" /> API anahtarı gerekmez · Manuel aktarım
                     </div>
                   </section>
                   <section className="tip-card">

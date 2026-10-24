@@ -609,7 +609,10 @@ export function PublicationWorkspace({
         drafts={drafts}
         initialDraftId={initialDraftId}
       />
-      <section className="card expert-panel">
+      <details className="card expert-panel panel-disclosure legacy-publication"
+        open={Boolean(error) || jobs.some((j) => ["draft", "queued", "preparing", "sending", "unknown"].includes(j.state))}>
+        <summary>Facebook için ayrı oturum yayını</summary>
+        <div className="disclosure-content">
         <h2>Facebook · ayrı oturum pilotu</h2>
         <p>
           Onaylanan işler planlanan zamanda şirket bilgisayarındaki Firefox ile
@@ -880,8 +883,12 @@ export function PublicationWorkspace({
               )}
             </article>
           ))}
-      </section>
-      <MetricsWorkspace company={company} user={user} />
+        </div>
+      </details>
+      <details className="panel-disclosure publication-metrics">
+        <summary>Yayın ölçümlerini incele</summary>
+        <MetricsWorkspace company={company} user={user} />
+      </details>
     </div>
   );
 }

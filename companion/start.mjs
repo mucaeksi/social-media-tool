@@ -133,6 +133,7 @@ function connect(config) {
           "local-ai-check-v1",
           "firefox-agent-v1",
           "draft-automation-v1",
+          "qwen-skills-v1",
           "advertising-v1",
           "research-v1",
           "browser-tasks-v1",

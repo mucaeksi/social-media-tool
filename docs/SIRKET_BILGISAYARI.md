@@ -1,5 +1,7 @@
 # 1.12: Qwen ile sosyal medya Firefox görevleri
 
+**1.14:** Qwen için 17 gerçek beceri dosyası, dosya doğrulama/onarımı ve son kullanılan rehberler; daha düzenli Üretim/Planlama/Yönetim paneli. Yardımcı 1.14, eklenti 1.5; aynı Baslat.cmd ve Ctrl+F5 ile güncelleyin. [Beceri dosyaları ve kullanım kontrolü](QWEN_BECERILERI_1_14.md). Model ve hesap klasörlerini silmeyin.
+
 **1.13:** Qwen ile kaynak taslaktan platform metinleri, ayrı hazırlık kopyası ve Firefox toplu yayın önizlemeleri tek akışta hazırlanır; son eklenti onayı korunur. Yardımcı 1.13 / eklenti 1.5. Ayrıntılar: [Qwen otomasyon rehberi](QWEN_OTOMASYON_1_13.md). Mevcut Baslat.cmd ile güncelleyin; model ve girişleri silmeyin.
 
 Yardımcı 1.12 ve eklenti 1.5, mevcut Qwen3.5:9b ile bağlı sosyal medya sekmelerini görme, gezinme ve boş metin alanına yazma görevlerini yürütür. İlk görevde Firefox görüntü izni istenir. Model ve girişler yeniden kurulmaz; mevcut patch akışı kullanılır. [Görev kullanımı ve güncelleme](https://github.com/mucaeksi/social-media-tool/blob/main/docs/FIREFOX_QWEN_1_12.md).

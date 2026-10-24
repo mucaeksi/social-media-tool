@@ -99,7 +99,7 @@ export function DraftLibrary({
   return (
     <section className="content-workspace">
       <div className="section-toolbar">
-        <h2>Taslaklar</h2>
+        <h2>Kaydedilmiş gönderiler</h2>
         <button className="primary" onClick={onNew}>
           Yeni gönderi
         </button>

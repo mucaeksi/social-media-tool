@@ -1,9 +1,11 @@
 import { test, expect } from "@playwright/test";
+import { qwenSkills, QWEN_SKILLS_PROTOCOL, QWEN_SKILLS_VERSION } from "../../shared/qwen-skills.mjs";
 
 test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyoya aktarımı", async ({
   page,
   request,
 }) => {
+  test.setTimeout(60000);
   const company = await (
     await request.post("/api/companies", {
       data: {
@@ -30,7 +32,7 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
   ).json();
   let phase = "runtime_missing",
     sent,
-    modelCalls = 0, selfTest = null, testCalls = 0;
+    modelCalls = 0, selfTest = null, testCalls = 0, skillsValid = false, skillChecks = 0, skillRepairs = 0, lastUse = null;
   const status = () => ({
     model: "qwen3.5:9b",
     phase,
@@ -39,6 +41,9 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
     code: null,
     diagnosticVersion: "local-ai-check-v1",
     selfTest,
+    skills: { protocol: QWEN_SKILLS_PROTOCOL, version: QWEN_SKILLS_VERSION, state: skillsValid ? "ready" : "invalid",
+      checkedAt: new Date().toISOString(), digest: skillsValid ? "a".repeat(64) : null,
+      skills: skillsValid ? qwenSkills.map((s) => ({ id: s.id, title: s.title, sha256: "b".repeat(64) })) : [], lastUse },
   });
   await page.route("**/api/health", async (route) => {
     const r = await route.fetch();
@@ -99,6 +104,8 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
   await page.route("**/api/computer/ai/status", (route) =>
     route.fulfill({ json: status() }),
   );
+  await page.route("**/api/computer/ai/skills/check", (route) => { skillChecks++; return route.fulfill({ json: status() }); });
+  await page.route("**/api/computer/ai/skills/repair", (route) => { skillRepairs++; skillsValid = true; return route.fulfill({ json: status() }); });
   await page.route("**/api/computer/ai/setup", (route) => {
     phase = "downloading";
     return route.fulfill({ status: 202, json: status() });
@@ -148,6 +155,7 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
   await page.route("**/api/computer/ai/ask", async (route) => {
     sent = route.request().postDataJSON();
     modelCalls++;
+    lastUse = { task: "posts", ids: ["kaynak-marka", "platform-tumblr"], version: QWEN_SKILLS_VERSION, digest: "a".repeat(64), at: new Date().toISOString() };
     await route.fulfill({
       json: {
         id: crypto.randomUUID(),
@@ -180,6 +188,7 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
     await expect(
       page.getByRole("combobox", { name: "Asistanın çalışacağı yer" }),
     ).toHaveValue("local");
+    await page.getByText("Yerel AI ve beceri yönetimi", { exact: true }).click();
     const night = page.getByRole("region", { name: "Gece öğrenmesi" });
     await expect(
       night.getByText("Gece programı açık.", { exact: true }),
@@ -214,6 +223,17 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
     await expect(
       page.getByText("Model dosyası doğrulandı", { exact: true }),
     ).toBeVisible({ timeout: 10000 });
+    const skills = page.getByLabel("Qwen sosyal medya becerileri");
+    await expect(skills.getByText(/Beceri dosyaları doğrulanamadı/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "İçerikleri hazırla", exact: true })).toBeDisabled();
+    await skills.getByRole("button", { name: "Beceri dosyalarını doğrula" }).click();
+    expect(skillChecks).toBe(1); expect(modelCalls).toBe(0);
+    await skills.getByRole("button", { name: "Beceri paketini onar" }).click();
+    await expect(skills.getByText(/17 beceri dosyası doğrulandı/)).toBeVisible();
+    await skills.getByText("Yüklü sosyal medya rehberleri", { exact: true }).click();
+    await expect(skills.getByText("Tumblr içerik rehberi", { exact: true })).toBeVisible();
+    await expect(skills.getByText(/henüz becerili model yanıtı alınmadı/)).toBeVisible();
+    expect(skillRepairs).toBe(1); expect(modelCalls).toBe(0);
     await page.getByRole("button", { name: "Qwen'i gerçekten test et" }).click();
     await expect(page.getByText("Qwen testi: Başarısız", { exact: true })).toBeVisible();
     await expect(page.getByRole("alert").filter({ hasText: "GPU_MEMORY" })).toBeVisible();
@@ -236,6 +256,7 @@ test("Küçük yerel AI kurulumu, şirket hafızası ve dokuz platformun stüdyo
     expect(sent.companyId).toBe(company.id);
     expect(sent.selected).toHaveLength(9);
     expect(sent.selected).toContain("tumblr");
+    await expect(skills.getByText(/Son model yanıtındaki beceriler: Kaynak ve marka dili, Tumblr/)).toBeVisible({ timeout: 10000 });
     await expect(
       page.getByText("Fiyat uydurulmaz.", { exact: true }),
     ).toBeVisible();

@@ -55,7 +55,7 @@ export const platforms = [
     height: 1350,
     format: "4:5",
     hashtags: 1,
-    hint: "Doğal bir sohbet başlatın; bir soru ile bitirin.",
+    hint: "Doğal ve doğrudan yazın; soruyu yalnız gerçek bir iletişim amacı varsa kullanın.",
     needsVideo: false,
     docs: "https://developers.facebook.com/docs/threads/",
     requirement:

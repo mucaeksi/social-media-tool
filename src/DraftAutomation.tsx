@@ -53,9 +53,10 @@ export function DraftAutomation({ company, user, draft, accounts, status, disabl
     try {
       const time = scheduledAt();
       setPhase("Qwen ve Firefox bağlantısı kontrol ediliyor…");
-      const model = await api<{ draftAutomationVersion?: string; busy: boolean; phase: string }>("/api/computer/ai/status", { signal: run.controller.signal });
+      const model = await api<{ draftAutomationVersion?: string; busy: boolean; phase: string; skills?: { state: string } }>("/api/computer/ai/status", { signal: run.controller.signal });
       check();
       if (model.draftAutomationVersion !== "draft-automation-v1") throw new Error("Bu akış için yardımcı 1.13 gerekli. Baslat.cmd ile güncellemeyi tamamlayın.");
+      if (model.skills && model.skills.state !== "ready") throw new Error("Qwen beceri dosyaları doğrulanamadı. Yerel AI ekranından beceri paketini onarın.");
       if (model.busy || model.phase !== "ready") throw new Error("Qwen hazır değil veya başka bir görevde. Yerel AI durumunu kontrol edin.");
       const before = await firefoxRequest<FirefoxStatus>("status"); check();
       for (const accountId of accountIds) {

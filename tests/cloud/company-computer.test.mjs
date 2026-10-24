@@ -8,6 +8,7 @@ import { objectKey } from "../../worker/media.mjs";
 import { Miniflare } from "miniflare";
 import { tokenDigest } from "../../shared/passwords.mjs";
 import { LOCAL_MODEL } from "../../shared/local-ai.mjs";
+import { qwenSkills, QWEN_SKILLS_VERSION, QWEN_SKILLS_PROTOCOL } from "../../shared/qwen-skills.mjs";
 
 let mf, db, device, agent, manualForwarded;
 const base = "https://studio.example",
@@ -465,6 +466,10 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
             : null,
       };
     if (m.input.action === "self-test") result.status = { ...result.status, diagnosticVersion: "local-ai-check-v1", selfTest: { state: "running", startedAt: new Date().toISOString(), finishedAt: null, code: null, steps: [] } };
+    if (m.input.action.startsWith("skills-")) result.status.skills = {
+      protocol: QWEN_SKILLS_PROTOCOL, version: QWEN_SKILLS_VERSION, state: "ready", checkedAt: new Date().toISOString(),
+      digest: "a".repeat(64), skills: qwenSkills.map((s) => ({ id: s.id, title: s.title, sha256: "b".repeat(64) })), lastUse: null,
+    };
     if (m.input.action === "select-tab") result = { ok: true, companyId: m.input.companyId,
       answer: JSON.stringify({ tabId: mode === "unknown-tab" ? 999 : m.input.tabs[0].tabId }), posts: [] };
     if (m.input.action === "browser-step") result = { ok: true, companyId: mode === "wrong-browser-company" ? otherCompany : m.input.companyId,
@@ -475,6 +480,8 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
   agent.addEventListener("message", listener);
   try {
     assert.equal((await request("/api/computer/ai/status")).status, 200);
+    assert.equal((await request("/api/computer/ai/skills/check", { method: "POST" })).status, 409, "Eski yardımcıya beceri komutu gönderilmez");
+    assert.equal((await request("/api/computer/ai/skills/repair", { method: "POST", role: "editor" })).status, 403);
     assert.equal(
       (await request("/api/computer/ai/setup", { method: "POST" })).status,
       202,
@@ -690,7 +697,7 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
       const receive = (e) => { if (JSON.parse(e.data).type === "pong") { agent.removeEventListener("message", receive); resolve(); } };
       agent.addEventListener("message", receive);
     });
-    agent.send(JSON.stringify({ type: "hello", capabilities: ["local-ai-v1", "local-ai-check-v1", "firefox-agent-v1"] }));
+    agent.send(JSON.stringify({ type: "hello", capabilities: ["local-ai-v1", "local-ai-check-v1", "firefox-agent-v1", "qwen-skills-v1"] }));
     agent.send(JSON.stringify({ type: "ping" })); await browserUpgraded;
     mode = "good";
     const step = await browserCall(); assert.equal(step.status, 200);
@@ -703,6 +710,12 @@ test("Yerel AI yönetici ister, eski yardımcıyı ayırt eder; seçili şirket 
     assert.equal((await browserCall({ ...browserInput, image: "/9j/" + "A".repeat(320000) })).status, 413);
     assert.equal((await request("/api/computer/ai/browser-cancel", { method: "POST", body: { companyId, runId: browserInput.runId }, role: "other" })).status, 200);
     assert.equal((await db.prepare("SELECT COUNT(*) AS total FROM ai_turns").first()).total, 2, "Görsel Firefox görevleri sohbet arşivine yazılmaz");
+    for (const action of ["check", "repair"]) {
+      const response = await request("/api/computer/ai/skills/" + action, { method: "POST" });
+      assert.equal(response.status, 200);
+      assert.equal((await response.json()).skills.skills.length, 17);
+      assert.equal(captured.action, "skills-" + action); assert.equal(captured.companyId, undefined);
+    }
   } finally {
     agent.removeEventListener("message", listener);
   }

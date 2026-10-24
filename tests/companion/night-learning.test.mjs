@@ -33,7 +33,8 @@ async function fixture(t) {
     memory,
     phase: "ready",
     status: async () => ({ phase: "ready" }),
-    chat: async () => {
+    chat: async (_messages, options) => {
+      assert.equal(options.skillTask, "night");
       chats++;
       return "Kaynaklı kurgu sosyal medya çalışma notu.";
     },

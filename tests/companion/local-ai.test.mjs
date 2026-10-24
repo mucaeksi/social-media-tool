@@ -113,8 +113,9 @@ test("Firefox iptali yalnız aynı görevin Qwen isteğini durdurur; geç kalan 
   await ready;
   await f.ai.execute({ action: "browser-cancel", runId: crypto.randomUUID() });
   assert.equal(f.ai.generationController.signal.aborted, false);
+  const rejected = assert.rejects(pending, (e) => e.code === "CANCELLED");
   await f.ai.execute({ action: "browser-cancel", runId: data.runId });
-  await assert.rejects(pending, (e) => e.code === "CANCELLED");
+  await rejected;
   assert.equal(f.ai.busy, false);
 });
 function responseFor(platform) {
@@ -136,7 +137,8 @@ test("Hazırlık iptali yalnız kendi üretim kimliğini keser ve diğer işi ko
   await f.ai.execute({ action: "cancel", jobId: crypto.randomUUID(), attemptId });
   await f.ai.execute({ action: "cancel", jobId, attemptId: crypto.randomUUID() });
   assert.equal(f.ai.generationController.signal.aborted, false);
-  await f.ai.execute({ action: "cancel", jobId, attemptId }); await assert.rejects(pending, (e) => e.code === "CANCELLED");
+  const rejected = assert.rejects(pending, (e) => e.code === "CANCELLED");
+  await f.ai.execute({ action: "cancel", jobId, attemptId }); await rejected;
   await assert.rejects(f.ai.execute({ ...input, jobId, attemptId }), (e) => e.code === "CANCELLED");
 });
 
@@ -151,7 +153,8 @@ test("küçük model, yalnız loopback, sabit kaynak ve sınırlı GPU bağlamı
     assert.equal(body.options.num_thread, 4);
     assert.equal(body.format.additionalProperties, false);
     assert.deepEqual(body.format.required, ["title", "caption", "hashtags", "alt"]);
-    assert.ok(body.messages[0].content.includes("Marka sesi ve kaynak uyarlaması"));
+    assert.ok(body.messages[0].content.includes("id: kaynak-marka"));
+    assert.ok(body.messages[0].content.includes("id: platform-"));
     assert.ok(body.messages.some((m) => m.content.includes("Kurgu Mobilya")));
     assert.ok(body.messages.some((m) => m.content.includes("Fiyat uydurma")));
     return Response.json({
@@ -196,8 +199,9 @@ test(
     const work = f.ai.execute(input);
     await ready;
     assert.equal((await f.ai.execute({ action: "status" })).status.busy, true);
+    const rejected = assert.rejects(work, (e) => e.code === "CANCELLED");
     await f.ai.execute({ action: "cancel" });
-    await assert.rejects(work, (e) => e.code === "CANCELLED");
+    await rejected;
     assert.equal(f.ai.busy, false);
   },
 );
@@ -302,6 +306,7 @@ test("hatalı/kesilmiş JSON ve platform sınırı aşılırsa önceki içerik y
   );
   await assert.rejects(f.ai.execute(input), (e) => e.code === "INVALID_OUTPUT");
   assert.equal(f.ai.busy, false);
+  assert.equal((await f.ai.status()).skills.lastUse.task, "posts");
   assert.throws(() =>
     localPost(
       JSON.stringify({ ...responseFor("x"), caption: "a".repeat(281) }),
@@ -455,6 +460,42 @@ test("uzun bağlam modele gönderilmeden reddedilir; şirket verisi sessizce kes
     (e) => e.code === "CONTEXT_TOO_LONG",
   );
   assert.equal(f.calls.length, 0);
+});
+
+test("Bozuk beceri dosyası model çağrısını keser; onarım yalnız rehberi yeniler ve gerçek isteğin becerileri raporlanır", async (t) => {
+  let chats = 0;
+  const f = await fixture(t, (url, body) => {
+    if (url.endsWith("tags")) return Response.json({ models: [model] });
+    chats++;
+    assert.match(body.messages[0].content, /id: kaynak-marka/);
+    assert.match(body.messages[0].content, /id: platform-instagram/);
+    return Response.json({ done: true, message: { content: JSON.stringify(responseFor("instagram")) } });
+  });
+  const initial = (await f.ai.execute({ action: "skills-check" })).status;
+  assert.equal(initial.skills.state, "ready"); assert.equal(initial.skills.lastUse, null);
+  const pointer = JSON.parse(await readFile(join(f.directory, "ai/skills/active.json")));
+  await writeFile(join(f.directory, "ai/skills/packs", pointer.id, "kaynak-marka/SKILL.md"), "fixture changed");
+  assert.equal((await f.ai.status()).skills.state, "invalid");
+  await assert.rejects(f.ai.execute({ ...input, selected: ["instagram"] }), (e) => e.code === "SKILLS_INVALID");
+  assert.equal(chats, 0);
+  await f.ai.execute({ action: "skills-repair" });
+  await f.ai.execute({ ...input, selected: ["instagram"] });
+  assert.equal(chats, 1);
+  const status = await f.ai.status(); assert.equal(status.skills.lastUse.task, "posts");
+  assert.equal(validLocalResult({ ok: true, status }), true);
+  assert.equal(JSON.parse(await readFile(join(f.directory, "local-ai-model.json"))).digest, model.digest);
+});
+
+test("Gece modeli doğrulanan güncellik/reklam/ölçüm becerilerini yükler; sadece dosya kontrolü kullanım yazmaz", async (t) => {
+  const f = await fixture(t, (_url, body) => {
+    assert.match(body.messages[0].content, /id: gece-guncellik/);
+    assert.match(body.messages[0].content, /id: reklam-planlama/);
+    assert.match(body.messages[0].content, /id: olcum-deney/);
+    return Response.json({ done: true, message: { content: "Kaynak ilkesini gözlem ve deneyden ayır." } });
+  });
+  await f.ai.chat([{ role: "system", content: "Kaynaklı gece notu." }, { role: "user", content: "Kurgu kaynak" }],
+    { tokens: 600, skillTask: "night", skillOptions: { advertising: true } });
+  assert.equal((await f.ai.skills.status()).lastUse.task, "night");
 });
 
 test("Gerçek model tanılaması arka planda metin, JSON ve görsel çağrılarını yapar; yanıtları rapora koymaz", async (t) => {

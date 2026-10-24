@@ -6,6 +6,11 @@ import { api } from "./api.ts";
 import { localErrors } from "../shared/local-ai.mjs";
 
 type Status = {
+  skills?: {
+    protocol: string; version: string; state: "ready" | "invalid"; checkedAt: string; digest: string | null;
+    skills: { id: string; title: string; sha256: string }[];
+    lastUse: { task: string; ids: string[]; version: string; digest: string; at: string } | null;
+  };
   diagnosticVersion?: string;
   selfTest?: {
     state: string;
@@ -71,6 +76,7 @@ export function LocalAIStatus({
           setError("");
           onReady(
             (next.phase === "ready" || next.phase === "learning") &&
+              (!next.skills || next.skills.state === "ready") &&
               (!advertising || next.advertisingVersion === AD_GUIDE_VERSION),
           );
         }
@@ -110,6 +116,15 @@ export function LocalAIStatus({
     catch (e) { setError((e as Error).message); }
     finally { setPending(false); }
   }
+  async function skillAction(action: "check" | "repair") {
+    setPending(true); setError("");
+    try {
+      const next = await api<Status>(`/api/computer/ai/skills/${action}`, { method: "POST" });
+      setStatus(next);
+      onReady((next.phase === "ready" || next.phase === "learning") && next.skills?.state === "ready" && (!advertising || next.advertisingVersion === AD_GUIDE_VERSION));
+    } catch (e) { setError((e as Error).message); }
+    finally { setPending(false); }
+  }
   return (
     <section className="card local-ai-status" aria-label="Yerel AI durumu">
       <div className="ai-section-heading">
@@ -120,6 +135,8 @@ export function LocalAIStatus({
             : "Bağlantı kontrol ediliyor"}
         </span>
       </div>
+      <details className="panel-disclosure local-ai-guide">
+        <summary>Kurulum ve model bilgileri</summary>
       <p>
         Yardımcı açılınca Ollama başlar ve model bellekte hazır tutulur.
         Yardımcı kapanınca model ve ona ait Ollama süreci kapanır. Cloudflare AI
@@ -137,6 +154,7 @@ export function LocalAIStatus({
         tutulur. Şirket hafızası Cloudflare’de de korunur; mevcut hesap
         girişleri silinmez.
       </p>
+      </details>
       {status?.progress != null && (
         <progress
           value={status.progress}
@@ -145,6 +163,26 @@ export function LocalAIStatus({
         />
       )}
       {status?.stage && <p role="status">{status.stage}</p>}
+      <div aria-label="Qwen sosyal medya becerileri">
+        <h3>Qwen'in yüklü becerileri</h3>
+        {status?.skills ? <>
+          <p role="status">{status.skills.state === "ready"
+            ? `${status.skills.skills.length} beceri dosyası doğrulandı · ${status.skills.version}`
+            : "Beceri dosyaları doğrulanamadı. İçerik üretmeden önce paketi onarın."}</p>
+          <p>Beceriler BAT klasörünün yanındaki <code>ai/skills</code> içinde tutulur; her işte ilgili rehberler yüklenir.</p>
+          {status.skills.skills.length > 0 && <details><summary>Yüklü sosyal medya rehberleri</summary>
+            <ul>{status.skills.skills.map((s) => <li key={s.id}>{s.title}</li>)}</ul>
+          </details>}
+          {status.skills.lastUse ? <p>
+            Son model yanıtındaki beceriler: {status.skills.lastUse.ids.map((id) => status.skills?.skills.find((s) => s.id === id)?.title || id).join(", ")}.
+          </p> : <p>Bu yardımcı oturumunda henüz becerili model yanıtı alınmadı.</p>}
+          <small>Dosya bütünlüğü, Qwen'in içerik kalitesini veya gerçek yayın başarısını kanıtlamaz. Modelin ağırlıkları değiştirilmez.</small>
+          <div className="expert-actions">
+            <button className="secondary" disabled={pending} onClick={() => void skillAction("check")}>Beceri dosyalarını doğrula</button>
+            <button className="secondary" disabled={pending || status.busy} onClick={() => void skillAction("repair")}>Beceri paketini onar</button>
+          </div>
+        </> : <p>Beceri dosyaları ve kullanım kontrolü için yardımcı 1.14 gerekli. Baslat.cmd ile güncellemeyi tamamlayın.</p>}
+      </div>
       <p>
         {status?.selfTest?.state === "passed"
           ? "Bu yardımcı oturumunda Qwen metin, gönderi biçimi ve görsel testlerini geçti. İçerik kalitesini ilk gerçek taslakta ayrıca inceleyin."
@@ -255,6 +293,7 @@ export function LocalAIStatus({
               baglam: status?.runtime?.context ?? null,
               qwenTesti: status?.selfTest ?? null,
               sonUretim: status?.lastRun ?? null,
+              qwenBecerileri: status?.skills ?? null,
             },
             null,
             2,

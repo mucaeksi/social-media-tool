@@ -178,7 +178,7 @@ export class NightLearning {
             }),
           },
         ],
-        { tokens: 600 },
+        { tokens: 600, skillTask: "night", skillOptions: { platform: source.platform, advertising: source.topic === "advertising" } },
       );
       controller.signal.throwIfAborted();
       if (!nightTime(this.now()).active) throw new Error("Gece süresi bitti.");
