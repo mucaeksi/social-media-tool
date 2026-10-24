@@ -32,7 +32,7 @@ test("Gruplandırılmış panel, klavye gezinmesi ve mobil çekmece aynı şirke
     await expect(page.getByRole("heading", { name: "İçerik stüdyosu", exact: true })).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.getByRole("button", { name: "Menüyü aç", exact: true })).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), { message: "Responsive yerleşim yatay taşma üretmemeli" }).toBe(true);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: testInfo.outputPath("panel-mobil.png"), animations: "disabled" });
     await page.getByRole("button", { name: "Menüyü aç", exact: true }).click();
@@ -48,7 +48,7 @@ test("Gruplandırılmış panel, klavye gezinmesi ve mobil çekmece aynı şirke
     await expect(page.getByRole("heading", { name: "Şirketler", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Menüyü aç", exact: true })).toHaveAttribute("aria-expanded", "false");
     await expect(page.getByLabel("Aktif şirket")).toHaveValue(company.id);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), { message: "Responsive yerleşim yatay taşma üretmemeli" }).toBe(true);
     await page.getByRole("button", { name: "Menüyü aç", exact: true }).click();
     await page.getByRole("button", { name: "Kullanım rehberi", exact: true }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
